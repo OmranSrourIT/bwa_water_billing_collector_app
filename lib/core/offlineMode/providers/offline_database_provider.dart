@@ -1,0 +1,59 @@
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/app_database.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/batch_local_service.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/failure_reason_local_service.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_details_local_service.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_local_service.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/reading_local_service.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/sync_queue_local_service.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/unreachable_local_service.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/sync/sync_engine.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/failure_reason_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/reading_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final databaseProvider = Provider<AppDatabase>((ref) {
+  return AppDatabase.instance;
+});
+
+final batchLocalServiceProvider = Provider<BatchLocalService>((ref) {
+  return BatchLocalService(ref.read(databaseProvider));
+});
+
+final invoiceLocalServiceProvider = Provider<InvoiceLocalService>((ref) {
+  return InvoiceLocalService(ref.read(databaseProvider));
+});
+
+final invoiceDetailsLocalServiceProvider = Provider<InvoiceDetailsLocalService>(
+  (ref) {
+    return InvoiceDetailsLocalService(ref.read(databaseProvider));
+  },
+);
+
+final unreachableLocalServiceProvider = Provider<UnreachableLocalService>((
+  ref,
+) {
+  return UnreachableLocalService(ref.read(databaseProvider));
+});
+
+final syncQueueLocalServiceProvider = Provider<SyncQueueLocalService>((ref) {
+  return SyncQueueLocalService(ref.read(databaseProvider));
+});
+
+final readingLocalServiceProvider = Provider<ReadingLocalService>((ref) {
+  return ReadingLocalService(ref.read(databaseProvider));
+});
+final failureReasonLocalServiceProvider = Provider<FailureReasonLocalService>((
+  ref,
+) {
+  return FailureReasonLocalService(ref.read(databaseProvider));
+});
+
+final syncEngineProvider = Provider<SyncEngine>((ref) {
+  return SyncEngine(
+    queue: ref.read(syncQueueLocalServiceProvider),
+
+    readingService: ref.read(readingServiceProvider),
+
+    failureReasonService: ref.read(failureReasonServiceProvider),
+  );
+});
