@@ -417,13 +417,13 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
                                             ).future,
                                           );
 
-                                          // 🔥 تحديث الحالة
-                                          await ref.read(
-                                            updateInvoiceStatusProvider((
-                                              invoiceNo: widget.invoiceNumber.toString(),
-                                              status: newStatus,
-                                            )).future,
-                                          );
+                                          // // 🔥 تحديث الحالة
+                                          // await ref.read(
+                                          //   updateInvoiceStatusProvider((
+                                          //     invoiceNo: widget.invoiceNumber.toString(),
+                                          //     status: newStatus,
+                                          //   )).future,
+                                          // );
 
                                           // إعادة تحميل الفواتير
                                           ref.invalidate(

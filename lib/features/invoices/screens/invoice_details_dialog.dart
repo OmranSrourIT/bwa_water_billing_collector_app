@@ -1224,7 +1224,7 @@ class _Badge extends StatelessWidget {
     ) {
       final status = invoice.lookup.firstWhere(
         (e) => e.lookupType == "InvoiceStatus",
-        orElse: () => invoice.lookup.first,
+        orElse: () => invoice!.lookup!.first,
       );
 
       return switch (status.code) {

@@ -26,7 +26,7 @@ final invoiceDetailProvider =
       ref,
       invoiceNumber,
     ) async {
-      final repository = ref.read(invoiceDetailsRepositoryProvider);
+      final repository = ref.watch(invoiceDetailsRepositoryProvider);
 
       return repository.getInvoice(invoiceNumber);
     });

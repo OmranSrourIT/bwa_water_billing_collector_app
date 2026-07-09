@@ -1,15 +1,15 @@
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/app_database.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/app_database.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/batch_local_service.dart';
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/failure_reason_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_details_local_service.dart';
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_local_service.dart';
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/reading_local_service.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/lookup_local_service.dart'; 
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/sync_queue_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/unreachable_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/sync/sync_engine.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/failure_reason_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/reading_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../database/dao/invoice_local_service.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   return AppDatabase.instance;
@@ -39,15 +39,6 @@ final syncQueueLocalServiceProvider = Provider<SyncQueueLocalService>((ref) {
   return SyncQueueLocalService(ref.read(databaseProvider));
 });
 
-final readingLocalServiceProvider = Provider<ReadingLocalService>((ref) {
-  return ReadingLocalService(ref.read(databaseProvider));
-});
-final failureReasonLocalServiceProvider = Provider<FailureReasonLocalService>((
-  ref,
-) {
-  return FailureReasonLocalService(ref.read(databaseProvider));
-});
-
 final syncEngineProvider = Provider<SyncEngine>((ref) {
   return SyncEngine(
     queue: ref.read(syncQueueLocalServiceProvider),
@@ -56,4 +47,8 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
 
     failureReasonService: ref.read(failureReasonServiceProvider),
   );
+});
+
+final lookupLocalServiceProvider = Provider<LookupLocalService>((ref) {
+  return LookupLocalService(ref.read(databaseProvider));
 });

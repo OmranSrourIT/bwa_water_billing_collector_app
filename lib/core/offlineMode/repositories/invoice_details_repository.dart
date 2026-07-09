@@ -15,12 +15,10 @@ class InvoiceDetailsRepository {
     required this.isOnline,
   });
 
+ 
   Future<InvoiceInformationModel> getInvoice(String invoiceNo) async {
     if (isOnline) {
-      final result = await api.getInvoice(invoiceNo);
-
-      await local.insertInvoiceDetails(result);
-
+      final result = await api.getInvoice(invoiceNo); 
       return result;
     }
 

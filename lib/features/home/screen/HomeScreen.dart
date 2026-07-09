@@ -1,10 +1,12 @@
 import 'package:bwa_water_billing_collector_app/core/constants/AppColors.dart';
 import 'package:bwa_water_billing_collector_app/core/lang/app_localizations.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_sync_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/storage/PrinterStorage.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/ConnectionBanner.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/connection_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/responsive.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
+import 'package:bwa_water_billing_collector_app/core/widgets/InitialSyncLoadingScreen.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/showEndBatchConfirmDialog.dart';
@@ -19,6 +21,7 @@ import 'package:bwa_water_billing_collector_app/features/batch/providers/batch_p
 import 'package:bwa_water_billing_collector_app/features/invoices/models/InvoiceSummary.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoice_model.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoice_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/screens/MeterReadingDialog.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/screens/PaymentDialog.dart';
@@ -116,8 +119,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final syncState = ref.watch(initialSyncStateProvider);
     final batchAsync = ref.watch(batchProvider);
     final isTablet = Responsive.isTablet(context);
+
+    if (syncState.loading) {
+      return InitialSyncLoadingScreen(message: syncState.message);
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -133,6 +141,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       if (selectedBatch != null) {
                         ref.refresh(
                           invoicesProvider(selectedBatch!.batchNumber),
+                        );
+
+                        ref.refresh(
+                          invoiceDetailProvider(selectedInvoiceNo!).future,
                         );
                       } else {
                         ref.refresh(batchProvider);
@@ -970,36 +982,36 @@ class _SearchSectionState extends State<_SearchSection> {
             ],
           ),
           child: GestureDetector(
-  behavior: HitTestBehavior.translucent,
-  onTap: () {
-    FocusManager.instance.primaryFocus?.unfocus();
-  },
-  child: TextField(
-    controller: _searchController,
-    textAlign: TextAlign.center,
-    style: TextStyle(fontSize: isTablet ? 15 : 14),
-    onChanged: (value) {
-      widget.onSearchChanged(value);
-    },
-    decoration: InputDecoration(
-      border: InputBorder.none,
-      hintText: tr.t('search_invoice'),
-      hintStyle: TextStyle(
-        color: Colors.grey.shade400,
-        fontSize: isTablet ? 15 : 13,
-      ),
-      contentPadding: EdgeInsets.symmetric(
-        horizontal: isTablet ? 16 : 20,
-        vertical: 12,
-      ),
-      suffixIcon: Icon(
-        Icons.search_rounded,
-        size: isTablet ? 20 : 22,
-        color: Colors.grey.shade400,
-      ),
-    ),
-  ),
-)
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              FocusManager.instance.primaryFocus?.unfocus();
+            },
+            child: TextField(
+              controller: _searchController,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: isTablet ? 15 : 14),
+              onChanged: (value) {
+                widget.onSearchChanged(value);
+              },
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: tr.t('search_invoice'),
+                hintStyle: TextStyle(
+                  color: Colors.grey.shade400,
+                  fontSize: isTablet ? 15 : 13,
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: isTablet ? 16 : 20,
+                  vertical: 12,
+                ),
+                suffixIcon: Icon(
+                  Icons.search_rounded,
+                  size: isTablet ? 20 : 22,
+                  color: Colors.grey.shade400,
+                ),
+              ),
+            ),
+          ),
         ),
 
         const SizedBox(height: 8),
@@ -1759,7 +1771,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                             showDialog(
                               context: context,
                               builder: (_) => UnreachableDialog(
-                                invoiceNumber:widget.invoice.invoiceNo,
+                                invoiceNumber: widget.invoice.invoiceNo,
                                 batchId: widget.batchId,
                               ),
                             );
@@ -2229,8 +2241,8 @@ class _BatchDropdownState extends State<_BatchDropdown> {
                 child: isSearching
                     ? TextField(
                         controller: _controller,
-                        autofocus: true, 
-                          textAlign: TextAlign.center,
+                        autofocus: true,
+                        textAlign: TextAlign.center,
                         onChanged: (_) {
                           if (_overlayEntry == null) {
                             _showDropdown();
@@ -2240,7 +2252,7 @@ class _BatchDropdownState extends State<_BatchDropdown> {
                         decoration: InputDecoration(
                           hintText: tr.t('search_batch'),
                           border: InputBorder.none,
-                          isDense: true, 
+                          isDense: true,
                           hintStyle: TextStyle(
                             color: Colors.grey.shade400,
                             fontSize: 14,

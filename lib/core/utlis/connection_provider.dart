@@ -27,8 +27,7 @@ class ConnectionNotifier extends StateNotifier<bool> {
         state = false;
         return;
       }
-
-      // تأكيد إن في إنترنت فعلي
+ 
       final hasInternet = await _checkInternet();
       state = hasInternet;
     });

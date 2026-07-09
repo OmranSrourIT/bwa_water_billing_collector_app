@@ -29,9 +29,7 @@ class AppDatabase {
       path,
       version: 1,
       onCreate: (db, version) async {
-        // ===========================
         // BATCHES
-        // ===========================
         await db.execute('''
       CREATE TABLE batches(
         batch_number TEXT PRIMARY KEY,
@@ -42,42 +40,46 @@ class AppDatabase {
       )
     ''');
 
-        // ===========================
         // INVOICES
-        // ===========================
+
         await db.execute('''
-      CREATE TABLE invoices(
-        invoice_no TEXT PRIMARY KEY,
-        batch_number TEXT NOT NULL,
+CREATE TABLE invoices(
+  invoice_no TEXT PRIMARY KEY,
 
-        account_no TEXT,
-        customer_name TEXT,
-        address TEXT,
-        usage_type TEXT,
-        collector_name TEXT,
+  batch_number TEXT NOT NULL,
 
-        total_amount REAL,
-        consumption_qty_row REAL,
-        consumption_qty_potable REAL,
+  account_no TEXT,
+  customer_name TEXT,
+  address TEXT,
+  usage_type TEXT,
+  collector_name TEXT,
 
-        is_notified INTEGER,
-        is_meter_rollover INTEGER,
+  total_amount REAL,
 
-        payment_ref_no INTEGER,
-        payment_date TEXT,
+  consumption_qty_row REAL,
+  consumption_qty_potable REAL,
 
-        invoice_status TEXT,
+  is_notified INTEGER,
+  is_meter_rollover INTEGER,
 
-        synced INTEGER DEFAULT 1,
 
-        FOREIGN KEY(batch_number)
-        REFERENCES batches(batch_number)
-      )
-    ''');
+  -- كامل Payment Model
+  payment_json TEXT,
 
-        // ===========================
+
+  -- كامل Lookup List
+  lookup_json TEXT,
+
+
+  synced INTEGER DEFAULT 1,
+
+
+  FOREIGN KEY(batch_number)
+  REFERENCES batches(batch_number)
+)
+''');
         // INVOICE DETAILS
-        // ===========================
+
         await db.execute('''
       CREATE TABLE invoice_details(
         invoice_no TEXT PRIMARY KEY,
@@ -121,15 +123,35 @@ class AppDatabase {
         payment_ref_no INTEGER,
         payment_date TEXT,
 
-        attachment TEXT,
+        
+
+         invoice_details_json TEXT,
+
+         failure_reasons_json TEXT,
+
+         lookup_json TEXT,
+         
+         
 
         synced INTEGER DEFAULT 1
       )
     ''');
 
-        // ===========================
+        await db.execute('''
+CREATE TABLE invoice_attachments(
+
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+ invoice_no TEXT NOT NULL,
+
+ type TEXT NOT NULL,
+
+ attachment TEXT
+
+)
+''');
+
         // UNREACHABLE (تعذر القراءة)
-        // ===========================
         await db.execute('''
       CREATE TABLE unreachable(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -148,9 +170,28 @@ class AppDatabase {
       )
     ''');
 
-        // ===========================
+        await db.execute('''
+CREATE TABLE lookups(
+
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+  lookup_type TEXT NOT NULL,
+
+  code TEXT NOT NULL,
+
+  ar_desc TEXT,
+
+  en_desc TEXT,
+
+  order_no INTEGER,
+
+  UNIQUE(lookup_type, code)
+
+)
+''');
+
         // SYNC QUEUE
-        // ===========================
+
         await db.execute('''
       CREATE TABLE sync_queue(
         id INTEGER PRIMARY KEY AUTOINCREMENT,

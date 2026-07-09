@@ -1,8 +1,17 @@
 import 'package:bwa_water_billing_collector_app/core/Serivces/AppInfoService.dart';
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/app_database.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/app_database.dart';
+
+import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/initial_sync_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_provider.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_sync_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/routes/RouterApp.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/connection_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/auth/providers/auth_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/batch/providers/batch_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/failure_reason_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/field_failure_lookup_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoice_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -44,11 +53,30 @@ class _MyAppState extends ConsumerState<MyApp> {
   void initState() {
     super.initState();
 
+    ref.listenManual(authProvider, (previous, next) async {
+      if (previous?.successLogin != true && next.successLogin == true) {
+        print("LOGIN SUCCESS => START INITIAL SYNC");
+        if (ref.read(connectionProvider)) {
+          await ref.read(initialSyncStateProvider.notifier).start();
+          print("INITIAL SYNC FINISHED");
+        }
+      }
+    });
+
     ref.listenManual<bool>(connectionProvider, (previous, next) async {
-      // رجع الإنترنت بعد ما كان مقطوع
       if (next == true && previous == false) {
-        print("Internet Connected => Start Sync"); 
-        await ref.read(syncEngineProvider).sync();
+        print("Internet Connected => Start Sync");
+
+        final success = await ref.read(syncEngineProvider).sync();
+
+        if (success) {
+          await ref.read(initialSyncStateProvider.notifier).start();
+          ref.invalidate(batchProvider);
+          ref.invalidate(invoicesProvider); 
+          ref.invalidate(invoiceDetailProvider);
+          // ref.invalidate(failureReasonProvider);
+          // ref.invalidate(fieldFailureLookupProvider);
+        }
       }
     });
   }

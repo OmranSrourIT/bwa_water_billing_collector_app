@@ -185,8 +185,7 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
 
       currentReadDateTime: readingDate.toUtc().toIso8601String(),
 
-      previousReadingDateTime:
-          invoice.previousReadingDateTime?.toUtc().toIso8601String() ?? "",
+      previousReadingDateTime:  invoice.previousReadingDateTime?.toUtc().toIso8601String() ?? "",
 
       isMeterRollover: resetMeter,
 
@@ -208,15 +207,21 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
             isError: true,
           );
 
+          ref.invalidate(invoicesProvider(widget.batchId.toString()));
+
+          ref.invalidate(
+            invoiceDetailProvider(widget.invoiceNumber.toString()),
+          );
+
           return;
         }
 
-        await ref.read(
-          updateInvoiceStatusProvider((
-            invoiceNo: widget.invoiceNumber,
-            status: "RDY",
-          )).future,
-        );
+        // await ref.read(
+        //   updateInvoiceStatusProvider((
+        //     invoiceNo: widget.invoiceNumber,
+        //     status: "RDY",
+        //   )).future,
+        // );
 
         AppPopupAlert.show(
           context,
@@ -226,6 +231,10 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
             Navigator.pop(context, true);
           },
         );
+
+        ref.invalidate(invoicesProvider(widget.batchId.toString()));
+
+        ref.invalidate(invoiceDetailProvider(widget.invoiceNumber.toString()));
       } catch (e) {
         final errorMessage = "حدث خطأ أثناء تحديث حالة الفاتورة";
 

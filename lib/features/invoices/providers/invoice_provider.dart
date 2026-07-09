@@ -21,6 +21,6 @@ final invoiceRepositoryProvider = Provider<InvoiceRepository>((ref) {
 
 final invoicesProvider = FutureProvider.family<List<InvoiceModel>, String>((ref,batchId,)
  async {
-  final repository = ref.read(invoiceRepositoryProvider);
+  final repository = ref.watch(invoiceRepositoryProvider);
   return repository.getInvoices(batchId);
 });

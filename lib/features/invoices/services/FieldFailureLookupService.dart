@@ -3,9 +3,8 @@ import 'package:bwa_water_billing_collector_app/features/invoices/models/field_f
 import 'package:dio/dio.dart';
 
 class FieldFailureLookupService {
-  final Dio dio;
-
-  FieldFailureLookupService({required this.dio}); 
+  final Dio dio; 
+  FieldFailureLookupService(this.dio); 
    Future<List<FieldFailureLookupModel>> getLookupStatus(
     String lookUpstatus,
   ) async {

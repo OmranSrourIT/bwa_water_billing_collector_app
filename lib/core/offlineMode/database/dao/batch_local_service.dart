@@ -1,4 +1,5 @@
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/app_database.dart';
+ 
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/app_database.dart';
 import 'package:bwa_water_billing_collector_app/features/batch/models/batch_model.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -27,9 +28,7 @@ class BatchLocalService {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
-    }
-
-
+    } 
     await batch.commit(noResult: true);
   }
 

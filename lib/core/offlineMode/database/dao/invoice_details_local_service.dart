@@ -1,4 +1,5 @@
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/app_database.dart';
+import 'dart:convert';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/app_database.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -66,14 +67,75 @@ class InvoiceDetailsLocalService {
 
       "payment_date": item.payment?.paymentDate?.toIso8601String(),
 
-      "attachment": item.attachment,
+      "invoice_details_json": jsonEncode(
+        item.invoiceDetails
+            .map(
+              (e) => {
+                "SequenceNo": e.sequenceNo,
+
+                "Description": e.description,
+
+                "Amount": e.amount,
+
+                "AmountFormatted": e.amountFormatted,
+              },
+            )
+            .toList(),
+      ),
+
+      "failure_reasons_json": jsonEncode(
+        item.failureReasons
+            .map(
+              (e) => {
+                "FailureReasonCode": e.failureReasonCode,
+                "FailureNotes": e.failureNotes,
+                "Attachment": null,
+              },
+            )
+            .toList(),
+      ),
+
+      "lookup_json": jsonEncode(
+        item.lookup
+            .map(
+              (e) => {
+                "LookupType": e.lookupType,
+
+                "Code": e.code,
+
+                "ArDesc": e.arDesc,
+
+                "EnDesc": e.enDesc,
+              },
+            )
+            .toList(),
+      ),
 
       "synced": 1,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+
+    if (item.attachment != null) {
+      await database.insert("invoice_attachments", {
+        "invoice_no": item.invoiceNumber,
+        "type": "METER",
+        "attachment": item.attachment,
+      });
+    }
+
+    for (final reason in item.failureReasons) {
+      if (reason.attachment != null) {
+        await database.insert("invoice_attachments", {
+          "invoice_no": item.invoiceNumber,
+          "type": "FAILURE",
+          "attachment": reason.attachment,
+        });
+      }
+    }
   }
 
   Future<InvoiceInformationModel?> getInvoiceDetails(String invoiceNo) async {
     final database = await db.database;
+ 
 
     final result = await database.query(
       "invoice_details",
@@ -86,6 +148,12 @@ class InvoiceDetailsLocalService {
     }
 
     final json = result.first;
+
+    final invoiceDetailsJson = json["invoice_details_json"] as String?;
+
+    final failureReasonsJson = json["failure_reasons_json"] as String?;
+
+    final lookupJson = json["lookup_json"] as String?;
 
     return InvoiceInformationModel(
       invoiceNumber: json["invoice_no"] as String,
@@ -133,13 +201,70 @@ class InvoiceDetailsLocalService {
       collectionPeriodDescription:
           json["collection_period_description"] as String? ?? "",
 
-      invoiceDetails: [],
+      invoiceDetails: invoiceDetailsJson == null
+          ? []
+          : (jsonDecode(invoiceDetailsJson) as List)
+                .map((e) => InvoiceDetailModel.fromJson(e))
+                .toList(),
 
-      failureReasons: [],
+      failureReasons: failureReasonsJson == null
+          ? []
+          : (jsonDecode(failureReasonsJson) as List).map((e) {
+              final model = FieldFailureReasonModel.fromJson(e);
 
-      lookup: [],
+              return FieldFailureReasonModel(
+                failureReasonCode: model.failureReasonCode,
+                failureNotes: model.failureNotes,
+                attachment: null,
+              );
+            }).toList(),
 
-      attachment: json["attachment"] as String?,
+      lookup: lookupJson == null
+          ? []
+          : (jsonDecode(lookupJson) as List)
+                .map((e) => LookupModel.fromJson(e))
+                .toList(),
+      attachment: null,
+
+      periodFromDate: json["period_from_date"] != null
+          ? DateTime.parse(json["period_from_date"] as String)
+          : null,
+
+      periodToDate: json["period_to_date"] != null
+          ? DateTime.parse(json["period_to_date"] as String)
+          : null,
+
+      currentReadDateTime: json["current_read_date_time"] != null
+          ? DateTime.parse(json["current_read_date_time"] as String)
+          : null,
+
+      previousReadingDateTime: json["previous_reading_date_time"] != null
+          ? DateTime.parse(json["previous_reading_date_time"] as String)
+          : null,
+
+      installationDate: json["installation_date"] != null
+          ? DateTime.parse(json["installation_date"] as String)
+          : null,
+
+      // attachment: json["attachment"] as String?,
+    );
+  }
+
+  Future<void> updateReading({
+    required String invoiceNo,
+    required double currentReading,
+    required DateTime currentReadDateTime,
+  }) async {
+    final database = await db.database;
+
+    await database.update(
+      "invoice_details",
+      {
+        "current_reading": currentReading,
+        "current_read_date_time": currentReadDateTime.toIso8601String(),
+      },
+      where: "invoice_no = ?",
+      whereArgs: [invoiceNo],
     );
   }
 }

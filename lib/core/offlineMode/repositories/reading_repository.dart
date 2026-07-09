@@ -1,3 +1,4 @@
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_details_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/sync_queue_local_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/ReadingResponse.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/reading_request_model.dart';
@@ -7,12 +8,13 @@ class ReadingRepository {
   final ReadingService api;
 
   final SyncQueueLocalService queue;
-
+  final InvoiceDetailsLocalService local;
   final bool isOnline;
 
   ReadingRepository({
     required this.api,
     required this.queue,
+    required this.local,
     required this.isOnline,
   });
 
@@ -65,6 +67,12 @@ class ReadingRepository {
 
         "base64": request.base64,
       },
+    );
+
+    await local.updateReading(
+      invoiceNo: request.invoiceNumber,
+      currentReading: request.currentReading,
+      currentReadDateTime: DateTime.parse(request.currentReadDateTime),
     );
 
     return ReadingResponse(

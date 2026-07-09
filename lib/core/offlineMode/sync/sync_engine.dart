@@ -7,9 +7,7 @@ import '../database/dao/sync_queue_local_service.dart';
 
 class SyncEngine {
   final SyncQueueLocalService queue;
-
   final ReadingService readingService;
-
   final FailureReasonService failureReasonService;
 
   SyncEngine({
@@ -18,8 +16,10 @@ class SyncEngine {
     required this.failureReasonService,
   });
 
-  Future<void> sync() async {
+  Future<bool> sync() async {
     final items = await queue.getPendingItems();
+
+    bool allSuccess = true;
 
     for (final item in items) {
       final id = item["id"] as int;
@@ -36,19 +36,15 @@ class SyncEngine {
         switch (type) {
           case "READING":
             success = await _syncReading(payload);
-
             break;
 
           case "FAILURE_REASON":
             success = await _syncFailureReason(payload);
-
             break;
 
           default:
             print("Unknown sync type => $type");
-
             success = true;
-
             break;
         }
 
@@ -56,12 +52,17 @@ class SyncEngine {
           await queue.markAsSynced(id);
         } else {
           await queue.markAsFailed(id);
+          allSuccess = false;
         }
       } catch (e) {
-        print("SYNC ERROR => $e"); 
+        print("SYNC ERROR => $e");
+
         await queue.markAsFailed(id);
+        allSuccess = false;
       }
     }
+
+    return allSuccess;
   }
 
   Future<bool> _syncReading(Map<String, dynamic> data) async {
