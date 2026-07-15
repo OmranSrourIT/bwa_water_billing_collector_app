@@ -215,13 +215,13 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
 
           return;
         }
-
-        // await ref.read(
-        //   updateInvoiceStatusProvider((
-        //     invoiceNo: widget.invoiceNumber,
-        //     status: "RDY",
-        //   )).future,
-        // );
+  // 🔥 تحديث الحالة
+        await ref.read(
+          updateInvoiceStatusProvider((
+            invoiceNo: widget.invoiceNumber,
+            status: "RDY",
+          )).future,
+        );
 
         AppPopupAlert.show(
           context,
@@ -240,9 +240,7 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
 
         if (context.mounted) {
           AppPopupAlert.show(context, message: errorMessage, isError: true);
-        }
-
-        debugPrint("updateInvoiceStatus error: $e");
+        } 
       }
     } catch (e) {
       final message = parseError(e);

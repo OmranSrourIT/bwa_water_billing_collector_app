@@ -1,6 +1,8 @@
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/AccountLocalService.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/batch_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_details_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/lookup_local_service.dart';
+import 'package:bwa_water_billing_collector_app/features/Account/services/account_api_service.dart';
 import 'package:bwa_water_billing_collector_app/features/batch/services/batch_Api_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/FieldFailureLookupService.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/invoice_service.dart';
@@ -13,20 +15,25 @@ class InitialSyncRepository {
   final InvoiceService invoiceApi;
   final InvoiceDetailsService detailsApi;
   final FieldFailureLookupService lookupApi;
+  final AccountApiService accountApi;
   final BatchLocalService batchLocal;
   final InvoiceLocalService invoiceLocal;
   final InvoiceDetailsLocalService detailsLocal;
   final LookupLocalService lookupLocal;
+
+  final AccountLocalService accountLocal;
 
   InitialSyncRepository({
     required this.batchApi,
     required this.invoiceApi,
     required this.detailsApi,
     required this.lookupApi,
+    required this.accountApi,
     required this.batchLocal,
     required this.invoiceLocal,
     required this.detailsLocal,
     required this.lookupLocal,
+    required this.accountLocal,
   });
 
   Future<void> downloadInitialData({
@@ -34,6 +41,10 @@ class InitialSyncRepository {
   }) async {
     try {
       onProgress?.call("جاري تجهيز البيانات محليا...");
+
+      final account = await accountApi.getAccount();
+
+      await accountLocal.saveAccount(account);
 
       final batches = await batchApi.getBatches();
 

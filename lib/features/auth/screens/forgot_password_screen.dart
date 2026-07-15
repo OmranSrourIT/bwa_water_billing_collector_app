@@ -1,3 +1,5 @@
+import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
+import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
 import 'package:bwa_water_billing_collector_app/features/auth/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -34,15 +36,18 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   color: Colors.black.withOpacity(0.06),
                   blurRadius: 35,
                   offset: const Offset(0, 15),
-                )
+                ),
               ],
             ),
             child: Form(
               key: formKey,
               child: Column(
                 children: [
-                  const Icon(Icons.lock_reset,
-                      size: 70, color: Color(0xff1976D2)),
+                  const Icon(
+                    Icons.lock_reset,
+                    size: 70,
+                    color: Color(0xff1976D2),
+                  ),
 
                   const SizedBox(height: 15),
 
@@ -109,20 +114,33 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                                   Navigator.pop(context);
                                 }
                               } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(e.toString())),
-                                );
+                                final message = parseError(e);
+
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  AppPopupAlert.show(
+                                    context,
+                                    message: message,
+                                    isError: true,
+                                  );
+                                });
                               }
 
                               setState(() => loading = false);
                             },
                       child: loading
-                          ? const CircularProgressIndicator(
-                              color: Colors.white,
-                            )
-                          : const Text("إرسال",style: TextStyle(color: Colors.white,fontSize: 13,fontWeight: FontWeight.bold),),
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              "إرسال",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),

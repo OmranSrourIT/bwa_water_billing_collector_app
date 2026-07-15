@@ -12,19 +12,21 @@ final appUpdateStorageProvider = Provider<AppUpdateStorage>((ref) {
   return AppUpdateStorage();
 });
 
-final appUpdateProvider = FutureProvider<AppUpdate>((ref) async {
+final appUpdateProvider = FutureProvider.autoDispose<AppUpdate>((ref) async {
   final dio = Dio();
+
   final storage = ref.read(appUpdateStorageProvider);
 
   try {
+    print("====== CALL API ======");
     final res = await dio.get(
       "${ApiConstants.baseUrl}${ApiConstants.updateAppVersion(AppInfoService.version)}",
     );
 
+    print(res.data);
+
     // 🔥 FIX: parse string -> json
-    final data = res.data is String
-        ? jsonDecode(res.data)
-        : res.data;
+    final data = res.data is String ? jsonDecode(res.data) : res.data;
 
     final model = AppUpdate.fromJson(data);
 
@@ -35,7 +37,9 @@ final appUpdateProvider = FutureProvider<AppUpdate>((ref) async {
     );
 
     return model;
-  } catch (e) {
+  } catch (e, s) {
+    print("ERROR: $e");
+    print(s);
     final cachedNeedUpdate = await storage.getNeedUpdate();
     final cachedUrl = await storage.getApkUrl() ?? "";
 
@@ -43,10 +47,7 @@ final appUpdateProvider = FutureProvider<AppUpdate>((ref) async {
       return AppUpdate(needUpdate: false, apkURL: "");
     }
 
-    return AppUpdate(
-      needUpdate: cachedNeedUpdate,
-      apkURL: cachedUrl,
-    );
+    return AppUpdate(needUpdate: cachedNeedUpdate, apkURL: cachedUrl);
   }
 });
 

@@ -1,3 +1,6 @@
+import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_provider.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/repositories/AccountRepository.dart';
+import 'package:bwa_water_billing_collector_app/core/utlis/connection_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/Account/model/account_model.dart';
 import 'package:bwa_water_billing_collector_app/features/Account/services/account_api_service.dart';
 import 'package:bwa_water_billing_collector_app/features/Account/services/account_service.dart';
@@ -10,8 +13,18 @@ final accountServiceProvider = Provider<AccountService>((ref) {
   return AccountApiService(dio);
 });
 
+ 
+
+final accountRepositoryProvider = Provider<AccountRepository>((ref) {
+  return AccountRepository(
+    api: ref.read(accountServiceProvider),
+    local: ref.read(accountLocalServiceProvider),
+    isOnline: ref.watch(connectionProvider),
+  );
+});
 
 final accountProvider = FutureProvider<AccountModel>((ref) async {
-  final service = ref.read(accountServiceProvider);
-  return service.getAccount();
+  final repository = ref.watch(accountRepositoryProvider);
+
+  return repository.getAccount();
 });

@@ -13,8 +13,8 @@ final batchServiceProvider = Provider<BatchApiService>((ref) {
 
 final batchRepositoryProvider = Provider<BatchRepository>((ref) {
   return BatchRepository(
-    api: ref.read(batchServiceProvider), 
-    local: ref.read(batchLocalServiceProvider),
+    api: ref.watch(batchServiceProvider), 
+    local: ref.watch(batchLocalServiceProvider),
      isOnline:ref.watch(connectionProvider),
   );
 });

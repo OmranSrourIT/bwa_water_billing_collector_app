@@ -1,4 +1,6 @@
 import 'dart:ui';
+import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
+import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
 import 'package:bwa_water_billing_collector_app/features/Account/provider/account_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:bwa_water_billing_collector_app/core/constants/AppColors.dart';
@@ -22,7 +24,15 @@ class AccountDetailsDialog extends ConsumerWidget {
             child: CircularProgressIndicator(),
           ),
         ),
-        error: (e, _) => Center(child: Text("Error: $e")),
+          error: (error, stack) {
+        final message = parseError(error);
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          AppPopupAlert.show(context, message: message, isError: true);
+        });
+
+        return const SizedBox();
+      },
         data: (account) {
           return _buildDialog(context, account);
         },

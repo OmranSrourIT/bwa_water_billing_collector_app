@@ -1,6 +1,9 @@
 import 'dart:ui';
 import 'package:bwa_water_billing_collector_app/core/constants/AppConstant.dart';
+import 'package:bwa_water_billing_collector_app/core/storage/PrinterStorage.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
+import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
+import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
 import 'package:bwa_water_billing_collector_app/features/Payment/printer_channel.dart';
 import 'package:bwa_water_billing_collector_app/features/Printer%20VAN_GOLD/printer_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
@@ -125,7 +128,19 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                           ),
                         ),
 
-                        error: (e, _) => Center(child: Text("Error: $e")),
+                        error: (error, stack) {
+                          final message = parseError(error);
+
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            AppPopupAlert.show(
+                              context,
+                              message: message,
+                              isError: true,
+                            );
+                          });
+
+                          return const SizedBox();
+                        },
                       ),
                     ),
                   ),
@@ -137,7 +152,17 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                     loading: () {
                       return const SizedBox();
                     },
-                    error: (e, s) {
+                    error: (error, stack) {
+                      final message = parseError(error);
+
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        AppPopupAlert.show(
+                          context,
+                          message: message,
+                          isError: true,
+                        );
+                      });
+
                       return const SizedBox();
                     },
                   ),
@@ -205,12 +230,29 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                   final granted = await requestBluetoothPermissions();
                   if (!granted) return;
 
-                  await PrinterChannel.printImage(
-                    mac: "86:67:7A:02:70:92",
-                    image: image,
-                  );
+                  final mac = await PrinterStorage.getMac();
+
+                  if (mac == null) {
+                    AppPopupAlert.show(
+                      context,
+                      message:
+                          "الطابعة غير متصلة، يرجى الاتصال بالطابعة أولاً.",
+                      isError: true,
+                    );
+                    return;
+                  }
+
+                  await PrinterChannel.printImage(mac: mac, image: image);
                 } catch (e) {
-                  debugPrint("PRINT ERROR: $e");
+                  final message = parseError(e);
+
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    AppPopupAlert.show(
+                      context,
+                      message: message,
+                      isError: true,
+                    );
+                  });
                 } finally {
                   setState(() => isPrinting = false);
                 }
@@ -330,19 +372,19 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                       context,
                     );
 
-                    final int? days = (collectionType == "EST")
-                        ? (invoice.periodToDate != null &&
-                                  invoice.periodFromDate != null)
-                              ? invoice.periodToDate!
-                                    .difference(invoice.periodFromDate!)
-                                    .inDays
-                              : null
-                        : (invoice.previousReadingDateTime != null &&
-                              invoice.currentReadDateTime != null)
-                        ? invoice.currentReadDateTime!
-                              .difference(invoice.previousReadingDateTime!)
-                              .inDays
-                        : null;
+                    // final int? days = (collectionType == "EST")
+                    //     ? (invoice.periodToDate != null &&
+                    //               invoice.periodFromDate != null)
+                    //           ? invoice.periodToDate!
+                    //                 .difference(invoice.periodFromDate!)
+                    //                 .inDays
+                    //           : null
+                    //     : (invoice.previousReadingDateTime != null &&
+                    //           invoice.currentReadDateTime != null)
+                    //     ? invoice.currentReadDateTime!
+                    //           .difference(invoice.previousReadingDateTime!)
+                    //           .inDays
+                    //     : null;
 
                     return Column(
                       children: [
@@ -381,7 +423,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                         ),
 
                         Text(
-                          "عدد أيام الاحتساب: ${days?.toString() ?? ""} يوم",
+                          "عدد أيام الاحتساب: ${invoice.activeCollectionPeriod} يوم",
                           style: const TextStyle(fontSize: 14),
                         ),
                       ],

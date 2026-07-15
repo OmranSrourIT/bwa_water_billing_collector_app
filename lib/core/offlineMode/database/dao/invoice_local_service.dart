@@ -1,7 +1,6 @@
 import 'dart:convert';
 
- 
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/app_database.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/app_database.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoice_model.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -78,14 +77,14 @@ class InvoiceLocalService {
   }
 
   Future<List<InvoiceModel>> getInvoices(String batchNumber) async {
-    final database = await db.database;
+    final database = await db.database; 
 
-    final result = await database.query(
-      "invoices",
-      where: "batch_number=?",
-      whereArgs: [batchNumber],
+    final result = await database.rawQuery(
+      "SELECT * FROM invoices WHERE batch_number = ?",
+      [batchNumber],
     );
 
+    print("RAW RESULT = ${result.length}");
     return result.map((json) {
       final lookupJson = json["lookup_json"] as String?;
 
@@ -130,4 +129,41 @@ class InvoiceLocalService {
   }
 
 
+Future<void> updateInvoiceStatus({
+  required String invoiceNo,
+  required String status,
+}) async {
+  final database = await db.database;
+
+  final result = await database.query(
+    "invoices",
+    columns: ["lookup_json"],
+    where: "invoice_no = ?",
+    whereArgs: [invoiceNo],
+  );
+
+  if (result.isEmpty) return;
+
+  final lookupJson = result.first["lookup_json"] as String?;
+
+  if (lookupJson == null || lookupJson.isEmpty) return;
+
+  final List<dynamic> lookups = jsonDecode(lookupJson);
+
+  for (final item in lookups) {
+    if (item["LookupType"] == "InvoiceStatus") {
+      item["Code"] = status;
+      break;
+    }
+  }
+
+  await database.update(
+    "invoices",
+    {
+      "lookup_json": jsonEncode(lookups),
+    },
+    where: "invoice_no = ?",
+    whereArgs: [invoiceNo],
+  );
+}
 }

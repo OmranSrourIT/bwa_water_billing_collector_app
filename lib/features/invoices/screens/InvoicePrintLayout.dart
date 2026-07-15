@@ -4,7 +4,6 @@ import 'package:bwa_water_billing_collector_app/features/invoices/models/invoice
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-
 class InvoicePrintLayout extends StatelessWidget {
   final InvoiceInformationModel invoice;
 
@@ -150,7 +149,7 @@ class InvoicePrintLayout extends StatelessWidget {
                       ),
 
                       Text(
-                        "عدد أيام الاحتساب: ${days?.toString() ?? ""} يوم",
+                        "عدد أيام الاحتساب: ${invoice.activeCollectionPeriod} يوم",
                         style: valueStyle.copyWith(fontSize: 16),
                       ),
                     ],

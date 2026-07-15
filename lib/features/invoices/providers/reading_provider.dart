@@ -1,5 +1,6 @@
 import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/repositories/reading_repository.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/repositories/update_invoice_status_repository.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/connection_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/ReadingResponse.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,18 +36,28 @@ final insertReadingProvider =
       return repository.insertReading(request);
     });
 
+final updateInvoiceStatusRepositoryProvider =
+    Provider<UpdateInvoiceStatusRepository>((ref) {
+  return UpdateInvoiceStatusRepository(
+    api: ref.read(readingServiceProvider),
+    queue: ref.read(syncQueueLocalServiceProvider),
+    detailsLocal: ref.read(invoiceDetailsLocalServiceProvider),
+    invoiceLocal : ref.read(invoiceLocalServiceProvider),
+    isOnline: ref.watch(connectionProvider),
+  );
+});
 
 
     
-final updateInvoiceStatusProvider =
+ final updateInvoiceStatusProvider =
     FutureProvider.family<String, ({String invoiceNo, String status})>((
       ref,
       request,
     ) async {
-      final service = ref.read(readingServiceProvider);
+      final repository = ref.read(updateInvoiceStatusRepositoryProvider);
 
-      return service.updateInvoiceStatus(
-        invoiceNumber: request.invoiceNo,
+      return repository.updateStatus(
+        invoiceNo: request.invoiceNo,
         status: request.status,
       );
     });

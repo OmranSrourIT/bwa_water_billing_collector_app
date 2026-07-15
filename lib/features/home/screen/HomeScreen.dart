@@ -7,6 +7,7 @@ import 'package:bwa_water_billing_collector_app/core/utlis/connection_provider.d
 import 'package:bwa_water_billing_collector_app/core/utlis/responsive.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/InitialSyncLoadingScreen.dart';
+import 'package:bwa_water_billing_collector_app/core/widgets/appErrorState.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/showEndBatchConfirmDialog.dart';
@@ -105,13 +106,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         });
       }
     } catch (e) {
-      AppPopupAlert.show(
-        context,
-        message: isArabic
-            ? "حدث خطأ غير متوقع"
-            : "An unexpected error occurred",
-        isError: true,
-      );
+      final message = parseError(e);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        AppPopupAlert.show(context, message: message, isError: true);
+      });
     } finally {
       if (mounted) setState(() => isEndBatchLoading = false);
     }
@@ -122,6 +121,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final syncState = ref.watch(initialSyncStateProvider);
     final batchAsync = ref.watch(batchProvider);
     final isTablet = Responsive.isTablet(context);
+  
 
     if (syncState.loading) {
       return InitialSyncLoadingScreen(message: syncState.message);
@@ -349,13 +349,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                                         onCollectionChanged: (value) {
                                           setState(() {
-                                            selectedCollectionType = value.code;
+                                            selectedCollectionType =
+                                                value?.code;
                                           });
                                         },
 
                                         onStatusChanged: (value) {
                                           setState(() {
-                                            selectedInvoiceStatus = value.code;
+                                            selectedInvoiceStatus = value?.code;
                                           });
                                         },
                                       ),
@@ -379,23 +380,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     ],
                                   );
                                 },
-                                loading: () => const SizedBox(),
-                                error: (_, __) => const SizedBox(),
+                                loading: () => CircularProgressIndicator(),
+                                error: (error, stack) {
+                                  final message = parseError(error);
+
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
+                                    AppPopupAlert.show(
+                                      context,
+                                      message: message,
+                                      isError: true,
+                                    );
+                                  });
+
+                                  return const SizedBox();
+                                },
                               );
                             },
                             loading: () => CircularProgressIndicator(),
                             error: (error, stack) {
-                              final message = parseError(error);
-
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                AppPopupAlert.show(
-                                  context,
-                                  message: message,
-                                  isError: true,
-                                );
-                              });
-
-                              return const SizedBox();
+                              return AppErrorState(
+                                message: parseError(error).replaceAll("Exception:", ""),
+                                onRetry: () {
+                                  ref.invalidate(batchProvider);
+                                },
+                              );
                             },
                           ),
                         ],
@@ -448,14 +458,14 @@ class MessageSelectedBacth extends StatelessWidget {
             const SizedBox(height: 12),
 
             const Text(
-              "الرحاء إختيار سجل من القائمة أعلاه",
+              "الرحاء إختيار السجل من القائمة أعلاه",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 6),
 
             Text(
-              "يرجى اختيار الدفعة من القائمة المنسدلة لتحميل الفواتير",
+              "يرجى اختيار السجل من القائمة المنسدلة لتحميل الفواتير",
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
             ),
@@ -471,7 +481,7 @@ class MessageSelectedBacth extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(
-                "ابدأ باختيار  دفعة",
+                "ابدأ باختيار  السجل",
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -592,7 +602,19 @@ class _Header extends ConsumerWidget {
                           child: CircularProgressIndicator(),
                         ),
                       ),
-                      error: (_, __) => const SizedBox(),
+                      error: (error, stack) {
+                        final message = parseError(error);
+
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          AppPopupAlert.show(
+                            context,
+                            message: message,
+                            isError: true,
+                          );
+                        });
+
+                        return const SizedBox();
+                      },
                       data: (account) {
                         final NameArabic =
                             account.firstNameAr +
@@ -924,11 +946,11 @@ class _SummaryCard extends StatelessWidget {
 class _SearchSection extends StatefulWidget {
   final List<LookupModelParent> collectionTypes;
   final String? selectedCollectionType;
-  final Function(LookupModelParent) onCollectionChanged;
+  final Function(LookupModelParent?) onCollectionChanged;
 
   final List<LookupModelParent> invoiceStatuses;
   final String? selectedInvoiceStatus;
-  final Function(LookupModelParent) onStatusChanged;
+  final Function(LookupModelParent?) onStatusChanged;
 
   final String? searchAccountValue;
   final Function(String) onSearchChanged;
@@ -1047,7 +1069,7 @@ class _FilterDropdownsubscriptionType extends StatefulWidget {
   final String title;
   final List<LookupModelParent> items;
   final String? selected;
-  final Function(LookupModelParent) onChanged;
+  final Function(LookupModelParent?) onChanged;
 
   const _FilterDropdownsubscriptionType({
     required this.title,
@@ -1092,51 +1114,77 @@ class _FilterDropdownsubscriptionTypeState
                 targetAnchor: Alignment.bottomCenter,
                 followerAnchor: Alignment.topCenter,
                 offset: const Offset(0, 6),
-
                 child: Material(
                   elevation: 16,
                   borderRadius: BorderRadius.circular(14),
                   color: Colors.white,
-
                   child: IntrinsicWidth(
                     child: Material(
                       borderRadius: BorderRadius.circular(14),
                       color: Colors.white,
-
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: widget.items.map((item) {
-                          final index = widget.items.indexOf(item);
+                        children: [
+                          // يرجى الاختيار
+                          InkWell(
+                            onTap: () {
+                              widget.onChanged(null);
+                              _hideDropdown();
+                            },
+                            child: Container(
+                              width: 280,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              child: Text(
+                                isArabic ? "يرجى الاختيار" : "Please Select",
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
 
-                          return Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              InkWell(
-                                onTap: () {
-                                  widget.onChanged(item);
-                                  _hideDropdown();
-                                },
-                                child: Container(
-                                  width: 280,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 10,
-                                  ),
-                                  child: Text(
-                                    isArabic ? item.arDesc : item.enDesc,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
+                          Divider(height: 1, color: Colors.grey.shade200),
+
+                          ...widget.items.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final item = entry.value;
+
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                InkWell(
+                                  onTap: () {
+                                    widget.onChanged(item);
+                                    _hideDropdown();
+                                  },
+                                  child: Container(
+                                    width: 280,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 10,
+                                    ),
+                                    child: Text(
+                                      isArabic ? item.arDesc : item.enDesc,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-
-                              if (index != widget.items.length - 1)
-                                Divider(height: 1, color: Colors.grey.shade200),
-                            ],
-                          );
-                        }).toList(),
+                                if (index != widget.items.length - 1)
+                                  Divider(
+                                    height: 1,
+                                    color: Colors.grey.shade200,
+                                  ),
+                              ],
+                            );
+                          }),
+                        ],
                       ),
                     ),
                   ),
@@ -1227,6 +1275,7 @@ class _InvoiceCard extends ConsumerStatefulWidget {
 class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
   bool _pressed = false;
   bool _loadingPayment = false;
+ 
 
   String getInvoiceStatus(InvoiceModel invoice, BuildContext context) {
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
@@ -1354,6 +1403,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
     final isTablet = Responsive.isTablet(context);
     final tr = AppLocalizations.of(context);
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+     final isOnline = ref.watch(connectionProvider);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -1678,8 +1728,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                             );
                           },
                         ),
-                      if (getInvoiceStatusCode(widget.invoice, context) ==
-                          "COL")
+                      if (getInvoiceStatusCode(widget.invoice, context) == "COL")
                         _ActionButton(
                           title: Text(tr.t('print_invoice')),
                           icon: Icons.receipt_long,
@@ -1716,10 +1765,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                             );
                           },
                         ),
-                      if (getInvoiceStatusCode(widget.invoice, context) ==
-                              "RDY" ||
-                          getInvoiceStatusCode(widget.invoice, context) ==
-                              "UNC")
+                      if ((getInvoiceStatusCode(widget.invoice, context) ==  "RDY" ||  getInvoiceStatusCode(widget.invoice, context) ==  "UNC") && isOnline)
                         _ActionButton(
                           title: _loadingPayment
                               ? const SizedBox(

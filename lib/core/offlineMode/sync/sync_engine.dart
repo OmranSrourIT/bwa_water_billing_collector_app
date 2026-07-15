@@ -42,6 +42,10 @@ class SyncEngine {
             success = await _syncFailureReason(payload);
             break;
 
+          case "UPDATE_INVOICE_STATUS":
+            success = await _syncUpdateInvoiceStatus(payload);
+            break;
+
           default:
             print("Unknown sync type => $type");
             success = true;
@@ -64,6 +68,8 @@ class SyncEngine {
 
     return allSuccess;
   }
+
+  
 
   Future<bool> _syncReading(Map<String, dynamic> data) async {
     final response = await readingService.insertReading(
@@ -104,4 +110,20 @@ class SyncEngine {
 
     return response.result == "Success";
   }
+
+
+Future<bool> _syncUpdateInvoiceStatus(
+  Map<String, dynamic> data,
+) async {
+  try {
+    final result = await readingService.updateInvoiceStatus(
+      invoiceNumber: data["invoiceNo"],
+      status: data["status"],
+    );
+
+    return result == "Invoice status updated";
+  } catch (_) {
+    return false;
+  }
+}
 }

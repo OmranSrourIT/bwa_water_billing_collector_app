@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:bwa_water_billing_collector_app/core/Serivces/AppInfoService.dart';
 import 'package:bwa_water_billing_collector_app/core/constants/AppConstant.dart';
 import 'package:bwa_water_billing_collector_app/core/constants/api_constants.dart';
@@ -5,11 +7,16 @@ import 'package:bwa_water_billing_collector_app/core/lang/app_localizations.dart
 import 'package:bwa_water_billing_collector_app/core/utlis/responsive.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
+import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
 import 'package:bwa_water_billing_collector_app/features/auth/providers/auth_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/auth/services/auth_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:recaptcha_enterprise_flutter/recaptcha.dart';
+import 'package:recaptcha_enterprise_flutter/recaptcha_action.dart';
+import 'package:recaptcha_enterprise_flutter/recaptcha_client.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   final VoidCallback onToggleLang;
@@ -29,30 +36,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-
+  
+ 
   bool _handledExpired = false;
 
-  // @override
-  // void didChangeDependencies() {
-  //   super.didChangeDependencies();
-
-  //   final auth = ref.read(authProvider);
-
-  //   if (auth.tokenExpired && !_handledExpired) {
-  //     _handledExpired = true;
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       AppPopupAlert.show(
-  //         context,
-  //         message: "انتهت الجلسة، الرجاء تسجيل الدخول مرة أخرى",
-  //         isError: true,
-  //       );
-  //     });
-  //   }
-  // }
+  // late final WebViewController _webViewController;
+  // String? _captchaToken;
+  // bool _showCaptcha = false;
 
   @override
   void initState() {
     super.initState();
+    // _webViewController = WebViewController()
+    //   ..setJavaScriptMode(JavaScriptMode.unrestricted)
+    //   ..addJavaScriptChannel(
+    //     'CaptchaChannel',
+    //     onMessageReceived: (message) {
+    //       setState(() {
+    //         _captchaToken = message.message;
+    //         _showCaptcha = false;
+    //       });
+    //       print("Captcha Token: $_captchaToken");
+    //     },
+    //   )
+    //   ..loadHtmlString(_buildHtml() , baseUrl: ApiConstants.baseUrl);
+
     final auth = ref.read(authProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (auth.tokenExpired &&
@@ -64,7 +72,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     ref.listenManual<AuthState>(authProvider, (prev, next) {
-      if (next.tokenExpired && next.successLogin ==true &&  auth.user == null && !_handledExpired) {
+      if (next.tokenExpired &&
+          next.successLogin == true &&
+          auth.user == null &&
+          !_handledExpired) {
         _showSessionExpiredAlert();
       }
       if (next.successLogin == true) {
@@ -80,13 +91,45 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           if (mounted) {
             AppPopupAlert.show(
               context,
-              message: next.error?.toString() ?? "Unknown error",
+              message:
+                  next.error?.toString().replaceFirst("Exception: ", "") ??
+                  "Unknown error",
               isError: true,
             );
           }
         });
       }
     });
+  }
+
+  // String _buildHtml() {
+  //   return """
+  //   <html>
+  //     <head>
+  //       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  //       <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  //       <script>
+  //         function onResult(token ) {
+  //           CaptchaChannel.postMessage(token);
+  //         }
+  //       </script>
+  //       <style>
+  //         body { display: flex; justify-content: center; align-items: center; background: transparent; margin: 0; padding: 0; }
+  //       </style>
+  //     </head>
+  //     <body>
+  //       <div class="g-recaptcha" 
+  //            data-sitekey="6LdYa1AtAAAAAGF-PqV2EXHToACnZdAKfKfkH-_A" 
+  //            data-callback="onResult"></div>
+  //     </body>
+  //   </html>
+  // """;
+  // }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   void _showSessionExpiredAlert() {
@@ -103,15 +146,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
-
     final size = MediaQuery.of(context).size;
-
     final isTablet = Responsive.isTablet(context);
-
-    final cardWidth = isTablet
-        ? size.width *
-              0.90 //
-        : size.width * 0.90;
+    final cardWidth = isTablet ? size.width * 0.90 : size.width * 0.90;
 
     return Scaffold(
       backgroundColor: const Color(0xffEEF4FB),
@@ -127,7 +164,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             right: -90,
             child: _circle(const Color(0xff0D47A1)),
           ),
-
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -153,7 +189,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
-                        // 🌍 Language Button
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -168,12 +203,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 18),
                         _logo(),
-
                         const SizedBox(height: 18),
-
                         Text(
                           t.t("title"),
                           textAlign: TextAlign.center,
@@ -183,9 +215,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             color: Color(0xff0D47A1),
                           ),
                         ),
-
                         const SizedBox(height: 6),
-
                         Text(
                           t.t("subtitle"),
                           textAlign: TextAlign.center,
@@ -194,9 +224,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             color: Colors.grey,
                           ),
                         ),
-
                         const SizedBox(height: 28),
-
                         _input(
                           controller: _usernameController,
                           icon: Icons.person_outline,
@@ -204,7 +232,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           hint: t.t("enter_username"),
                           validatorText: t.t("username_required"),
                         ),
-
                         const SizedBox(height: 16),
                         _input(
                           controller: _passwordController,
@@ -227,11 +254,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           validatorText: t.t("password_required"),
                         ),
                         Align(
-                          alignment:
-                              AppLocalizations.of(
-                                    context,
-                                  ).locale.languageCode ==
-                                  'en'
+                          alignment: AppLocalizations.of(context).locale.languageCode == 'en'
                               ? Alignment.centerLeft
                               : Alignment.centerRight,
                           child: TextButton(
@@ -248,49 +271,71 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
                         ),
+                        
+                        const SizedBox(height: 10),
+                        
+                        // 🛡️ reCAPTCHA Widget
+                        // if (_captchaToken == null)
+                        //   Container(
+                        //     height: 100,
+                        //     width: double.infinity,
+                        //     margin: const EdgeInsets.only(bottom: 10),
+                        //     child: WebViewWidget(
+                        //       controller: _webViewController,
+                        //     ),
+                        //   )
+                        // else
+                          // Padding(
+                          //   padding: const EdgeInsets.only(bottom: 10),
+                          //   child: Row(
+                          //     mainAxisAlignment: MainAxisAlignment.center,
+                          //     children: [
+                          //       const Icon(Icons.check_circle, color: Colors.green),
+                          //       const SizedBox(width: 8),
+                          //       const Text(
+                          //         "تم التحقق بنجاح",
+                          //         style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                          //       ),
+                          //     ],
+                          //   ),
+                          // ),
 
                         _button(t),
-
                         const SizedBox(height: 18),
-
                         const Divider(),
-
                         const SizedBox(height: 10),
-
-                         Container(
-  padding: const EdgeInsets.symmetric(
-    horizontal: 14,
-    vertical: 6,
-  ),
-  decoration: BoxDecoration(
-    color: const Color(0xffEEF4FB),
-    borderRadius: BorderRadius.circular(20),
-    border: Border.all(
-      color: const Color(0xff1976D2).withOpacity(0.2),
-    ),
-  ),
-  child: Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      const Icon(
-        Icons.verified_outlined,
-        size: 16,
-        color: Color(0xff1976D2),
-      ),
-
-      const SizedBox(width: 6),
-
-      Text(
-        "${t.t("version")}  ${AppInfoService.version}",
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: Color(0xff0D47A1),
-        ),
-      ),
-    ],
-  ),
-),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffEEF4FB),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0xff1976D2).withOpacity(0.2),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.verified_outlined,
+                                size: 16,
+                                color: Color(0xff1976D2),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                "${t.t("version")}  ${AppInfoService.version}",
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xff0D47A1),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -298,7 +343,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
           ),
-          
           if (ref.watch(authProvider).isLoading)
             const BwaLoadingOverlay(isLoading: true),
         ],
@@ -313,16 +357,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     showDialog(
       context: context,
       barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(
-        0.45,
-      ), // 🔥 يمنع أي لون غريب بالخلفية
+      barrierColor: Colors.black.withOpacity(0.45),
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setState) {
             bool loading = false;
-
             return Dialog(
-              backgroundColor: Colors.white, // 🔥 مهم جداً
+              backgroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(22),
@@ -332,20 +373,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(22),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 25,
-                      offset: const Offset(0, 12),
-                    ),
-                  ],
                 ),
                 child: Form(
                   key: formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      /// 🔵 ICON
                       Container(
                         width: 70,
                         height: 70,
@@ -361,9 +394,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           size: 32,
                         ),
                       ),
-
                       const SizedBox(height: 14),
-
                       const Text(
                         "إستعادة كلمة المرور",
                         style: TextStyle(
@@ -372,22 +403,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           color: Color(0xff0D47A1),
                         ),
                       ),
-
                       const SizedBox(height: 6),
-
                       const Text(
                         "أدخل بريدك الإلكتروني لإرسال رابط إعادة التعيين",
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 13, color: Colors.grey,fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-
                       const SizedBox(height: 18),
-
-                      /// EMAIL FIELD
                       TextFormField(
                         controller: emailController,
-                        validator: (v) =>
-                            v == null || v.isEmpty ? "Email required" : null,
+                        validator: (v) => v == null || v.isEmpty ? "Email required" : null,
                         decoration: InputDecoration(
                           labelText: "البريد الإلكتروني",
                           prefixIcon: const Icon(Icons.email_outlined),
@@ -397,102 +426,49 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             borderRadius: BorderRadius.circular(14),
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 14,
-                          ),
                         ),
                       ),
-
                       const SizedBox(height: 22),
-
-                      /// BUTTONS
                       Row(
                         children: [
-                          /// CANCEL
                           Expanded(
                             child: OutlinedButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
+                              onPressed: () => Navigator.pop(context),
                               style: OutlinedButton.styleFrom(
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                side: const BorderSide(
-                                  color: Color(0xff1976D2),
-                                ),
+                                side: const BorderSide(color: Color(0xff1976D2)),
                               ),
                               child: const Text("إلغاء"),
                             ),
                           ),
-
                           const SizedBox(width: 10),
-
-                          /// SEND
                           Expanded(
                             flex: 2,
-                            child: StatefulBuilder(
-                              builder: (context, setState) {
-                                return ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xff1976D2),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                  ),
-                                  onPressed: loading
-                                      ? null
-                                      : () async {
-                                          if (!formKey.currentState!
-                                              .validate()) {
-                                            return;
-                                          }
-
-                                          setState(() => loading = true);
-
-                                          try {
-                                            await ref
-                                                .read(forgotPasswordProvider)
-                                                .sendResetEmail(
-                                                  emailController.text.trim(),
-                                                );
-
-                                            if (context.mounted) {
-                                              Navigator.pop(context);
-
-                                              AppPopupAlert.show(
-                                                context,
-                                                message:
-                                                    "تم إرسال رابط إعادة التعيين",
-                                                isError: false,
-                                              );
-                                            }
-                                          } catch (e) {
-                                            AppPopupAlert.show(
-                                              context,
-                                              message: e.toString(),
-                                              isError: true,
-                                            );
-                                          }
-
-                                          setState(() => loading = false);
-                                        },
-                                  child: loading
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      :  const Text("إرسال",style: TextStyle(color: Colors.white,fontSize: 13,fontWeight: FontWeight.bold),),
-                                );
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xff1976D2),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              onPressed: loading ? null : () async {
+                                if (!formKey.currentState!.validate()) return;
+                                setState(() => loading = true);
+                                try {
+                                  // logic for reset email
+                                  Navigator.pop(context);
+                                  AppPopupAlert.show(context, message: "تم إرسال رابط إعادة التعيين", isError: false);
+                                } catch (e) {
+                                  AppPopupAlert.show(context, message: e.toString(), isError: true);
+                                }
+                                setState(() => loading = false);
                               },
+                              child: loading
+                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Text("إرسال", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
                             ),
                           ),
                         ],
@@ -510,7 +486,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Widget _logo() {
     return Container(
-      width: 140, // 👈 كان 92
+      width: 140,
       height: 140,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -544,27 +520,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         suffixIcon: suffix,
         filled: true,
         fillColor: const Color(0xffF8FAFC),
-
-        // 👇 يخلي لون الليبل ثابت وما يتغير وقت الخطأ
-        labelStyle: const TextStyle(
-          color: Color(0xff0D47A1), // أو أي لون بدك ياه
-          fontWeight: FontWeight.w500,
-        ),
-
-        // 👇 لون رسالة الخطأ (required فقط)
+        labelStyle: const TextStyle(color: Color(0xff0D47A1), fontWeight: FontWeight.w500),
         errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
-
-        // 👇 يخلي البوردر وقت الخطأ ما يصير أحمر قوي (اختياري)
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red),
-        ),
-
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red),
-        ),
-
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
@@ -577,7 +534,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Consumer(
       builder: (context, ref, _) {
         final authState = ref.watch(authProvider);
-
         return SizedBox(
           width: double.infinity,
           height: 50,
@@ -589,22 +545,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
             child: ElevatedButton(
-              onPressed: authState.isLoading
+              onPressed: (authState.isLoading ) //|| _captchaToken == null
                   ? null
                   : () async {
                       if (!_formKey.currentState!.validate()) return;
-
                       FocusScope.of(context).unfocus();
-
                       try {
-                        await ref
-                            .read(authProvider.notifier)
-                            .login(
+                        await ref.read(authProvider.notifier).login(
                               username: _usernameController.text,
                               password: _passwordController.text,
                             );
-                      } catch (_) {
-                        // error رح يجي من state listener
+                      } catch (e) {
+                        final message = parseError(e);
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          AppPopupAlert.show(context, message: message, isError: true);
+                        });
                       }
                     },
               style: ElevatedButton.styleFrom(
@@ -618,18 +573,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ? const SizedBox(
                       width: 22,
                       height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : Text(
                       t.t("login"),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        letterSpacing: 1,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
                     ),
             ),
           ),
@@ -641,56 +589,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
 class LanguageArEn extends StatelessWidget {
   const LanguageArEn({super.key, required this.widget});
-
   final LoginScreen widget;
-
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: AppLocalizations.of(context).locale.languageCode == 'ar'
-          ? Alignment.topLeft
-          : Alignment.topRight,
+      alignment: AppLocalizations.of(context).locale.languageCode == 'ar' ? Alignment.topLeft : Alignment.topRight,
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xffEEF4FB),
           borderRadius: BorderRadius.circular(30),
           border: Border.all(color: const Color(0xff1976D2).withOpacity(0.25)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(30),
-            // onTap: widget.onToggleLang,
+            onTap: () {}, // Language toggle logic
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4.0),
-                    child: Icon(
-                      Icons.language,
-                      size: 20,
-                      color: const Color(0xff1976D2),
-                    ),
-                  ),
+                  const Icon(Icons.language, size: 20, color: Color(0xff1976D2)),
                   const SizedBox(width: 6),
                   Text(
-                    AppLocalizations.of(context).locale.languageCode == 'en'
-                        ? 'العربية'
-                        : 'العربية',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xff0D47A1),
-                      fontSize: 16,
-                    ),
+                    AppLocalizations.of(context).locale.languageCode == 'en' ? 'العربية' : 'English',
+                    style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xff0D47A1), fontSize: 16),
                   ),
                 ],
               ),
@@ -712,41 +636,19 @@ Widget _circle(Color color) {
 
 class _WaterDropPainter extends CustomPainter {
   final Color color;
-
   _WaterDropPainter(this.color);
-
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color.withOpacity(0.10)
-      ..style = PaintingStyle.fill;
-
+    final paint = Paint()..color = color.withOpacity(0.10)..style = PaintingStyle.fill;
     final path = Path();
-
     final w = size.width;
     final h = size.height;
-
-    // 💡 دالة تعكس Y بشكل حقيقي
-    double x(double v) => v;
-    double y(double v) => h - v;
-
-    // 🔥 نقاط مقلوبة فعلياً (مش نفس الشكل القديم)
-    path.moveTo(x(w * 0.5), y(h * 0.95));
-
-    path.quadraticBezierTo(x(w * 0.15), y(h * 0.65), x(w * 0.35), y(h * 0.30));
-
-    path.quadraticBezierTo(
-      x(w * 0.5),
-      y(h * 0.05), // 👈 الذنب الحقيقي للأعلى
-      x(w * 0.65),
-      y(h * 0.30),
-    );
-
-    path.quadraticBezierTo(x(w * 0.85), y(h * 0.65), x(w * 0.5), y(h * 0.95));
-
+    path.moveTo(w * 0.5, h * 0.05);
+    path.quadraticBezierTo(w * 0.15, h * 0.35, w * 0.35, h * 0.70);
+    path.quadraticBezierTo(w * 0.5, h * 0.95, w * 0.65, h * 0.70);
+    path.quadraticBezierTo(w * 0.85, h * 0.35, w * 0.5, h * 0.05);
     canvas.drawPath(path, paint);
   }
-
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

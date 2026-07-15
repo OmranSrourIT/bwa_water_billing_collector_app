@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
@@ -39,7 +40,7 @@ class _UpdateScreenState extends State<UpdateScreen> {
       Dio dio = Dio();
 
       await dio.download(
-        "https://bwa.infinite-tek.com:8443/rest/v1/NewReleaseDownload/newRelease.apk",
+       widget.apkUrl,
 
         filePath,
 
@@ -67,11 +68,11 @@ class _UpdateScreenState extends State<UpdateScreen> {
       debugPrint("Download Error: $e");
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("فشل التحميل: تأكد من اتصالك بالإنترنت"),
-          ),
-        );
+        final message = "فشل التحميل: تأكد من اتصالك بالإنترنت";
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          AppPopupAlert.show(context, message: message, isError: true);
+        });
       }
     } finally {
       if (mounted) {

@@ -3,6 +3,7 @@ import 'package:bwa_water_billing_collector_app/core/constants/AppConstant.dart'
 import 'package:bwa_water_billing_collector_app/core/storage/PrinterStorage.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
+import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
 import 'package:bwa_water_billing_collector_app/features/Printer%20VAN_GOLD/printer_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
@@ -163,7 +164,8 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                         children: [
                                           _NoticeRow(
                                             "رقم الفاتورة / الإصدارية :",
-                                            invoice.invoiceNumber + " / ${invoice.cycleCode}"  ,
+                                            invoice.invoiceNumber +
+                                                " / ${invoice.cycleCode}",
                                           ),
                                           _NoticeRow(
                                             "رقم الحساب :",
@@ -191,15 +193,14 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                     /// ================= AMOUNT
                                     Container(
                                       width: double.infinity,
-                                       padding: const EdgeInsets.all(10),
-                                            decoration: BoxDecoration( 
-                                              border: Border.all(
-                                                color: Colors.black12,
-                                                width: 1,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: Colors.black12,
+                                          width: 1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                       child: Column(
                                         children: [
                                           const Text("المبلغ المترتب"),
@@ -366,7 +367,10 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
           Expanded(
             child: OutlinedButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("إغلاق",style: TextStyle(fontSize: 15,fontWeight: FontWeight.bold),),
+              child: const Text(
+                "إغلاق",
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
             ),
           ),
 
@@ -375,8 +379,15 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
           Expanded(
             flex: 2,
             child: ElevatedButton.icon(
-              icon: const Icon(Icons.print,size: 22,),
-              label:   Text("طباعة الإشعار",style: TextStyle(color: Colors.white,fontSize: 15,fontWeight: FontWeight.bold),),
+              icon: const Icon(Icons.print, size: 22),
+              label: Text(
+                "طباعة الإشعار",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xff0F9D58),
                 foregroundColor: Colors.white,
@@ -425,7 +436,8 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                   if (mac == null) {
                     AppPopupAlert.show(
                       context,
-                      message: "اختر طابعة أولاً",
+                      message:
+                          "الطابعة غير متصلة، يرجى الاتصال بالطابعة أولاً.",
                       isError: true,
                     );
                     return;
@@ -447,7 +459,15 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                     );
                   }
                 } catch (e) {
-                  debugPrint("PRINT ERROR: $e");
+                  final message = parseError(e);
+
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    AppPopupAlert.show(
+                      context,
+                      message: message,
+                      isError: true,
+                    );
+                  });
                 } finally {
                   setState(() => isPrinting = false);
                 }

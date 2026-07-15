@@ -1,4 +1,4 @@
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/app_database.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/app_database.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/field_failure_lookup_model.dart';
 import 'package:sqflite/sqflite.dart';
 

@@ -9,7 +9,7 @@ class AppUpdate {
 
   factory AppUpdate.fromJson(Map<String, dynamic> json) {
     return AppUpdate(
-      apkURL: json['apkURL'],
+      apkURL: json["apkURL"] ?? "",
       needUpdate: json['needUpdate'],
     );
   }

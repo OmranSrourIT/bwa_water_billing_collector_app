@@ -52,7 +52,9 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
     final lookupReasons = ref.watch(
       fieldFailureLookupProvider("FieldFailureReason"),
     );
-    final invoiceAsync = ref.watch(invoiceDetailProvider(widget.invoiceNumber.toString()));
+    final invoiceAsync = ref.watch(
+      invoiceDetailProvider(widget.invoiceNumber.toString()),
+    );
 
     final showCamera =
         selectedReasonCode == "DAM" || selectedReasonCode == "LCK";
@@ -166,14 +168,41 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
                                   child: CircularProgressIndicator(),
                                 ),
 
-                                error: (error, _) => Text(error.toString()),
+                                error: (error, stack) {
+                                  final message = parseError(error);
+
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
+                                    AppPopupAlert.show(
+                                      context,
+                                      message: message,
+                                      isError: true,
+                                    );
+                                  });
+
+                                  return const SizedBox();
+                                },
 
                                 data: (data) {
                                   return invoiceAsync.when(
                                     loading: () => const Center(
                                       child: CircularProgressIndicator(),
                                     ),
-                                    error: (e, _) => Text(e.toString()),
+                                    error: (error, stack) {
+                                      final message = parseError(error);
+
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback((_) {
+                                            AppPopupAlert.show(
+                                              context,
+                                              message: message,
+                                              isError: true,
+                                            );
+                                          });
+
+                                      return const SizedBox();
+                                    },
                                     data: (invoice) {
                                       final invoiceStatus = getLookupValue(
                                         invoice,
@@ -354,7 +383,9 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
                                           return;
                                         }
 
-                                        if(notesController.text.trim().isEmpty){
+                                        if (notesController.text
+                                            .trim()
+                                            .isEmpty) {
                                           AppPopupAlert.show(
                                             context,
                                             message: "يجب كتابة ملاحظات",
@@ -417,17 +448,19 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
                                             ).future,
                                           );
 
-                                          // // 🔥 تحديث الحالة
-                                          // await ref.read(
-                                          //   updateInvoiceStatusProvider((
-                                          //     invoiceNo: widget.invoiceNumber.toString(),
-                                          //     status: newStatus,
-                                          //   )).future,
-                                          // );
+                                          // 🔥 تحديث الحالة
+                                          await ref.read(
+                                            updateInvoiceStatusProvider((
+                                              invoiceNo: widget.invoiceNumber.toString(),
+                                              status: newStatus,
+                                            )).future,
+                                          );
 
                                           // إعادة تحميل الفواتير
                                           ref.invalidate(
-                                            invoicesProvider(widget.batchId.toString()),
+                                            invoicesProvider(
+                                              widget.batchId.toString(),
+                                            ),
                                           );
 
                                           ref.invalidate(
@@ -438,7 +471,9 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
 
                                           AppPopupAlert.show(
                                             context,
-                                            message: isArabic ? result.arMessage : result.enMessage,
+                                            message: isArabic
+                                                ? result.arMessage
+                                                : result.enMessage,
                                             isError: false,
                                             onOk: () {
                                               Navigator.pop(context, result);

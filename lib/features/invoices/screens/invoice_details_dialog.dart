@@ -187,23 +187,24 @@ class InvoiceDetailsDialog extends ConsumerWidget {
                                         "رقم الحساب",
                                         invoice.accountNo,
                                         "أيام الاحتساب",
-                                        getLookupCodeValue(
-                                                  invoice,
-                                                  "CollectionType",
-                                                  context,
-                                                ) ==
-                                                "EST"
-                                            ? (invoice.periodToDate != null &&
-                                                      invoice.periodFromDate !=
-                                                          null)
-                                                  ? "${invoice.periodToDate!.difference(invoice.periodFromDate!).inDays}"
-                                                  : ""
-                                            : (invoice.previousReadingDateTime !=
-                                                      null &&
-                                                  invoice.currentReadDateTime !=
-                                                      null)
-                                            ? "${invoice.currentReadDateTime!.difference(invoice.previousReadingDateTime!).inDays}"
-                                            : "",
+                                        // getLookupCodeValue(
+                                        //           invoice,
+                                        //           "CollectionType",
+                                        //           context,
+                                        //         ) ==
+                                        //         "EST"
+                                        //     ? (invoice.periodToDate != null &&
+                                        //               invoice.periodFromDate !=
+                                        //                   null)
+                                        //           ? "${invoice.periodToDate!.difference(invoice.periodFromDate!).inDays}"
+                                        //           : ""
+                                        //     : (invoice.previousReadingDateTime !=
+                                        //               null &&
+                                        //           invoice.currentReadDateTime !=
+                                        //               null)
+                                        //     ? "${invoice.currentReadDateTime!.difference(invoice.previousReadingDateTime!).inDays}"
+                                        //     : "",
+                                        invoice.activeCollectionPeriod!,
                                       ),
                                     ],
                                   ),
@@ -785,7 +786,15 @@ class _FailureReasonsTable extends ConsumerWidget {
     return lookupAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
 
-      error: (_, __) => const SizedBox(),
+      error: (error, stack) {
+        final message = parseError(error);
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          AppPopupAlert.show(context, message: message, isError: true);
+        });
+
+        return const SizedBox();
+      },
 
       data: (lookup) {
         return Container(

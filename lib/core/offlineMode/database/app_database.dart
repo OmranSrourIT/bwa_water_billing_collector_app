@@ -123,15 +123,13 @@ CREATE TABLE invoices(
         payment_ref_no INTEGER,
         payment_date TEXT,
 
-        
-
          invoice_details_json TEXT,
 
          failure_reasons_json TEXT,
 
          lookup_json TEXT,
          
-         
+        activeCollectionPeriod, 
 
         synced INTEGER DEFAULT 1
       )
@@ -151,24 +149,6 @@ CREATE TABLE invoice_attachments(
 )
 ''');
 
-        // UNREACHABLE (تعذر القراءة)
-        await db.execute('''
-      CREATE TABLE unreachable(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-        invoice_no TEXT NOT NULL,
-
-        failure_reason_code TEXT,
-        failure_reason TEXT,
-        failure_notes TEXT,
-
-        attachment TEXT,
-
-        created_at TEXT,
-
-        synced INTEGER DEFAULT 0
-      )
-    ''');
 
         await db.execute('''
 CREATE TABLE lookups(
@@ -209,6 +189,34 @@ CREATE TABLE lookups(
         created_at TEXT
       )
     ''');
+
+        await db.execute('''
+CREATE TABLE account(
+
+  username TEXT PRIMARY KEY,
+
+  first_name_ar TEXT,
+  father_name_ar TEXT,
+  grandfather_name_ar TEXT,
+  family_name_ar TEXT,
+
+  first_name_en TEXT,
+  father_name_en TEXT,
+  grandfather_name_en TEXT,
+  family_name_en TEXT,
+
+  email TEXT,
+
+  national_id TEXT,
+  phone TEXT,
+  country_code TEXT,
+
+  unified_card_no TEXT,
+  national_number TEXT,
+
+  synced INTEGER DEFAULT 1
+)
+''');
       },
     );
   }

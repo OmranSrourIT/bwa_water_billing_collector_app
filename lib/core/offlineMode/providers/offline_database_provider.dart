@@ -1,9 +1,9 @@
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/app_database.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/app_database.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/AccountLocalService.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/batch_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_details_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/lookup_local_service.dart'; 
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/sync_queue_local_service.dart';
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/unreachable_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/sync/sync_engine.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/failure_reason_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/reading_provider.dart';
@@ -29,11 +29,6 @@ final invoiceDetailsLocalServiceProvider = Provider<InvoiceDetailsLocalService>(
   },
 );
 
-final unreachableLocalServiceProvider = Provider<UnreachableLocalService>((
-  ref,
-) {
-  return UnreachableLocalService(ref.read(databaseProvider));
-});
 
 final syncQueueLocalServiceProvider = Provider<SyncQueueLocalService>((ref) {
   return SyncQueueLocalService(ref.read(databaseProvider));
@@ -51,4 +46,9 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
 
 final lookupLocalServiceProvider = Provider<LookupLocalService>((ref) {
   return LookupLocalService(ref.read(databaseProvider));
+});
+
+
+final accountLocalServiceProvider = Provider<AccountLocalService>((ref) {
+  return AccountLocalService(ref.read(databaseProvider));
 });

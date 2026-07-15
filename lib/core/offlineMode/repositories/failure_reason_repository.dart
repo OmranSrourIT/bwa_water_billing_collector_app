@@ -1,5 +1,6 @@
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_details_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/sync_queue_local_service.dart';
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/unreachable_local_service.dart';
+ 
 import 'package:bwa_water_billing_collector_app/features/invoices/models/FailureReasonRequestModel.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/FailureReasonResponse.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/failure_reason_service.dart';
@@ -7,20 +8,21 @@ import 'package:bwa_water_billing_collector_app/features/invoices/services/failu
 class FailureReasonRepository {
   final FailureReasonService api;
   final SyncQueueLocalService queue;
-  final UnreachableLocalService unreachable;
+ 
+  final InvoiceDetailsLocalService detailsLocal;
   final bool isOnline;
 
   FailureReasonRepository({
     required this.api,
     required this.queue,
-    required this.unreachable,
+ 
+    required this.detailsLocal,
     required this.isOnline,
   });
 
   Future<FailureReasonResponse> sendFailureReason(
     FailureReasonRequest request,
   ) async {
-
     if (isOnline) {
       return await api.sendFailureReason(
         invoiceNo: request.invoiceNo,
@@ -29,10 +31,7 @@ class FailureReasonRepository {
         failureReason: request.failureReason,
         base64Image: request.base64,
       );
-    }
-
-    // حفظ بالتعذرات
-    await unreachable.insert(request);
+    } 
 
     // حفظ بالـ Queue
     await queue.addQueue(
@@ -45,6 +44,13 @@ class FailureReasonRepository {
         "failureReason": request.failureReason,
         "base64": request.base64,
       },
+    );
+
+    await detailsLocal.updateFailureReason(
+      invoiceNo: request.invoiceNo,
+      code: request.code,
+      notes: request.notes,
+      attachment: request.base64,
     );
 
     return FailureReasonResponse(

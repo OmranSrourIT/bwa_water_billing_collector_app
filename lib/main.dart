@@ -1,15 +1,11 @@
 import 'package:bwa_water_billing_collector_app/core/Serivces/AppInfoService.dart';
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/app_database.dart';
-
-import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/initial_sync_provider.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/app_database.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_sync_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/routes/RouterApp.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/connection_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/auth/providers/auth_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/batch/providers/batch_provider.dart';
-import 'package:bwa_water_billing_collector_app/features/invoices/providers/failure_reason_provider.dart';
-import 'package:bwa_water_billing_collector_app/features/invoices/providers/field_failure_lookup_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoice_provider.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +20,7 @@ void main() async {
   await AppDatabase.instance.database;
 
   print("SQLite Database Opened Successfully");
+  
 
   await FlutterDownloader.initialize(debug: true, ignoreSsl: true);
 
@@ -57,7 +54,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       if (previous?.successLogin != true && next.successLogin == true) {
         print("LOGIN SUCCESS => START INITIAL SYNC");
         if (ref.read(connectionProvider)) {
-          await ref.read(initialSyncStateProvider.notifier).start();
+          await ref.read(initialSyncStateProvider.notifier).start(); //This is For Iraq Api Sync
           print("INITIAL SYNC FINISHED");
         }
       }
@@ -67,10 +64,10 @@ class _MyAppState extends ConsumerState<MyApp> {
       if (next == true && previous == false) {
         print("Internet Connected => Start Sync");
 
-        final success = await ref.read(syncEngineProvider).sync();
+        final success = await ref.read(syncEngineProvider).sync(); //This is For Iraq Api Sync
 
         if (success) {
-          await ref.read(initialSyncStateProvider.notifier).start();
+          await ref.read(initialSyncStateProvider.notifier).start(); //This is For LocalDB  Sync
           ref.invalidate(batchProvider);
           ref.invalidate(invoicesProvider); 
           ref.invalidate(invoiceDetailProvider);

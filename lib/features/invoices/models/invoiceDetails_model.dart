@@ -40,6 +40,7 @@ class InvoiceInformationModel {
   final List<FieldFailureReasonModel> failureReasons;
 
   final List<LookupModel> lookup;
+  final String? activeCollectionPeriod;
   final String? attachment;
 
   InvoiceInformationModel({
@@ -81,6 +82,7 @@ class InvoiceInformationModel {
 
     required this.failureReasons,
     required this.lookup,
+    required this.activeCollectionPeriod,
     this.attachment,
   });
 
@@ -175,6 +177,9 @@ class InvoiceInformationModel {
       lookup: (json["Lookup"] as List? ?? [])
           .map((e) => LookupModel.fromJson(e))
           .toList(),
+
+          
+      activeCollectionPeriod: json["ActiveCollectionPeriod"] ?? "",
 
       attachment: attachment,
     );

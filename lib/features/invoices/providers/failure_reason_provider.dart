@@ -19,7 +19,7 @@ final failureReasonRepositoryProvider = Provider<FailureReasonRepository>((
   return FailureReasonRepository(
     api: ref.read(failureReasonServiceProvider),
     queue: ref.read(syncQueueLocalServiceProvider),
-    unreachable: ref.read(unreachableLocalServiceProvider),
+    detailsLocal: ref.read(invoiceDetailsLocalServiceProvider),
     isOnline: ref.watch(connectionProvider),
   );
 });
