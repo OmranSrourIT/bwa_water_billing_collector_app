@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 String handleDioError(DioException e) {
@@ -12,9 +14,23 @@ String handleDioError(DioException e) {
     }
   }
 
-  if (data is String) {
+ if (data is String) {
+  try {
+    final json = jsonDecode(data);
+
+    if (json["error"]?["message"] != null) {
+      return json["error"]["message"];
+    }
+
+    if (json["message"] != null) {
+      return json["message"];
+    }
+
+    return data;
+  } catch (_) {
     return data;
   }
+}
 
   switch (e.type) {
     case DioExceptionType.connectionTimeout:

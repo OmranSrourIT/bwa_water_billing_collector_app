@@ -1,8 +1,4 @@
-import 'dart:convert';
-import 'dart:io';
 import 'package:bwa_water_billing_collector_app/core/Serivces/AppInfoService.dart';
-import 'package:bwa_water_billing_collector_app/core/constants/AppConstant.dart';
-import 'package:bwa_water_billing_collector_app/core/constants/api_constants.dart';
 import 'package:bwa_water_billing_collector_app/core/lang/app_localizations.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/responsive.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
@@ -13,10 +9,7 @@ import 'package:bwa_water_billing_collector_app/features/auth/services/auth_stat
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:recaptcha_enterprise_flutter/recaptcha.dart';
-import 'package:recaptcha_enterprise_flutter/recaptcha_action.dart';
-import 'package:recaptcha_enterprise_flutter/recaptcha_client.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+ 
 
 class LoginScreen extends ConsumerStatefulWidget {
   final VoidCallback onToggleLang;
@@ -36,8 +29,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  
- 
+  bool rememberMe = false;
+
   bool _handledExpired = false;
 
   // late final WebViewController _webViewController;
@@ -61,6 +54,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     //   )
     //   ..loadHtmlString(_buildHtml() , baseUrl: ApiConstants.baseUrl);
 
+    Future.microtask(() async {
+      final storage = ref.read(tokenStorageProvider);
+
+      rememberMe = await storage.getRememberMe();
+
+      if (rememberMe) {
+        _usernameController.text = await storage.getUsername() ?? "";
+        _passwordController.text = await storage.getPassword() ?? "";
+        if (_usernameController.text.isNotEmpty &&
+            _passwordController.text.isNotEmpty) {
+          await ref
+              .read(authProvider.notifier)
+              .login(
+                username: _usernameController.text,
+                password: _passwordController.text,
+                rememberMe: true,
+              );
+        }
+      }
+
+      if (mounted) {
+        setState(() {});
+      }
+    });
+
     final auth = ref.read(authProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (auth.tokenExpired &&
@@ -78,14 +96,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           !_handledExpired) {
         _showSessionExpiredAlert();
       }
-      if (next.successLogin == true) {
-        _handledExpired = false;
-        Future.microtask(() {
-          if (mounted) {
-            context.go('/home');
-          }
-        });
-      }
+      // if (next.successLogin == true) {
+      //   _handledExpired = false;
+      //   Future.microtask(() {
+      //     if (mounted) {
+      //       context.go('/home');
+      //     }
+      //   });
+      // }
       if (next.error != null && next.error != prev?.error) {
         Future.microtask(() {
           if (mounted) {
@@ -118,8 +136,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   //       </style>
   //     </head>
   //     <body>
-  //       <div class="g-recaptcha" 
-  //            data-sitekey="6LdYa1AtAAAAAGF-PqV2EXHToACnZdAKfKfkH-_A" 
+  //       <div class="g-recaptcha"
+  //            data-sitekey="6LdYa1AtAAAAAGF-PqV2EXHToACnZdAKfKfkH-_A"
   //            data-callback="onResult"></div>
   //     </body>
   //   </html>
@@ -167,7 +185,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.only(right:10 , left:10 , top:0 , bottom:50),
+                padding: const EdgeInsets.only(
+                  right: 10,
+                  left: 10,
+                  top: 0,
+                  bottom: 50,
+                ),
                 child: Container(
                   width: cardWidth,
                   padding: const EdgeInsets.symmetric(
@@ -253,6 +276,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           validatorText: t.t("password_required"),
                         ),
+
                         // Align(
                         //   alignment: AppLocalizations.of(context).locale.languageCode == 'en'
                         //       ? Alignment.centerLeft
@@ -271,9 +295,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         //     ),
                         //   ),
                         // ),
-                        
                         const SizedBox(height: 20),
-                        
+
                         // 🛡️ reCAPTCHA Widget
                         // if (_captchaToken == null)
                         //   Container(
@@ -285,21 +308,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         //     ),
                         //   )
                         // else
-                          // Padding(
-                          //   padding: const EdgeInsets.only(bottom: 10),
-                          //   child: Row(
-                          //     mainAxisAlignment: MainAxisAlignment.center,
-                          //     children: [
-                          //       const Icon(Icons.check_circle, color: Colors.green),
-                          //       const SizedBox(width: 8),
-                          //       const Text(
-                          //         "تم التحقق بنجاح",
-                          //         style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-                          //       ),
-                          //     ],
-                          //   ),
-                          // ),
-
+                        // Padding(
+                        //   padding: const EdgeInsets.only(bottom: 10),
+                        //   child: Row(
+                        //     mainAxisAlignment: MainAxisAlignment.center,
+                        //     children: [
+                        //       const Icon(Icons.check_circle, color: Colors.green),
+                        //       const SizedBox(width: 8),
+                        //       const Text(
+                        //         "تم التحقق بنجاح",
+                        //         style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                        //       ),
+                        //     ],
+                        //   ),
+                        // ),
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: rememberMe,
+                              onChanged: (v) {
+                                setState(() {
+                                  rememberMe = v ?? false;
+                                });
+                              },
+                            ),
+                            const Text(
+                              "تذكرني ؟",
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: const Color(0xff1976D2),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                         _button(t),
                         const SizedBox(height: 18),
                         const Divider(),
@@ -324,6 +366,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 size: 16,
                                 color: Color(0xff1976D2),
                               ),
+
                               const SizedBox(width: 6),
                               Text(
                                 "${t.t("version")}  ${AppInfoService.version}",
@@ -416,7 +459,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: 18),
                       TextFormField(
                         controller: emailController,
-                        validator: (v) => v == null || v.isEmpty ? "Email required" : null,
+                        validator: (v) =>
+                            v == null || v.isEmpty ? "Email required" : null,
                         decoration: InputDecoration(
                           labelText: "البريد الإلكتروني",
                           prefixIcon: const Icon(Icons.email_outlined),
@@ -438,7 +482,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                side: const BorderSide(color: Color(0xff1976D2)),
+                                side: const BorderSide(
+                                  color: Color(0xff1976D2),
+                                ),
                               ),
                               child: const Text("إلغاء"),
                             ),
@@ -452,23 +498,51 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
-                              onPressed: loading ? null : () async {
-                                if (!formKey.currentState!.validate()) return;
-                                setState(() => loading = true);
-                                try {
-                                  // logic for reset email
-                                  Navigator.pop(context);
-                                  AppPopupAlert.show(context, message: "تم إرسال رابط إعادة التعيين", isError: false);
-                                } catch (e) {
-                                  AppPopupAlert.show(context, message: e.toString(), isError: true);
-                                }
-                                setState(() => loading = false);
-                              },
+                              onPressed: loading
+                                  ? null
+                                  : () async {
+                                      if (!formKey.currentState!.validate())
+                                        return;
+                                      setState(() => loading = true);
+                                      try {
+                                        // logic for reset email
+                                        Navigator.pop(context);
+                                        AppPopupAlert.show(
+                                          context,
+                                          message:
+                                              "تم إرسال رابط إعادة التعيين",
+                                          isError: false,
+                                        );
+                                      } catch (e) {
+                                        AppPopupAlert.show(
+                                          context,
+                                          message: e.toString(),
+                                          isError: true,
+                                        );
+                                      }
+                                      setState(() => loading = false);
+                                    },
                               child: loading
-                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                  : const Text("إرسال", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      "إرسال",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                             ),
                           ),
                         ],
@@ -520,7 +594,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         suffixIcon: suffix,
         filled: true,
         fillColor: const Color(0xffF8FAFC),
-        labelStyle: const TextStyle(color: Color(0xff0D47A1), fontWeight: FontWeight.w500),
+        labelStyle: const TextStyle(
+          color: Color(0xff0D47A1),
+          fontWeight: FontWeight.w500,
+        ),
         errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -545,20 +622,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
             child: ElevatedButton(
-              onPressed: (authState.isLoading ) //|| _captchaToken == null
+              onPressed:
+                  (authState.isLoading) //|| _captchaToken == null
                   ? null
                   : () async {
                       if (!_formKey.currentState!.validate()) return;
                       FocusScope.of(context).unfocus();
                       try {
-                        await ref.read(authProvider.notifier).login(
+                        await ref
+                            .read(authProvider.notifier)
+                            .login(
                               username: _usernameController.text,
                               password: _passwordController.text,
+                              rememberMe: rememberMe,
                             );
                       } catch (e) {
                         final message = parseError(e);
                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                          AppPopupAlert.show(context, message: message, isError: true);
+                          AppPopupAlert.show(
+                            context,
+                            message: message,
+                            isError: true,
+                          );
                         });
                       }
                     },
@@ -573,13 +658,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ? const SizedBox(
                       width: 22,
                       height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : Text(
                       t.t("login"),
-                      style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
             ),
+         
           ),
         );
       },
@@ -593,7 +685,9 @@ class LanguageArEn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: AppLocalizations.of(context).locale.languageCode == 'ar' ? Alignment.topLeft : Alignment.topRight,
+      alignment: AppLocalizations.of(context).locale.languageCode == 'ar'
+          ? Alignment.topLeft
+          : Alignment.topRight,
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xffEEF4FB),
@@ -610,11 +704,21 @@ class LanguageArEn extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.language, size: 20, color: Color(0xff1976D2)),
+                  const Icon(
+                    Icons.language,
+                    size: 20,
+                    color: Color(0xff1976D2),
+                  ),
                   const SizedBox(width: 6),
                   Text(
-                    AppLocalizations.of(context).locale.languageCode == 'en' ? 'العربية' : 'العربية',
-                    style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xff0D47A1), fontSize: 16),
+                    AppLocalizations.of(context).locale.languageCode == 'en'
+                        ? 'العربية'
+                        : 'العربية',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff0D47A1),
+                      fontSize: 16,
+                    ),
                   ),
                 ],
               ),
@@ -639,7 +743,9 @@ class _WaterDropPainter extends CustomPainter {
   _WaterDropPainter(this.color);
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color.withOpacity(0.10)..style = PaintingStyle.fill;
+    final paint = Paint()
+      ..color = color.withOpacity(0.10)
+      ..style = PaintingStyle.fill;
     final path = Path();
     final w = size.width;
     final h = size.height;
@@ -649,6 +755,7 @@ class _WaterDropPainter extends CustomPainter {
     path.quadraticBezierTo(w * 0.85, h * 0.35, w * 0.5, h * 0.05);
     canvas.drawPath(path, paint);
   }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

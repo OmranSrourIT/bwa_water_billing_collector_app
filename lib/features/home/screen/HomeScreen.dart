@@ -564,16 +564,16 @@ class _Header extends ConsumerWidget {
                     ),
                   ),
 
-                  PopupMenuItem(
-                    value: 'changePassword',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.lock_reset),
-                        const SizedBox(width: 10),
-                        Text(tr.t('change_password')),
-                      ],
-                    ),
-                  ),
+                  // PopupMenuItem(
+                  //   value: 'changePassword',
+                  //   child: Row(
+                  //     children: [
+                  //       const Icon(Icons.lock_reset),
+                  //       const SizedBox(width: 10),
+                  //       Text(tr.t('change_password')),
+                  //     ],
+                  //   ),
+                  // ),
 
                   const PopupMenuDivider(),
 

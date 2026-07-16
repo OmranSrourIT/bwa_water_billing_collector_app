@@ -51,7 +51,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       if (previous?.successLogin != true && next.successLogin == true) {
    
         if (ref.read(connectionProvider)) {
-          await ref.read(initialSyncStateProvider.notifier).start(); //This is For Iraq Api Sync
+          await ref.read(initialSyncStateProvider.notifier).start(); //This is For LocalDB  Sync from Api 
        
         }
       }
@@ -64,7 +64,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         final success = await ref.read(syncEngineProvider).sync(); //This is For Iraq Api Sync
 
         if (success) {
-          await ref.read(initialSyncStateProvider.notifier).start(); //This is For LocalDB  Sync
+          await ref.read(initialSyncStateProvider.notifier).start(); //This is For LocalDB  Sync from Api 
           ref.invalidate(batchProvider);
           ref.invalidate(invoicesProvider); 
           ref.invalidate(invoiceDetailProvider);

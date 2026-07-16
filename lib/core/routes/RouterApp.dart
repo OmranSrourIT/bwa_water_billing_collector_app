@@ -35,6 +35,7 @@ GoRouter RouterApp({
       if (!initialized) {
         return null;
       }
+      
 
       if (auth.tokenExpired) {
         return '/login';

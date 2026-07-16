@@ -48,6 +48,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
   AuthNotifier(this.service, this.tokenStorage, this.ref)
     : super(const AuthState()) {
     checkToken();
+    tryAutoLogin();
+  }
+  Future<void> tryAutoLogin() async {
+    final remember = await tokenStorage.getRememberMe();
+
+    if (!remember) return;
+
+    final username = await tokenStorage.getUsername();
+    final password = await tokenStorage.getPassword();
+
+    if (username == null || password == null) return;
+
+    try {
+      final user = await service.login(username: username, password: password);
+
+      state = AuthState(user: user, successLogin: true, initialized: true);
+
+      ref.invalidate(dioProvider);
+    } catch (_) {
+      state = const AuthState(initialized: true);
+    }
   }
 
   Future<void> checkToken() async {
@@ -59,7 +80,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
         successLogin: true,
         initialized: true,
       );
-    } else {
+
+      return;
+    }
+
+    await tryAutoLogin();
+
+    if (!state.initialized) {
       state = const AuthState(initialized: true);
     }
   }
@@ -67,6 +94,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> login({
     required String username,
     required String password,
+    required bool rememberMe,
   }) async {
     state = state.copyWith(isLoading: true, error: null, successLogin: false);
 
@@ -81,6 +109,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
         initialized: true,
       );
 
+      if (rememberMe) {
+        await tokenStorage.saveRememberMe(true);
+        await tokenStorage.saveUsername(username);
+        await tokenStorage.savePassword(password);
+      } else {
+        await tokenStorage.clearRememberMe();
+      }
       // 🔥 أهم خطوة: عمل invalidate للـ dio لكي يحصل على التوكن الجديد
       ref.invalidate(dioProvider);
 
@@ -100,21 +135,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     await service.logout();
-    await tokenStorage.clearToken();  
-    
+    await tokenStorage.clearToken();
+   await tokenStorage.clearRememberMe();
+   
+
     state = const AuthState(
       initialized: true,
       user: null,
       successLogin: false,
       tokenExpired: false,
-      error: null
+      error: null,
     );
     ref.invalidate(dioProvider);
   }
 
   Future<void> tokenExpired() async {
     await tokenStorage.clearToken();
- 
+
     state = const AuthState(
       initialized: true,
       user: null,
