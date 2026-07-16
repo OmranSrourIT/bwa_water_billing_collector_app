@@ -167,12 +167,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.only(right:10 , left:10 , top:0 , bottom:50),
                 child: Container(
                   width: cardWidth,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 28,
-                    vertical: 30,
+                    vertical: 10,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -253,26 +253,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           validatorText: t.t("password_required"),
                         ),
-                        Align(
-                          alignment: AppLocalizations.of(context).locale.languageCode == 'en'
-                              ? Alignment.centerLeft
-                              : Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                              _showForgotPasswordDialog(context);
-                            },
-                            child: Text(
-                              t.t("password_forgot"),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: const Color(0xff1976D2),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
+                        // Align(
+                        //   alignment: AppLocalizations.of(context).locale.languageCode == 'en'
+                        //       ? Alignment.centerLeft
+                        //       : Alignment.centerRight,
+                        //   child: TextButton(
+                        //     onPressed: () {
+                        //       _showForgotPasswordDialog(context);
+                        //     },
+                        //     child: Text(
+                        //       t.t("password_forgot"),
+                        //       style: TextStyle(
+                        //         fontSize: 12,
+                        //         color: const Color(0xff1976D2),
+                        //         fontWeight: FontWeight.w600,
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
                         
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 20),
                         
                         // 🛡️ reCAPTCHA Widget
                         // if (_captchaToken == null)
@@ -613,7 +613,7 @@ class LanguageArEn extends StatelessWidget {
                   const Icon(Icons.language, size: 20, color: Color(0xff1976D2)),
                   const SizedBox(width: 6),
                   Text(
-                    AppLocalizations.of(context).locale.languageCode == 'en' ? 'العربية' : 'English',
+                    AppLocalizations.of(context).locale.languageCode == 'en' ? 'العربية' : 'العربية',
                     style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xff0D47A1), fontSize: 16),
                   ),
                 ],

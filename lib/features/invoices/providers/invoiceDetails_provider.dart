@@ -1,4 +1,5 @@
 import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_provider.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/repositories/NoticePrintRepository.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/repositories/invoice_details_repository.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/connection_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/auth/providers/auth_provider.dart';
@@ -31,10 +32,17 @@ final invoiceDetailProvider =
       return repository.getInvoice(invoiceNumber);
     });
 
+final noticePrintRepositoryProvider = Provider<NoticePrintRepository>((ref) {
+  return NoticePrintRepository(
+    api: ref.read(invoiceServiceDetailsProvider),
+    queue: ref.read(syncQueueLocalServiceProvider), 
+    isOnline: ref.watch(connectionProvider),
+  );
+});
+
 final updateNoticePrintProvider = FutureProvider.family<String, String>((
   ref,
   invoiceNo,
-) async {
-  final service = ref.watch(invoiceServiceDetailsProvider);
-  return service.updateNoticePrint(invoiceNo);
+) {
+  return ref.read(noticePrintRepositoryProvider).updateNoticePrint(invoiceNo);
 });

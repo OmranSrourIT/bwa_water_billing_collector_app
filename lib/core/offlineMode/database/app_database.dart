@@ -128,6 +128,7 @@ CREATE TABLE invoices(
          lookup_json TEXT,
          
         activeCollectionPeriod, 
+        
 
         synced INTEGER DEFAULT 1
       )

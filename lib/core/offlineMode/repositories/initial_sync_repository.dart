@@ -95,11 +95,18 @@ class InitialSyncRepository {
       );
 
       if (path != null) {
-        await attachmentLocal.saveAttachment(
+        final existing = await attachmentLocal.getAttachment(
           invoiceNo: details.invoiceNumber,
           type: AttachmentType.meter,
-          path: path,
         );
+
+        if (existing == null) {
+          await attachmentLocal.saveAttachment(
+            invoiceNo: details.invoiceNumber,
+            type: AttachmentType.meter,
+            path: path,
+          );
+        }
       }
     }
 
@@ -117,12 +124,20 @@ class InitialSyncRepository {
       );
 
       if (path != null) {
-        await attachmentLocal.saveAttachment(
+        final existing = await attachmentLocal.getAttachment(
           invoiceNo: details.invoiceNumber,
           type: AttachmentType.failure,
           reasonCode: reason.failureReasonCode,
-          path: path,
         );
+
+        if (existing == null) {
+          await attachmentLocal.saveAttachment(
+            invoiceNo: details.invoiceNumber,
+            type: AttachmentType.failure,
+            reasonCode: reason.failureReasonCode,
+            path: path,
+          );
+        }
       }
     }
   }

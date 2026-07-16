@@ -87,6 +87,8 @@ class InvoiceDetailsLocalService {
             .toList(),
       ),
 
+      
+
       "failure_reasons_json": jsonEncode(
         item.failureReasons
             .map(
@@ -286,17 +288,32 @@ class InvoiceDetailsLocalService {
   }) async {
     final database = await db.database;
 
+    final result = await database.query(
+      "invoice_details",
+      columns: ["failure_reasons_json"],
+      where: "invoice_no = ?",
+      whereArgs: [invoiceNo],
+    );
+
+    List<dynamic> reasons = [];
+
+    if (result.isNotEmpty) {
+      final json = result.first["failure_reasons_json"] as String?;
+
+      if (json != null && json.isNotEmpty) {
+        reasons = jsonDecode(json);
+      }
+    }
+
+    reasons.add({
+      "FailureReasonCode": code,
+      "FailureNotes": notes,
+      "Attachment": attachment,
+    });
+
     await database.update(
       "invoice_details",
-      {
-        "failure_reasons_json": jsonEncode([
-          {
-            "FailureReasonCode": code,
-            "FailureNotes": notes,
-            "Attachment": attachment,
-          },
-        ]),
-      },
+      {"failure_reasons_json": jsonEncode(reasons)},
       where: "invoice_no = ?",
       whereArgs: [invoiceNo],
     );
@@ -346,4 +363,6 @@ class InvoiceDetailsLocalService {
       whereArgs: [invoiceNo],
     );
   }
+
+
 }

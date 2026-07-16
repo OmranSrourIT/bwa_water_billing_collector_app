@@ -6,24 +6,28 @@ class InvoiceAttachmentLocalService {
 
   InvoiceAttachmentLocalService(this.db);
 
-  Future<void> saveAttachment({
-    required String invoiceNo,
-    required String type,
-    String? reasonCode,
-    required String path,
-    int synced = 1,
-  }) async {
-    final database = await db.database;
+   Future<void> saveAttachment({
+  required String invoiceNo,
+  required String type,
+  String? reasonCode,
+  required String path,
+  int synced = 1,
+}) async {
+  final database = await db.database;
 
-    await database.insert("invoice_attachments", {
+  await database.insert(
+    "invoice_attachments",
+    {
       "invoice_no": invoiceNo,
       "type": type,
       "reason_code": reasonCode,
       "path": path,
       "synced": synced,
       "created_at": DateTime.now().toIso8601String(),
-    });
-  }
+    },
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+}
 
   Future<String?> getAttachment({
     required String invoiceNo,

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:bwa_water_billing_collector_app/core/storage/image_storage_service.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/services/invoiceDetials_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/reading_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/failure_reason_service.dart';
 
@@ -11,12 +12,14 @@ class SyncEngine {
   final ReadingService readingService;
   final FailureReasonService failureReasonService;
   final ImageStorageService imageStorage;
+  final InvoiceDetailsService invoiceDetailsService;
 
   SyncEngine({
     required this.queue,
     required this.readingService,
     required this.failureReasonService,
     required this.imageStorage,
+    required this.invoiceDetailsService,
   });
 
   Future<bool> sync() async {
@@ -49,8 +52,11 @@ class SyncEngine {
             success = await _syncUpdateInvoiceStatus(payload);
             break;
 
+          case "UPDATE_NOTICE_PRINT":
+            success = await _syncNoticePrint(payload);
+            break;
+
           default:
-         
             success = true;
             break;
         }
@@ -61,7 +67,7 @@ class SyncEngine {
           await queue.markAsFailed(id);
           allSuccess = false;
         }
-      } catch (e) { 
+      } catch (e) {
         await queue.markAsFailed(id);
         allSuccess = false;
       }
@@ -100,11 +106,9 @@ class SyncEngine {
   }
 
   Future<bool> _syncFailureReason(Map<String, dynamic> data) async {
-
-      final base64 = await imageStorage.imageToBase64(
-    data["imagePath"] as String?,
-  );
-
+    final base64 = await imageStorage.imageToBase64(
+      data["imagePath"] as String?,
+    );
 
     final response = await failureReasonService.sendFailureReason(
       invoiceNo: data["invoiceNo"],
@@ -115,7 +119,7 @@ class SyncEngine {
 
       failureReason: data["failureReason"],
 
-      base64Image:base64,
+      base64Image: base64,
     );
 
     return response.result == "Success";
@@ -133,4 +137,18 @@ class SyncEngine {
       return false;
     }
   }
+
+ Future<bool> _syncNoticePrint(
+    Map<String, dynamic> data,
+) async {
+  try {
+    await invoiceDetailsService.updateNoticePrint(
+      data["invoiceNo"],
+    );
+
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
 }
