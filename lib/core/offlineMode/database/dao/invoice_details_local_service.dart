@@ -1,12 +1,16 @@
 import 'dart:convert';
+import 'package:bwa_water_billing_collector_app/core/constants/attachment_type.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/app_database.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_attachment_local_service.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/lookup_local_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
 import 'package:sqflite/sqflite.dart';
 
 class InvoiceDetailsLocalService {
   final AppDatabase db;
-
-  InvoiceDetailsLocalService(this.db);
+  final InvoiceAttachmentLocalService attachmentLocal;
+  final LookupLocalService lookupLocal;
+  InvoiceDetailsLocalService(this.db, this.attachmentLocal, this.lookupLocal);
 
   Future<void> insertInvoiceDetails(InvoiceInformationModel item) async {
     final database = await db.database;
@@ -115,24 +119,6 @@ class InvoiceDetailsLocalService {
 
       "synced": 1,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
-
-    if (item.attachment != null) {
-      await database.insert("invoice_attachments", {
-        "invoice_no": item.invoiceNumber,
-        "type": "METER",
-        "attachment": item.attachment,
-      });
-    }
-
-    for (final reason in item.failureReasons) {
-      if (reason.attachment != null) {
-        await database.insert("invoice_attachments", {
-          "invoice_no": item.invoiceNumber,
-          "type": "FAILURE",
-          "attachment": reason.attachment,
-        });
-      }
-    }
   }
 
   Future<InvoiceInformationModel?> getInvoiceDetails(String invoiceNo) async {
@@ -155,6 +141,11 @@ class InvoiceDetailsLocalService {
     final failureReasonsJson = json["failure_reasons_json"] as String?;
 
     final lookupJson = json["lookup_json"] as String?;
+
+    final meterAttachment = await attachmentLocal.getAttachment(
+      invoiceNo: invoiceNo,
+      type: AttachmentType.meter,
+    );
 
     return InvoiceInformationModel(
       invoiceNumber: json["invoice_no"] as String,
@@ -219,22 +210,30 @@ class InvoiceDetailsLocalService {
 
       failureReasons: failureReasonsJson == null
           ? []
-          : (jsonDecode(failureReasonsJson) as List).map((e) {
-              final model = FieldFailureReasonModel.fromJson(e);
+          : await Future.wait(
+              (jsonDecode(failureReasonsJson) as List).map((e) async {
+                final model = FieldFailureReasonModel.fromJson(e);
 
-              return FieldFailureReasonModel(
-                failureReasonCode: model.failureReasonCode,
-                failureNotes: model.failureNotes,
-                attachment: null,
-              );
-            }).toList(),
+                final attachment = await attachmentLocal.getAttachment(
+                  invoiceNo: invoiceNo,
+                  type: AttachmentType.failure,
+                  reasonCode: model.failureReasonCode,
+                );
+
+                return FieldFailureReasonModel(
+                  failureReasonCode: model.failureReasonCode,
+                  failureNotes: model.failureNotes,
+                  attachment: attachment,
+                );
+              }),
+            ),
 
       lookup: lookupJson == null
           ? []
           : (jsonDecode(lookupJson) as List)
                 .map((e) => LookupModel.fromJson(e))
                 .toList(),
-      attachment: null,
+      attachment: meterAttachment,
 
       periodFromDate: json["period_from_date"] != null
           ? DateTime.parse(json["period_from_date"] as String)
@@ -309,38 +308,42 @@ class InvoiceDetailsLocalService {
   }) async {
     final database = await db.database;
 
-    Future<void> updateLookup(String table) async {
-      final result = await database.query(
-        table,
-        columns: ["lookup_json"],
-        where: "invoice_no = ?",
-        whereArgs: [invoiceNo],
-      );
+    final statusLookup = await lookupLocal.getLookupByCode(
+      lookupType: "InvoiceStatus",
+      code: status,
+    );
 
-      if (result.isEmpty) return;
+    if (statusLookup == null) return;
 
-      final lookupJson = result.first["lookup_json"] as String?;
+    final result = await database.query(
+      "invoice_details",
+      columns: ["lookup_json"],
+      where: "invoice_no = ?",
+      whereArgs: [invoiceNo],
+    );
 
-      if (lookupJson == null || lookupJson.isEmpty) return;
+    if (result.isEmpty) return;
 
-      final List<dynamic> lookups = jsonDecode(lookupJson);
+    final lookupJson = result.first["lookup_json"] as String?;
 
-      for (final item in lookups) {
-        if (item["LookupType"] == "InvoiceStatus") {
-          item["Code"] = status;
-          break;
-        }
+    if (lookupJson == null || lookupJson.isEmpty) return;
+
+    final List<dynamic> lookups = jsonDecode(lookupJson);
+
+    for (final item in lookups) {
+      if (item["LookupType"] == "InvoiceStatus") {
+        item["Code"] = statusLookup.code;
+        item["ArDesc"] = statusLookup.arDesc;
+        item["EnDesc"] = statusLookup.enDesc;
+        break;
       }
-
-      await database.update(
-        table,
-        {"lookup_json": jsonEncode(lookups)},
-        where: "invoice_no = ?",
-        whereArgs: [invoiceNo],
-      );
     }
 
-    await updateLookup("invoice_details");
-    await updateLookup("invoices");
+    await database.update(
+      "invoice_details",
+      {"lookup_json": jsonEncode(lookups)},
+      where: "invoice_no = ?",
+      whereArgs: [invoiceNo],
+    );
   }
 }

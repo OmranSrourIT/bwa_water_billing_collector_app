@@ -21,9 +21,7 @@ class InvoiceRepository {
 
       return invoices;
     }
-
-    print("Offline => SQLite invoices");
-
+  
     final result = await local.getInvoices(batchNumber);
     return result;
   }

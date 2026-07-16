@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:bwa_water_billing_collector_app/core/constants/AppColors.dart';
 import 'package:bwa_water_billing_collector_app/core/lang/app_localizations.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/app_database.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_sync_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/storage/PrinterStorage.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/ConnectionBanner.dart';
@@ -121,7 +124,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final syncState = ref.watch(initialSyncStateProvider);
     final batchAsync = ref.watch(batchProvider);
     final isTablet = Responsive.isTablet(context);
-  
+
+    List<Map<String, dynamic>> attachments = [];
+ 
 
     if (syncState.loading) {
       return InitialSyncLoadingScreen(message: syncState.message);
@@ -132,7 +137,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Stack(
           children: [
             Column(
-              children: [
+              children: [ 
                 _Header(),
                 Expanded(
                   child: RefreshIndicator(
@@ -401,7 +406,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             loading: () => CircularProgressIndicator(),
                             error: (error, stack) {
                               return AppErrorState(
-                                message: parseError(error).replaceAll("Exception:", ""),
+                                message: parseError(
+                                  error,
+                                ).replaceAll("Exception:", ""),
                                 onRetry: () {
                                   ref.invalidate(batchProvider);
                                 },
@@ -1275,7 +1282,6 @@ class _InvoiceCard extends ConsumerStatefulWidget {
 class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
   bool _pressed = false;
   bool _loadingPayment = false;
- 
 
   String getInvoiceStatus(InvoiceModel invoice, BuildContext context) {
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
@@ -1403,7 +1409,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
     final isTablet = Responsive.isTablet(context);
     final tr = AppLocalizations.of(context);
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
-     final isOnline = ref.watch(connectionProvider);
+    final isOnline = ref.watch(connectionProvider);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -1728,7 +1734,8 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                             );
                           },
                         ),
-                      if (getInvoiceStatusCode(widget.invoice, context) == "COL")
+                      if (getInvoiceStatusCode(widget.invoice, context) ==
+                          "COL")
                         _ActionButton(
                           title: Text(tr.t('print_invoice')),
                           icon: Icons.receipt_long,
@@ -1765,7 +1772,11 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                             );
                           },
                         ),
-                      if ((getInvoiceStatusCode(widget.invoice, context) ==  "RDY" ||  getInvoiceStatusCode(widget.invoice, context) ==  "UNC") && isOnline)
+                      if ((getInvoiceStatusCode(widget.invoice, context) ==
+                                  "RDY" ||
+                              getInvoiceStatusCode(widget.invoice, context) ==
+                                  "UNC") &&
+                          isOnline)
                         _ActionButton(
                           title: _loadingPayment
                               ? const SizedBox(

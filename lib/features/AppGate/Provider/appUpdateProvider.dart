@@ -18,19 +18,16 @@ final appUpdateProvider = FutureProvider.autoDispose<AppUpdate>((ref) async {
   final storage = ref.read(appUpdateStorageProvider);
 
   try {
-    print("====== CALL API ======");
+   
     final res = await dio.get(
       "${ApiConstants.baseUrl}${ApiConstants.updateAppVersion(AppInfoService.version)}",
     );
 
-    print(res.data);
-
-    // 🔥 FIX: parse string -> json
+      
     final data = res.data is String ? jsonDecode(res.data) : res.data;
 
     final model = AppUpdate.fromJson(data);
-
-    // 🔥 خزّن محلياً
+ 
     await storage.saveUpdateData(
       needUpdate: model.needUpdate,
       apkUrl: model.apkURL,
@@ -38,8 +35,7 @@ final appUpdateProvider = FutureProvider.autoDispose<AppUpdate>((ref) async {
 
     return model;
   } catch (e, s) {
-    print("ERROR: $e");
-    print(s);
+   
     final cachedNeedUpdate = await storage.getNeedUpdate();
     final cachedUrl = await storage.getApkUrl() ?? "";
 

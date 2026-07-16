@@ -451,7 +451,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                         infoDetials.invoiceNumber,
                       ).future,
                     );
-                    print("UPDATE NOTICE DONE: $result");
+              
                     AppPopupAlert.show(
                       context,
                       message: "تم الطباعة وتحديث الإشعار بنجاح",

@@ -45,12 +45,9 @@ class BatchApiService {
 
       return BatchEndResponse.fromJson(jsonData);
     } on DioException catch (e) {
-      // التعامل مع أخطاء الـ Timeout أو انقطاع الاتصال
-      print("Dio Error: ${e.type} - ${e.message}");
+  
       return BatchEndResponse.networkError();
-    } catch (e) {
-      // التعامل مع أي خطأ غير متوقع في الكود
-      print("Unexpected Error: $e");
+    } catch (e) { 
       return BatchEndResponse.error(
         "حدث خطأ أثناء معالجة البيانات",
         "Error processing data",

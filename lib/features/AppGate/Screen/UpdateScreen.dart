@@ -65,8 +65,7 @@ class _UpdateScreenState extends State<UpdateScreen> {
         await OpenFile.open(filePath);
       }
     } catch (e) {
-      debugPrint("Download Error: $e");
-
+    
       if (mounted) {
         final message = "فشل التحميل: تأكد من اتصالك بالإنترنت";
 

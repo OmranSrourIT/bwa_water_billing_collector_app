@@ -1,3 +1,4 @@
+import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/image_storage_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/repositories/failure_reason_repository.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/connection_provider.dart';
@@ -20,6 +21,8 @@ final failureReasonRepositoryProvider = Provider<FailureReasonRepository>((
     api: ref.read(failureReasonServiceProvider),
     queue: ref.read(syncQueueLocalServiceProvider),
     detailsLocal: ref.read(invoiceDetailsLocalServiceProvider),
+    attachmentLocal: ref.read(invoiceAttachmentLocalServiceProvider), 
+    imageStorage: ref.read(imageStorageProvider),
     isOnline: ref.watch(connectionProvider),
   );
 });

@@ -1,6 +1,9 @@
+import 'package:bwa_water_billing_collector_app/core/constants/attachment_type.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_attachment_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_details_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/sync_queue_local_service.dart';
- 
+import 'package:bwa_water_billing_collector_app/core/storage/image_storage_service.dart';
+
 import 'package:bwa_water_billing_collector_app/features/invoices/models/FailureReasonRequestModel.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/FailureReasonResponse.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/failure_reason_service.dart';
@@ -8,15 +11,17 @@ import 'package:bwa_water_billing_collector_app/features/invoices/services/failu
 class FailureReasonRepository {
   final FailureReasonService api;
   final SyncQueueLocalService queue;
- 
   final InvoiceDetailsLocalService detailsLocal;
+  final InvoiceAttachmentLocalService attachmentLocal;
+  final ImageStorageService imageStorage;
   final bool isOnline;
 
   FailureReasonRepository({
     required this.api,
     required this.queue,
- 
     required this.detailsLocal,
+    required this.attachmentLocal,
+    required this.imageStorage,
     required this.isOnline,
   });
 
@@ -31,9 +36,28 @@ class FailureReasonRepository {
         failureReason: request.failureReason,
         base64Image: request.base64,
       );
-    } 
+    }
 
-    // حفظ بالـ Queue
+    String? imagePath;
+
+    if (request.base64 != null && request.base64!.isNotEmpty) {
+      imagePath = await imageStorage.saveInvoiceImage(
+        invoiceNo: request.invoiceNo,
+        type: AttachmentType.failure,
+        base64: request.base64,
+      );
+
+      if (imagePath != null) {
+        await attachmentLocal.saveAttachment(
+          invoiceNo: request.invoiceNo,
+          type: AttachmentType.failure,
+          reasonCode: request.code,
+          path: imagePath,
+          synced: 0,
+        );
+      }
+    }
+
     await queue.addQueue(
       type: "FAILURE_REASON",
       referenceNo: request.invoiceNo,
@@ -42,7 +66,9 @@ class FailureReasonRepository {
         "code": request.code,
         "notes": request.notes,
         "failureReason": request.failureReason,
-        "base64": request.base64,
+
+        // بدلاً من Base64
+        "imagePath": imagePath,
       },
     );
 
@@ -50,7 +76,7 @@ class FailureReasonRepository {
       invoiceNo: request.invoiceNo,
       code: request.code,
       notes: request.notes,
-      attachment: request.base64,
+      attachment: imagePath,
     );
 
     return FailureReasonResponse(

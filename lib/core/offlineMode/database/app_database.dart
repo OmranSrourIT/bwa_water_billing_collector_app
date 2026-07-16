@@ -22,9 +22,7 @@ class AppDatabase {
     final databasePath = await getDatabasesPath();
 
     final path = join(databasePath, "bwa_collector.db");
-    print("databasePath ${databasePath}");
-    print("path ${path}");
-
+  
     return await openDatabase(
       path,
       version: 1,
@@ -136,19 +134,25 @@ CREATE TABLE invoices(
     ''');
 
         await db.execute('''
-CREATE TABLE invoice_attachments(
+ CREATE TABLE invoice_attachments(
 
- id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
 
- invoice_no TEXT NOT NULL,
+  invoice_no TEXT NOT NULL,
 
- type TEXT NOT NULL,
+  type TEXT NOT NULL,
+ 
+ reason_code TEXT,
 
- attachment TEXT
+  path TEXT NOT NULL,
 
+  synced INTEGER DEFAULT 1,
+
+  created_at TEXT,
+
+  UNIQUE(invoice_no, type,reason_code)
 )
 ''');
-
 
         await db.execute('''
 CREATE TABLE lookups(

@@ -1,9 +1,11 @@
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/app_database.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/AccountLocalService.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/batch_local_service.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_attachment_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_details_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/lookup_local_service.dart'; 
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/sync_queue_local_service.dart';
+import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/image_storage_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/sync/sync_engine.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/failure_reason_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/reading_provider.dart';
@@ -20,12 +22,12 @@ final batchLocalServiceProvider = Provider<BatchLocalService>((ref) {
 });
 
 final invoiceLocalServiceProvider = Provider<InvoiceLocalService>((ref) {
-  return InvoiceLocalService(ref.read(databaseProvider));
+  return InvoiceLocalService(ref.read(databaseProvider),ref.read(lookupLocalServiceProvider));
 });
 
 final invoiceDetailsLocalServiceProvider = Provider<InvoiceDetailsLocalService>(
   (ref) {
-    return InvoiceDetailsLocalService(ref.read(databaseProvider));
+    return InvoiceDetailsLocalService(ref.read(databaseProvider), ref.read(invoiceAttachmentLocalServiceProvider),ref.read(lookupLocalServiceProvider));
   },
 );
 
@@ -41,6 +43,7 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
     readingService: ref.read(readingServiceProvider),
 
     failureReasonService: ref.read(failureReasonServiceProvider),
+    imageStorage: ref.read(imageStorageProvider)
   );
 });
 
@@ -52,3 +55,11 @@ final lookupLocalServiceProvider = Provider<LookupLocalService>((ref) {
 final accountLocalServiceProvider = Provider<AccountLocalService>((ref) {
   return AccountLocalService(ref.read(databaseProvider));
 });
+
+final invoiceAttachmentLocalServiceProvider =
+    Provider<InvoiceAttachmentLocalService>((ref) {
+  return InvoiceAttachmentLocalService(
+    ref.read(databaseProvider),
+  );
+});
+

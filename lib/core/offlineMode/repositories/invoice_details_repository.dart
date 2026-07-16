@@ -21,9 +21,7 @@ class InvoiceDetailsRepository {
       final result = await api.getInvoice(invoiceNo); 
       return result;
     }
-
-    print("Offline => Invoice Details");
-
+ 
     final localData = await local.getInvoiceDetails(invoiceNo);
 
     if (localData == null) {

@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:bwa_water_billing_collector_app/core/utlis/connection_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
@@ -56,6 +59,7 @@ class InvoiceDetailsDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isTablet = Responsive.isTablet(context);
     final invoiceAsync = ref.watch(invoiceDetailProvider(invoiceNumber));
+    final isOnlineMODE = ref.watch(connectionProvider);
 
     return invoiceAsync.when(
       loading: () => BwaLoadingOverlay(isLoading: true),
@@ -70,6 +74,10 @@ class InvoiceDetailsDialog extends ConsumerWidget {
       },
 
       data: (invoice) {
+        final status = invoice.lookup.firstWhere(
+          (e) => e.lookupType == "InvoiceStatus",
+        );
+   
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(16),
@@ -303,7 +311,8 @@ class InvoiceDetailsDialog extends ConsumerWidget {
                                       if (invoice.attachment != null &&
                                           invoice.attachment!.isNotEmpty)
                                         _AttachmentImageInline(
-                                          base64: invoice.attachment!,
+                                          image: invoice.attachment!,
+                                          isOnline: isOnlineMODE,
                                         ),
                                     ],
                                   ),
@@ -367,24 +376,35 @@ class InvoiceDetailsDialog extends ConsumerWidget {
 }
 
 class _AttachmentImageInline extends StatelessWidget {
-  final String base64;
+  final String image;
+  final bool isOnline;
 
-  const _AttachmentImageInline({required this.base64});
+  const _AttachmentImageInline({required this.image, required this.isOnline});
 
   @override
   Widget build(BuildContext context) {
-    Uint8List? imageBytes;
+    Widget imageWidget;
 
-    try {
-      var cleanBase64 = base64.trim();
+    if (isOnline) {
+      var cleanBase64 = image.trim();
 
-      if (cleanBase64.contains(',')) {
-        cleanBase64 = cleanBase64.split(',').last;
+      if (cleanBase64.contains(",")) {
+        cleanBase64 = cleanBase64.split(",").last;
       }
 
-      imageBytes = base64Decode(cleanBase64);
-    } catch (e) {
-      return const SizedBox();
+      final bytes = base64Decode(cleanBase64);
+
+      imageWidget = Image.memory(bytes, fit: BoxFit.contain);
+    } else {
+      imageWidget = Image.file(
+        File(image),
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) {
+          return const Center(
+            child: Icon(Icons.broken_image, size: 80, color: Colors.grey),
+          );
+        },
+      );
     }
 
     return InkWell(
@@ -404,7 +424,7 @@ class _AttachmentImageInline extends StatelessWidget {
                       child: InteractiveViewer(
                         minScale: 1,
                         maxScale: 5,
-                        child: Image.memory(imageBytes!, fit: BoxFit.contain),
+                        child: imageWidget,
                       ),
                     ),
 
@@ -779,6 +799,8 @@ class _FailureReasonsTable extends ConsumerWidget {
       return const SizedBox();
     }
 
+    final isOnlineMODE = ref.watch(connectionProvider);
+
     final lookupAsync = ref.watch(
       fieldFailureLookupProvider("FieldFailureReason"),
     );
@@ -859,7 +881,7 @@ class _FailureReasonsTable extends ConsumerWidget {
                       imageBytes = null;
                     }
                   }
-
+ 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
@@ -925,174 +947,13 @@ class _FailureReasonsTable extends ConsumerWidget {
                         // ================= IMAGE BUTTON =================
                         const SizedBox(height: 12),
 
-                        if (imageBytes != null)
-                          InkWell(
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                barrierColor: Colors.black.withOpacity(0.6),
-                                builder: (_) {
-                                  return StatefulBuilder(
-                                    builder: (context, setState) {
-                                      return Dialog(
-                                        backgroundColor: Colors.white,
-                                        insetPadding: const EdgeInsets.all(10),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                          child: Stack(
-                                            children: [
-                                              // ================= IMAGE =================
-                                              Center(
-                                                child: InteractiveViewer(
-                                                  minScale: 1.0,
-                                                  maxScale: 5.0,
-                                                  child: Image.memory(
-                                                    imageBytes!,
-                                                    fit: BoxFit.contain,
-                                                  ),
-                                                ),
-                                              ),
-
-                                              // ================= HEADER (YOUR COLORS) =================
-                                              Container(
-                                                height: 60,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  gradient: LinearGradient(
-                                                    colors: [
-                                                      const Color(
-                                                        0xff2F318B,
-                                                      ).withOpacity(0.95),
-                                                      const Color(
-                                                        0xff27A9E1,
-                                                      ).withOpacity(0.95),
-                                                    ],
-                                                  ),
-                                                ),
-                                                child: Row(
-                                                  children: [
-                                                    // CLOSE
-                                                    IconButton(
-                                                      icon: const Icon(
-                                                        Icons.close,
-                                                        color: Colors.white,
-                                                      ),
-                                                      onPressed: () =>
-                                                          Navigator.pop(
-                                                            context,
-                                                          ),
-                                                    ),
-                                                    // TITLE
-                                                    Expanded(
-                                                      child: Center(
-                                                        child: Text(
-                                                          getReasonName(
-                                                            item,
-                                                            lookup,
-                                                            context,
-                                                          ),
-                                                          style:
-                                                              const TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontSize: 14,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                              ),
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-
-                                              // ================= BOTTOM HINT =================
-                                              Positioned(
-                                                bottom: 12,
-                                                left: 0,
-                                                right: 0,
-                                                child: Center(
-                                                  child: Container(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 12,
-                                                          vertical: 6,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.black
-                                                          .withOpacity(0.7),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            20,
-                                                          ),
-                                                    ),
-                                                    child: const Text(
-                                                      "قرّب بإصبعين للتكبير • اسحب للتحريك",
-                                                      style: TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 12,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
-                              );
-                            },
-                            child: Container(
-                              height: 55,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                gradient: LinearGradient(
-                                  colors: [
-                                    const Color.fromARGB(
-                                      33,
-                                      47,
-                                      49,
-                                      139,
-                                    ).withOpacity(0.70),
-                                    const Color.fromARGB(
-                                      144,
-                                      39,
-                                      169,
-                                      225,
-                                    ).withOpacity(0.95),
-                                  ],
-                                ),
-                                border: Border.all(
-                                  color: Colors.grey.withOpacity(0.3),
-                                ),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.image, color: Colors.lightGreen),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    "عرض الصورة",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        if (item.attachment != null &&
+                            item.attachment!.isNotEmpty)
+                          _ImagePreviewButton(
+                            image: item.attachment!,
+                            isOnline: isOnlineMODE,
+                            title: getReasonName(item, lookup, context),
+                            buttonText: "عرض الصورة",
                           ),
                       ],
                     ),
@@ -1103,6 +964,166 @@ class _FailureReasonsTable extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _ImagePreviewButton extends StatelessWidget {
+  final String image;
+  final bool isOnline;
+  final String title;
+  final String buttonText;
+
+  const _ImagePreviewButton({
+    required this.image,
+    required this.isOnline,
+    required this.title,
+    this.buttonText = "عرض الصورة",
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget imageWidget;
+
+    if (isOnline) {
+      var cleanBase64 = image.trim();
+
+      if (cleanBase64.contains(",")) {
+        cleanBase64 = cleanBase64.split(",").last;
+      }
+
+      imageWidget = Image.memory(
+        base64Decode(cleanBase64),
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) {
+          return const Center(
+            child: Icon(Icons.broken_image, size: 80, color: Colors.grey),
+          );
+        },
+      );
+    } else {
+      imageWidget = Image.file(
+        File(image),
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) {
+          return const Center(
+            child: Icon(Icons.broken_image, size: 80, color: Colors.grey),
+          );
+        },
+      );
+    }
+
+    return InkWell(
+      onTap: () {
+        showDialog(
+          context: context,
+          barrierColor: Colors.black.withOpacity(0.6),
+          builder: (_) {
+            return Dialog(
+              backgroundColor: Colors.white,
+              insetPadding: const EdgeInsets.all(10),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: InteractiveViewer(
+                        minScale: 1,
+                        maxScale: 5,
+                        child: imageWidget,
+                      ),
+                    ),
+
+                    Container(
+                      height: 60,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xff2F318B).withOpacity(0.95),
+                            const Color(0xff27A9E1).withOpacity(0.95),
+                          ],
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                title,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    Positioned(
+                      bottom: 12,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            "قرّب بإصبعين للتكبير • اسحب للتحريك",
+                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+      child: Container(
+        height: 55,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [
+              const Color.fromARGB(33, 47, 49, 139).withOpacity(0.70),
+              const Color.fromARGB(144, 39, 169, 225).withOpacity(0.95),
+            ],
+          ),
+          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.image, color: Colors.lightGreen),
+            const SizedBox(width: 8),
+            Text(
+              buttonText,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -22,8 +22,7 @@ class LookupRepository {
       return lookups;
     }
 
-    print("Offline => SQLite Lookups");
-
+  
     return await local.getLookups(lookupType);
   }
 }

@@ -1,3 +1,4 @@
+import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/image_storage_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/repositories/reading_repository.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/repositories/update_invoice_status_repository.dart';
@@ -22,10 +23,11 @@ final readingServiceProvider = Provider((ref) {
     api: ref.read(readingServiceProvider),
     queue: ref.read(syncQueueLocalServiceProvider),
     local: ref.read(invoiceDetailsLocalServiceProvider),
+    attachmentLocal: ref.read(invoiceAttachmentLocalServiceProvider),
+    imageStorage: ref.read(imageStorageProvider),
     isOnline: ref.watch(connectionProvider),
   );
 });
-
 final insertReadingProvider =
     FutureProvider.family<ReadingResponse, ReadingRequest>((
       ref,

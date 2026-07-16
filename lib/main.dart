@@ -17,10 +17,7 @@ import 'core/lang/app_localizations.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await AppDatabase.instance.database;
-
-  print("SQLite Database Opened Successfully");
-  
+  await AppDatabase.instance.database; 
 
   await FlutterDownloader.initialize(debug: true, ignoreSsl: true);
 
@@ -40,7 +37,7 @@ class MyApp extends ConsumerStatefulWidget {
 
 @pragma('vm:entry-point')
 void downloadCallback(String id, int status, int progress) {
-  print("STATUS=$status PROGRESS=$progress");
+ 
 }
 
 class _MyAppState extends ConsumerState<MyApp> {
@@ -52,17 +49,17 @@ class _MyAppState extends ConsumerState<MyApp> {
 
     ref.listenManual(authProvider, (previous, next) async {
       if (previous?.successLogin != true && next.successLogin == true) {
-        print("LOGIN SUCCESS => START INITIAL SYNC");
+   
         if (ref.read(connectionProvider)) {
           await ref.read(initialSyncStateProvider.notifier).start(); //This is For Iraq Api Sync
-          print("INITIAL SYNC FINISHED");
+       
         }
       }
     });
 
     ref.listenManual<bool>(connectionProvider, (previous, next) async {
       if (next == true && previous == false) {
-        print("Internet Connected => Start Sync");
+      
 
         final success = await ref.read(syncEngineProvider).sync(); //This is For Iraq Api Sync
 

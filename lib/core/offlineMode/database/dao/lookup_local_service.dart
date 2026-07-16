@@ -54,4 +54,31 @@ class LookupLocalService {
         )
         .toList();
   }
+
+  Future<FieldFailureLookupModel?> getLookupByCode({
+  required String lookupType,
+  required String code,
+}) async {
+  final database = await db.database;
+
+  final result = await database.query(
+    "lookups",
+    where: "lookup_type = ? AND code = ?",
+    whereArgs: [lookupType, code],
+    limit: 1,
+  );
+
+  if (result.isEmpty) {
+    return null;
+  }
+
+  final item = result.first;
+
+  return FieldFailureLookupModel(
+    code: item["code"] as String,
+    arDesc: item["ar_desc"] as String? ?? "",
+    enDesc: item["en_desc"] as String? ?? "",
+    order: item["order_no"] as int?,
+  );
+}
 }

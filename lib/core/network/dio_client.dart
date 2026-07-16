@@ -18,9 +18,7 @@ class DioClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await tokenStorage.getToken();
-
-          print("TOKEN => $token");
+          final token = await tokenStorage.getToken(); 
 
           final skipAuth = options.extra['skipAuth'] == true;
 
@@ -33,7 +31,7 @@ class DioClient {
 
         onError: (error, handler) async {
           if (error.response?.statusCode == 401) { 
-              print("401");
+              
             await tokenStorage.clearToken(); 
             await ref.read(authProvider.notifier).tokenExpired();
           }

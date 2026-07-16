@@ -22,8 +22,7 @@ class BatchRepository {
 
       return batches;
     }
-
-    print("Offline => SQLite Batches");
+ 
 
     return await local.getAllBatches();
   }
