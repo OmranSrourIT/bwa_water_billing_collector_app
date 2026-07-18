@@ -91,8 +91,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           if (mounted) {
             AppPopupAlert.show(
               context,
-              message:
-                  next.error?.toString().replaceFirst("Exception: ", "") ??
+              message: next.error?.toString().replaceFirst("Exception: ", "") ??
                   "Unknown error",
               isError: true,
             );

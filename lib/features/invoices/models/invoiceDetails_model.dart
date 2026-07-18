@@ -25,6 +25,7 @@ class InvoiceInformationModel {
   final double consumptionQtyRow;
   final double consumptionQtyPotable;
   final String customerID;
+  final bool isMeterRollover;
   final int cycleCode;
 
   final String region;
@@ -69,6 +70,7 @@ class InvoiceInformationModel {
     required this.consumptionQtyRow,
     required this.consumptionQtyPotable,
     required this.customerID,
+    required this.isMeterRollover,
     required this.cycleCode,
     required this.region,
 
@@ -151,6 +153,8 @@ class InvoiceInformationModel {
       consumptionQtyRow: (json["ConsumptionQtyRow"] ?? 0).toDouble(),
 
       customerID: json["CustomerID"]?.toString() ?? "",
+        
+        isMeterRollover: json["IsMeterRollover"] as bool? ?? false,
 
       cycleCode: (json["CycleCode"] ?? 0),
 

@@ -69,20 +69,20 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
     }
   }
 
-  Future<void> pickDate() async {
-    final selected = await showDatePicker(
-      context: context,
-      initialDate: readingDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-    );
+  // Future<void> pickDate() async {
+  //   final selected = await showDatePicker(
+  //     context: context,
+  //     initialDate: readingDate,
+  //     firstDate: DateTime(2020),
+  //     lastDate: DateTime(2100),
+  //   );
 
-    if (selected != null) {
-      setState(() {
-        readingDate = selected;
-      });
-    }
-  }
+  //   if (selected != null) {
+  //     setState(() {
+  //       readingDate = selected;
+  //     });
+  //   }
+  // }
 
   Future<Position?> getLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -119,7 +119,7 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
 
     final text = currentReadingController.text.trim();
 
-    final current = double.tryParse(text);
+    final current = int.tryParse(text);
 
     if (current == null) {
       AppPopupAlert.show(
@@ -130,7 +130,17 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
       return;
     }
 
-    final previous = invoice.previousReading.toDouble();
+    final previous = invoice.previousReading.toInt();
+
+    if (resetMeter && previous < 90000) {
+      AppPopupAlert.show(
+        context,
+        message:
+        "لا يمكن تدوير المقياس؛ القراءة السابقة لا تقترب من الحد الأقصى",
+        isError: true,
+      );
+      return;
+    }
 
     if (!resetMeter) {
       // القراءة العادية
@@ -176,16 +186,31 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
       return;
     }
 
+    final previousDate = DateUtils.dateOnly(invoice.previousReadingDateTime!);
+
+    final selectedDate = DateUtils.dateOnly(readingDate);
+
+    if (selectedDate.isBefore(previousDate)) {
+      AppPopupAlert.show(
+        context,
+        message:
+            "لا يمكن أن يكون تاريخ القراءة الحالية أقل من تاريخ القراءة السابقة",
+        isError: true,
+      );
+      return;
+    }
+
     final request = ReadingRequest(
       invoiceNumber: widget.invoiceNumber,
 
-      previousReading: invoice.previousReading.toDouble(),
+      previousReading: previous.toDouble(),
 
-      currentReading: current,
+      currentReading: current.toDouble(),
 
       currentReadDateTime: readingDate.toUtc().toIso8601String(),
 
-      previousReadingDateTime:  invoice.previousReadingDateTime?.toUtc().toIso8601String() ?? "",
+      previousReadingDateTime:
+          invoice.previousReadingDateTime?.toUtc().toIso8601String() ?? "",
 
       isMeterRollover: resetMeter,
 
@@ -215,7 +240,7 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
 
           return;
         }
-  // 🔥 تحديث الحالة
+        // 🔥 تحديث الحالة
         await ref.read(
           updateInvoiceStatusProvider((
             invoiceNo: widget.invoiceNumber,
@@ -240,7 +265,7 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
 
         if (context.mounted) {
           AppPopupAlert.show(context, message: errorMessage, isError: true);
-        } 
+        }
       }
     } catch (e) {
       final message = parseError(e);
@@ -357,6 +382,7 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
                                         _InfoRow(
                                           label: "القراءة السابقة",
                                           value: invoice.previousReading
+                                              .toInt()
                                               .toString(),
                                         ),
                                         _InfoRow(
@@ -379,29 +405,25 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
                                     title: "إدخال القراءة الحالية",
                                     child: Column(
                                       children: [
-                                        InkWell(
-                                          onTap: pickDate,
-                                          child: Container(
-                                            height: 54,
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 14,
+                                        Container(
+                                          height: 54,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              14,
                                             ),
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(14),
-                                              border: Border.all(
-                                                color: Colors.grey.shade300,
-                                              ),
+                                            border: Border.all(
+                                              color: Colors.grey.shade300,
                                             ),
-                                            child: Row(
-                                              children: [
-                                                const Icon(
-                                                  Icons.calendar_month,
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Text(formatDate(readingDate)),
-                                              ],
-                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.calendar_month),
+                                              const SizedBox(width: 10),
+                                              Text(formatDate(readingDate)),
+                                            ],
                                           ),
                                         ),
 
@@ -411,17 +433,13 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
                                           controller: currentReadingController,
                                           focusNode: currentReadingFocusNode,
 
-                                          keyboardType:
-                                              const TextInputType.numberWithOptions(
-                                                decimal: true,
-                                              ),
-
                                           textInputAction: TextInputAction.done,
 
+                                          keyboardType: TextInputType.number,
+
                                           inputFormatters: [
-                                            FilteringTextInputFormatter.allow(
-                                              RegExp(r'^\d*\.?\d{0,2}$'),
-                                            ),
+                                            FilteringTextInputFormatter
+                                                .digitsOnly,
                                           ],
 
                                           onSubmitted: (value) {
@@ -446,30 +464,60 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
                                   const SizedBox(height: 16),
 
                                   _SectionCard(
-                                    title: "إعادة تسلسل العداد",
-                                    child:
-                                        CupertinoSlidingSegmentedControl<bool>(
-                                          groupValue: resetMeter,
-                                          children: const {
-                                            true: Padding(
-                                              padding: EdgeInsets.all(12),
-                                              child: Text("نعم"),
+                                    title: "إعادة تدوير المقياس",
+                                    child: CupertinoSlidingSegmentedControl<bool>(
+                                      groupValue: resetMeter,
+                                      thumbColor: resetMeter
+                                          ? Colors.green
+                                          : Colors.red,
+                                      backgroundColor: Colors.grey.shade300,
+                                      children: {
+                                        true: Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Text(
+                                            "نعم",
+                                            style: TextStyle(
+                                              color: resetMeter
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                              fontWeight: FontWeight.bold,
                                             ),
-                                            false: Padding(
-                                              padding: EdgeInsets.all(12),
-                                              child: Text("لا"),
-                                            ),
-                                          },
-                                          onValueChanged: (value) {
-                                            if (value != null) {
-                                              setState(() {
-                                                resetMeter = value;
-                                              });
-                                            }
-                                          },
+                                          ),
                                         ),
-                                  ),
+                                        false: Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Text(
+                                            "لا",
+                                            style: TextStyle(
+                                              color: !resetMeter
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      },
+                                      onValueChanged: (value) {
+                                        if (value == true &&
+                                            invoice.previousReading.toInt() <
+                                                90000) {
+                                          AppPopupAlert.show(
+                                            context,
+                                            message:
+                                            "لا يمكن تدوير المقياس؛ القراءة السابقة لا تقترب من الحد الأقصى",
+                                            isError: true,
+                                          );
+                                          return;
+                                        }
 
+                                        if (value != null) {
+                                          setState(() {
+                                            resetMeter = value;
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ),
                                   const SizedBox(height: 16),
 
                                   _SectionCard(

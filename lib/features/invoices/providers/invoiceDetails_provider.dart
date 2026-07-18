@@ -1,3 +1,4 @@
+import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/image_storage_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/repositories/NoticePrintRepository.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/repositories/invoice_details_repository.dart';
@@ -18,6 +19,8 @@ final invoiceDetailsRepositoryProvider = Provider<InvoiceDetailsRepository>((
   return InvoiceDetailsRepository(
     api: ref.read(invoiceServiceDetailsProvider),
     local: ref.read(invoiceDetailsLocalServiceProvider),
+    attachmentLocal: ref.read(invoiceAttachmentLocalServiceProvider),
+    imageStorage: ref.read(imageStorageProvider),
     isOnline: ref.watch(connectionProvider),
   );
 });
@@ -35,7 +38,7 @@ final invoiceDetailProvider =
 final noticePrintRepositoryProvider = Provider<NoticePrintRepository>((ref) {
   return NoticePrintRepository(
     api: ref.read(invoiceServiceDetailsProvider),
-    queue: ref.read(syncQueueLocalServiceProvider), 
+    queue: ref.read(syncQueueLocalServiceProvider),
     isOnline: ref.watch(connectionProvider),
   );
 });

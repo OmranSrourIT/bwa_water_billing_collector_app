@@ -131,7 +131,7 @@ class _PopupAlertState extends State<_PopupAlert>
                         }
                       },
                       child: const Text(
-                        "تم",
+                        "إغلاق",
                         style: TextStyle(color: Colors.white),
                       ),
                     ),

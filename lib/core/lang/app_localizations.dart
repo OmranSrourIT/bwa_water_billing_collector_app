@@ -78,7 +78,7 @@ class AppLocalizations {
       'password_forgot': 'هل نسيت كلمة السر؟',
       'home_title': 'نظام فوترة خدمات المياه',
       'home_subtitle': 'لوحة الجابي', 
-      'account_info': 'معلومات الحساب',
+      'account_info':'معلومات المستخدم',
       'logout': 'تسجيل الخروج', 
       'pending': 'المتعذرة',
       'remaining': 'المتبقية',

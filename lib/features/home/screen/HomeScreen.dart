@@ -1,4 +1,4 @@
- import 'package:bwa_water_billing_collector_app/core/constants/AppColors.dart';
+import 'package:bwa_water_billing_collector_app/core/constants/AppColors.dart';
 import 'package:bwa_water_billing_collector_app/core/lang/app_localizations.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_sync_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/storage/PrinterStorage.dart';
@@ -31,6 +31,7 @@ import 'package:bwa_water_billing_collector_app/features/invoices/screens/Printi
 import 'package:bwa_water_billing_collector_app/features/invoices/screens/UnreachableDialog.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/screens/invoice_details_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:ui' as ui;
@@ -122,9 +123,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final batchAsync = ref.watch(batchProvider);
     final isTablet = Responsive.isTablet(context);
 
-    List<Map<String, dynamic>> attachments = [];
- 
-
     if (syncState.loading) {
       return InitialSyncLoadingScreen(message: syncState.message);
     }
@@ -134,7 +132,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Stack(
           children: [
             Column(
-              children: [ 
+              children: [
                 _Header(),
                 Expanded(
                   child: RefreshIndicator(
@@ -187,7 +185,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       onBatchSelected: (batch) {
                                         setState(() {
                                           selectedBatch = batch;
-
                                           selectedCollectionType = null;
                                           selectedInvoiceNo = null;
                                           selectedInvoiceStatus = null;
@@ -287,13 +284,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     final searchByAccountMatch =
                                         searchAccountValue == null ||
                                         searchAccountValue!.isEmpty ||
-                                        inv.invoiceNo.toLowerCase().contains(
+                                        inv.accountNo.toLowerCase().contains(
+                                          searchAccountValue!.toLowerCase(),
+                                        );
+
+                                    final searchByNameMatch =
+                                        searchAccountValue == null ||
+                                        searchAccountValue!.isEmpty ||
+                                        inv.customerName.toLowerCase().contains(
                                           searchAccountValue!.toLowerCase(),
                                         );
 
                                     return collectionMatch &&
-                                        statusMatch &&
-                                        searchByAccountMatch;
+                                            statusMatch &&
+                                            searchByAccountMatch ||
+                                        searchByNameMatch;
                                   }).toList();
                                   return Column(
                                     children: [
@@ -571,7 +576,6 @@ class _Header extends ConsumerWidget {
                   //     ],
                   //   ),
                   // ),
-
                   const PopupMenuDivider(),
 
                   PopupMenuItem(
@@ -988,7 +992,6 @@ class _SearchSectionState extends State<_SearchSection> {
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context);
-    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     final isTablet = Responsive.isTablet(context);
 
     return Column(
@@ -1014,6 +1017,8 @@ class _SearchSectionState extends State<_SearchSection> {
             },
             child: TextField(
               controller: _searchController,
+              keyboardType: TextInputType.text,
+              inputFormatters: [NoArabicDigitsFormatter()],
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: isTablet ? 15 : 14),
               onChanged: (value) {
@@ -1065,6 +1070,21 @@ class _SearchSectionState extends State<_SearchSection> {
           ],
         ),
       ],
+    );
+  }
+}
+
+class NoArabicDigitsFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final text = newValue.text.replaceAll(RegExp(r'[٠-٩]'), '');
+
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
     );
   }
 }
@@ -1685,9 +1705,11 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                       const SizedBox(width: 16),
                       _InlineItem(
                         title: tr.t('consumption'),
-                        value: NumberFormat(
-                          '#,##0.000',
-                        ).format(widget.invoice.consumptionQtyPotable),
+                        value:
+                            NumberFormat(
+                              '#,##',
+                            ).format(widget.invoice.consumptionQtyPotable) +
+                            " م³ ",
                       ),
                     ],
                   ),
@@ -1758,7 +1780,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                         _ActionButton(
                           title: Text(tr.t('enter_reading')),
                           icon: Icons.speed,
-                          color: AppColors.primary,
+                       color: const Color(0xFF2AAAE1),
                           onPressed: () {
                             showDialog(
                               context: context,

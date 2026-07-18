@@ -13,16 +13,17 @@ class BatchRepository {
     required this.local,
     required this.isOnline,
   });
-   
+
   Future<List<BatchModel>> getBatches() async {
     if (isOnline) {
       final batches = await api.getBatches();
 
-      // await local.insertBatches(batches);
+    //  batches.sort((a, b) => a.assignedDate.compareTo(b.assignedDate));
+
+      batches.sort((a, b) => a.batchNumber.compareTo(b.batchNumber));
 
       return batches;
     }
- 
 
     return await local.getAllBatches();
   }

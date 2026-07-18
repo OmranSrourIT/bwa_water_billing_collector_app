@@ -19,9 +19,13 @@ class InvoiceRepository {
     if (isOnline) {
       final invoices = await api.getInvoices(batchNumber);
 
+      invoices.sort((a, b) => a.accountNo.compareTo(b.accountNo));
+
+      await local.insertInvoices(batchNumber, invoices);
+
       return invoices;
     }
-  
+
     final result = await local.getInvoices(batchNumber);
     return result;
   }

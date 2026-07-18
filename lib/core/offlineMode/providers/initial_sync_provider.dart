@@ -17,8 +17,6 @@ final initialSyncProvider = Provider<InitialSyncRepository>((ref) {
     detailsApi: InvoiceDetailsService(ref.read(dioProvider)),
     lookupApi: FieldFailureLookupService(ref.read(dioProvider)),
     accountApi: AccountApiService(ref.read(dioProvider)),
-    attachmentLocal: ref.read(invoiceAttachmentLocalServiceProvider),
-    imageStorage: ref.read(imageStorageProvider),
     batchLocal: ref.read(batchLocalServiceProvider),
     invoiceLocal: ref.read(invoiceLocalServiceProvider),
     detailsLocal: ref.read(invoiceDetailsLocalServiceProvider),

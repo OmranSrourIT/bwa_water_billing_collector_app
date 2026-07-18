@@ -85,27 +85,28 @@ class AccountDetailsDialog extends ConsumerWidget {
                         ]),
                         const SizedBox(height: 12),
 
-                        _row([
-                          _field("الأسم الأول  انجليزي", account.firstNameEn),
-                          _field("اسم الأب انجليزي", account.fatherNameEn),
-                          _field("اسم الجد انجليزي", account.grandfatherNameEn),
-                          _field("اللقب انجليزي", account.familyNameEn),
-                        ]),
+                        // _row([
+                        //   _field("الأسم الأول  انجليزي", account.firstNameEn),
+                        //   _field("اسم الأب انجليزي", account.fatherNameEn),
+                        //   _field("اسم الجد انجليزي", account.grandfatherNameEn),
+                        //   _field("اللقب انجليزي", account.familyNameEn),
+                        // ]),
                         const SizedBox(height: 12),
                         _sectionTitle("معلومات الإتصال"),
                         _row([
                           _field("اسم المستخدم", account.username),
-                          _field("البريد الإلكتروني", account.email),
                           _field("رقم الهاتف", "${account.phone}"),
+                          _field("البريد الإلكتروني", account.email),
+                     
                         ]),
 
-                        const SizedBox(height: 12),
+                        // const SizedBox(height: 12),
 
-                        _sectionTitle("معلومات الهوية"),
-                        _row([
-                          _field("رقم البطاقة الموحدة", account.nationalNumber),
-                          _field("الرقم الوظيفي", account.nationalId),
-                        ]),
+                        // _sectionTitle("معلومات الهوية"),
+                        // _row([
+                        //   _field("رقم البطاقة الموحدة", account.nationalNumber),
+                        //   _field("الرقم الوظيفي", account.nationalId),
+                        // ]),
                       ],
                     ),
                   ),
@@ -165,7 +166,7 @@ class AccountDetailsDialog extends ConsumerWidget {
           const Icon(Icons.person, color: Colors.white),
           const SizedBox(width: 10),
           const Text(
-            "معلومات الحساب",
+         "معلومات المستخدم",
             style: TextStyle(
               color: Colors.white,
               fontSize: 16,

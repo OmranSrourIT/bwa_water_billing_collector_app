@@ -1,13 +1,10 @@
-import 'package:bwa_water_billing_collector_app/core/constants/attachment_type.dart';
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/AccountLocalService.dart';
+ import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/AccountLocalService.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/batch_local_service.dart';
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_attachment_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/invoice_details_local_service.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/lookup_local_service.dart';
-import 'package:bwa_water_billing_collector_app/core/storage/image_storage_service.dart';
 import 'package:bwa_water_billing_collector_app/features/Account/services/account_api_service.dart';
 import 'package:bwa_water_billing_collector_app/features/batch/services/batch_Api_service.dart';
-import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/models/invoice_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/FieldFailureLookupService.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/invoice_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/invoiceDetials_service.dart';
@@ -24,8 +21,6 @@ class InitialSyncRepository {
   final InvoiceLocalService invoiceLocal;
   final InvoiceDetailsLocalService detailsLocal;
   final LookupLocalService lookupLocal;
-  final InvoiceAttachmentLocalService attachmentLocal;
-  final ImageStorageService imageStorage;
   final AccountLocalService accountLocal;
 
   InitialSyncRepository({
@@ -38,8 +33,6 @@ class InitialSyncRepository {
     required this.invoiceLocal,
     required this.detailsLocal,
     required this.lookupLocal,
-    required this.attachmentLocal,
-    required this.imageStorage,
     required this.accountLocal,
   });
 
@@ -70,21 +63,7 @@ class InitialSyncRepository {
 
         await lookupLocal.insertLookups(type, lookups);
       }
-      for (final batch in batches) {
-       // تحميل جميع الفواتير
-        final invoices = await invoiceApi.getInvoices(batch.batchNumber);
-        await invoiceLocal.insertInvoices(batch.batchNumber, invoices);
-
-        for (final invoice in invoices) {
-            // تحميل جميع تفصايل الفاتورة
-          final details = await detailsApi.getInvoice(invoice.invoiceNo);
-                // حفظ الصور من قراءه العداد ، والتعذر 
-          await _saveAttachments(details);
-
-          await detailsLocal.insertInvoiceDetails(details);
-        }
-      }
-
+    
       onProgress?.call("تم تحميل جميع البيانات بنجاح");
     } catch (e) {
       onProgress?.call("حدث خطأ أثناء تحميل البيانات");
@@ -93,61 +72,15 @@ class InitialSyncRepository {
     }
   }
 
-  Future<void> _saveAttachments(InvoiceInformationModel details) async {
-    // صورة قراءة العداد
+  Future<List<InvoiceModel>> syncBatch(String batchNo) async {
 
-    if (details.attachment != null && details.attachment!.isNotEmpty) {
-      final path = await imageStorage.saveInvoiceImage(
-        invoiceNo: details.invoiceNumber,
-        type: AttachmentType.meter,
-        base64: details.attachment,
-      );
+   final invoices = await invoiceApi.getInvoices(batchNo);
 
-      if (path != null) {
-        final existing = await attachmentLocal.getAttachment(
-          invoiceNo: details.invoiceNumber,
-          type: AttachmentType.meter,
-        );
+   await invoiceLocal.insertInvoices(batchNo, invoices);
 
-        if (existing == null) {
-          await attachmentLocal.saveAttachment(
-            invoiceNo: details.invoiceNumber,
-            type: AttachmentType.meter,
-            path: path,
-          );
-        }
-      }
-    }
+   return invoices;
+}
 
-    // صور التعذر
+ 
 
-    for (final reason in details.failureReasons) {
-      if (reason.attachment == null || reason.attachment!.isEmpty) {
-        continue;
-      }
-
-      final path = await imageStorage.saveInvoiceImage(
-        invoiceNo: details.invoiceNumber,
-        type: AttachmentType.failure,
-        base64: reason.attachment,
-      );
-
-      if (path != null) {
-        final existing = await attachmentLocal.getAttachment(
-          invoiceNo: details.invoiceNumber,
-          type: AttachmentType.failure,
-          reasonCode: reason.failureReasonCode,
-        );
-
-        if (existing == null) {
-          await attachmentLocal.saveAttachment(
-            invoiceNo: details.invoiceNumber,
-            type: AttachmentType.failure,
-            reasonCode: reason.failureReasonCode,
-            path: path,
-          );
-        }
-      }
-    }
-  }
 }

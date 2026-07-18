@@ -41,7 +41,7 @@ class BatchLocalService {
 
     final result = await database.query(
       "batches",
-      orderBy: "assigned_date DESC",
+       orderBy: "assigned_date ASC",
     );
 
 

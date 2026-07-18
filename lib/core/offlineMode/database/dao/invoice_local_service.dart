@@ -80,12 +80,13 @@ class InvoiceLocalService {
   Future<List<InvoiceModel>> getInvoices(String batchNumber) async {
     final database = await db.database;
 
-    final result = await database.rawQuery(
-      "SELECT * FROM invoices WHERE batch_number = ?",
-      [batchNumber],
+    final result = await database.query(
+      "invoices",
+      where: "batch_number = ?",
+      whereArgs: [batchNumber],
+      orderBy: "account_no ASC",
     );
 
-    
     return result.map((json) {
       final lookupJson = json["lookup_json"] as String?;
 

@@ -87,8 +87,6 @@ class InvoiceDetailsLocalService {
             .toList(),
       ),
 
-      
-
       "failure_reasons_json": jsonEncode(
         item.failureReasons
             .map(
@@ -187,6 +185,8 @@ class InvoiceDetailsLocalService {
           .toDouble(),
 
       customerID: json["customer_id"] as String? ?? "",
+
+      isMeterRollover: json["IsMeterRollover"] as bool? ?? false,
 
       cycleCode: json["cycle_code"] as int? ?? 0,
 
@@ -363,6 +363,4 @@ class InvoiceDetailsLocalService {
       whereArgs: [invoiceNo],
     );
   }
-
-
 }

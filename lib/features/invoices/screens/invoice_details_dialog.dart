@@ -17,11 +17,17 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui';
 
-class InvoiceDetailsDialog extends ConsumerWidget {
+class InvoiceDetailsDialog extends ConsumerStatefulWidget {
   final String invoiceNumber;
 
   const InvoiceDetailsDialog({super.key, required this.invoiceNumber});
 
+  @override
+  ConsumerState<InvoiceDetailsDialog> createState() =>
+      _InvoiceDetailsDialogState();
+}
+
+class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
   String _formatDate(DateTime? d) {
     if (d == null) return "";
     return "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
@@ -56,19 +62,31 @@ class InvoiceDetailsDialog extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    bool _errorShown = false;
     final isTablet = Responsive.isTablet(context);
-    final invoiceAsync = ref.watch(invoiceDetailProvider(invoiceNumber));
+    final invoiceAsync = ref.watch(invoiceDetailProvider(widget.invoiceNumber));
     final isOnlineMODE = ref.watch(connectionProvider);
 
     return invoiceAsync.when(
       loading: () => BwaLoadingOverlay(isLoading: true),
       error: (error, stack) {
-        final message = parseError(error);
+        if (!_errorShown) {
+          _errorShown = true;
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          AppPopupAlert.show(context, message: message, isError: true);
-        });
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            AppPopupAlert.show(
+              context,
+              message: parseError(error).toString().replaceFirst("Exception: ", ""),
+              isError: true,
+              onOk: () {
+                Navigator.of(context).pop(); // يغلق InvoiceDetailsDialog
+              },
+            );
+
+            _errorShown = false;
+          });
+        }
 
         return const SizedBox();
       },
@@ -77,7 +95,7 @@ class InvoiceDetailsDialog extends ConsumerWidget {
         final status = invoice.lookup.firstWhere(
           (e) => e.lookupType == "InvoiceStatus",
         );
-   
+
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(16),
@@ -195,23 +213,6 @@ class InvoiceDetailsDialog extends ConsumerWidget {
                                         "رقم الحساب",
                                         invoice.accountNo,
                                         "أيام الاحتساب",
-                                        // getLookupCodeValue(
-                                        //           invoice,
-                                        //           "CollectionType",
-                                        //           context,
-                                        //         ) ==
-                                        //         "EST"
-                                        //     ? (invoice.periodToDate != null &&
-                                        //               invoice.periodFromDate !=
-                                        //                   null)
-                                        //           ? "${invoice.periodToDate!.difference(invoice.periodFromDate!).inDays}"
-                                        //           : ""
-                                        //     : (invoice.previousReadingDateTime !=
-                                        //               null &&
-                                        //           invoice.currentReadDateTime !=
-                                        //               null)
-                                        //     ? "${invoice.currentReadDateTime!.difference(invoice.previousReadingDateTime!).inDays}"
-                                        //     : "",
                                         invoice.activeCollectionPeriod!,
                                       ),
                                     ],
@@ -289,12 +290,10 @@ class InvoiceDetailsDialog extends ConsumerWidget {
                                         _Row(
                                           "حجم المنفذ",
                                           invoice.consumptionQtyRow.toString(),
-                                          "",
-                                          "",
-                                          // "الإجمالي",
-                                          // NumberFormat(
-                                          //   '#,##0.000',
-                                          // ).format(invoice.totalInvoiceAmount),
+                                          "إعادة تدوير المقياس",
+                                          invoice.isMeterRollover
+                                              ? "نعم"
+                                              : "لا",
                                         ),
                                       if (getLookupCodeValue(
                                             invoice,
@@ -881,7 +880,7 @@ class _FailureReasonsTable extends ConsumerWidget {
                       imageBytes = null;
                     }
                   }
- 
+
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
