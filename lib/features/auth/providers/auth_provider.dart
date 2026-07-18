@@ -48,28 +48,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   AuthNotifier(this.service, this.tokenStorage, this.ref)
     : super(const AuthState()) {
     checkToken();
-    tryAutoLogin();
+    
   }
-  Future<void> tryAutoLogin() async {
-    final remember = await tokenStorage.getRememberMe();
-
-    if (!remember) return;
-
-    final username = await tokenStorage.getUsername();
-    final password = await tokenStorage.getPassword();
-
-    if (username == null || password == null) return;
-
-    try {
-      final user = await service.login(username: username, password: password);
-
-      state = AuthState(user: user, successLogin: true, initialized: true);
-
-      ref.invalidate(dioProvider);
-    } catch (_) {
-      state = const AuthState(initialized: true);
-    }
-  }
+  
 
   Future<void> checkToken() async {
     final token = await tokenStorage.getToken();
@@ -80,15 +61,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         successLogin: true,
         initialized: true,
       );
-
       return;
     }
 
-    await tryAutoLogin();
-
-    if (!state.initialized) {
-      state = const AuthState(initialized: true);
-    }
+    state = const AuthState(initialized: true);
   }
 
   Future<void> login({
@@ -134,10 +110,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    final remember = await tokenStorage.getRememberMe();
+
     await service.logout();
     await tokenStorage.clearToken();
-   await tokenStorage.clearRememberMe();
-   
+
+    if (!remember) {
+      await tokenStorage.clearRememberMe();
+      await tokenStorage.saveUsername("");
+      await tokenStorage.savePassword("");
+    }
 
     state = const AuthState(
       initialized: true,

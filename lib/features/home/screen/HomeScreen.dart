@@ -1,8 +1,5 @@
-import 'dart:io';
-
-import 'package:bwa_water_billing_collector_app/core/constants/AppColors.dart';
+ import 'package:bwa_water_billing_collector_app/core/constants/AppColors.dart';
 import 'package:bwa_water_billing_collector_app/core/lang/app_localizations.dart';
-import 'package:bwa_water_billing_collector_app/core/offlineMode/database/app_database.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_sync_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/storage/PrinterStorage.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/ConnectionBanner.dart';

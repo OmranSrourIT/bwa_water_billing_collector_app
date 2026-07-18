@@ -47,24 +47,28 @@ class _MyAppState extends ConsumerState<MyApp> {
   void initState() {
     super.initState();
 
+    //This is working When LoginPage is runing Creating Db in  await AppDatabase.instance.database;  and start Get Data Form Api and Put it on Local Db
+
     ref.listenManual(authProvider, (previous, next) async {
       if (previous?.successLogin != true && next.successLogin == true) {
    
         if (ref.read(connectionProvider)) {
-          await ref.read(initialSyncStateProvider.notifier).start(); //This is For LocalDB  Sync from Api 
+          await ref.read(initialSyncStateProvider.notifier).start();
        
         }
       }
     });
 
+   //This is working When Change Connection To Online  and start Get Data Form LocalDB and Send it To Api (OnlineMode)
+
     ref.listenManual<bool>(connectionProvider, (previous, next) async {
       if (next == true && previous == false) {
       
 
-        final success = await ref.read(syncEngineProvider).sync(); //This is For Iraq Api Sync
-
+        final success = await ref.read(syncEngineProvider).sync(); //This is get data from local and send it to  Iraq Api Sync
+ 
         if (success) {
-          await ref.read(initialSyncStateProvider.notifier).start(); //This is For LocalDB  Sync from Api 
+          await ref.read(initialSyncStateProvider.notifier).start(); 
           ref.invalidate(batchProvider);
           ref.invalidate(invoicesProvider); 
           ref.invalidate(invoiceDetailProvider);

@@ -8,9 +8,7 @@ import 'package:bwa_water_billing_collector_app/features/auth/providers/auth_pro
 import 'package:bwa_water_billing_collector_app/features/auth/services/auth_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
  
-
 class LoginScreen extends ConsumerStatefulWidget {
   final VoidCallback onToggleLang;
   final Locale locale;
@@ -58,21 +56,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final storage = ref.read(tokenStorageProvider);
 
       rememberMe = await storage.getRememberMe();
-
       if (rememberMe) {
         _usernameController.text = await storage.getUsername() ?? "";
+
         _passwordController.text = await storage.getPassword() ?? "";
-        if (_usernameController.text.isNotEmpty &&
-            _passwordController.text.isNotEmpty) {
-          await ref
-              .read(authProvider.notifier)
-              .login(
-                username: _usernameController.text,
-                password: _passwordController.text,
-                rememberMe: true,
-              );
-        }
       }
+     
 
       if (mounted) {
         setState(() {});
@@ -96,14 +85,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           !_handledExpired) {
         _showSessionExpiredAlert();
       }
-      // if (next.successLogin == true) {
-      //   _handledExpired = false;
-      //   Future.microtask(() {
-      //     if (mounted) {
-      //       context.go('/home');
-      //     }
-      //   });
-      // }
+      
       if (next.error != null && next.error != prev?.error) {
         Future.microtask(() {
           if (mounted) {
@@ -671,7 +653,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
             ),
-         
           ),
         );
       },

@@ -49,13 +49,19 @@ class InitialSyncRepository {
     try {
       onProgress?.call("جاري تجهيز البيانات محليا...");
 
+      //تحميل بيانات الحساب
+
       final account = await accountApi.getAccount();
 
       await accountLocal.saveAccount(account);
 
+      // تحميل الدفعات
+
       final batches = await batchApi.getBatches();
 
       await batchLocal.insertBatches(batches);
+
+     // تحميل حالة الفاتورة ، تحميل اسباب التعذر 
 
       const lookupTypes = ["FieldFailureReason", "InvoiceStatus"];
 
@@ -65,11 +71,14 @@ class InitialSyncRepository {
         await lookupLocal.insertLookups(type, lookups);
       }
       for (final batch in batches) {
+       // تحميل جميع الفواتير
         final invoices = await invoiceApi.getInvoices(batch.batchNumber);
         await invoiceLocal.insertInvoices(batch.batchNumber, invoices);
 
         for (final invoice in invoices) {
+            // تحميل جميع تفصايل الفاتورة
           final details = await detailsApi.getInvoice(invoice.invoiceNo);
+                // حفظ الصور من قراءه العداد ، والتعذر 
           await _saveAttachments(details);
 
           await detailsLocal.insertInvoiceDetails(details);
