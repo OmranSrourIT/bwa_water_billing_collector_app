@@ -4,7 +4,6 @@ import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/in
 import 'package:bwa_water_billing_collector_app/core/offlineMode/database/dao/lookup_local_service.dart';
 import 'package:bwa_water_billing_collector_app/features/Account/services/account_api_service.dart';
 import 'package:bwa_water_billing_collector_app/features/batch/services/batch_Api_service.dart';
-import 'package:bwa_water_billing_collector_app/features/invoices/models/invoice_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/FieldFailureLookupService.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/invoice_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/invoiceDetials_service.dart';
@@ -72,15 +71,5 @@ class InitialSyncRepository {
     }
   }
 
-  Future<List<InvoiceModel>> syncBatch(String batchNo) async {
-
-   final invoices = await invoiceApi.getInvoices(batchNo);
-
-   await invoiceLocal.insertInvoices(batchNo, invoices);
-
-   return invoices;
-}
-
- 
-
+  
 }

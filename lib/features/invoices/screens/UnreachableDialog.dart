@@ -383,16 +383,16 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
                                           return;
                                         }
 
-                                        if (notesController.text
-                                            .trim()
-                                            .isEmpty) {
-                                          AppPopupAlert.show(
-                                            context,
-                                            message: "يجب كتابة ملاحظات",
-                                            isError: true,
-                                          );
-                                          return;
-                                        }
+                                        // if (notesController.text
+                                        //     .trim()
+                                        //     .isEmpty) {
+                                        //   AppPopupAlert.show(
+                                        //     context,
+                                        //     message: "يجب كتابة ملاحظات",
+                                        //     isError: true,
+                                        //   );
+                                        //   return;
+                                        // }
 
                                         if (showCamera && base64Image == null) {
                                           AppPopupAlert.show(

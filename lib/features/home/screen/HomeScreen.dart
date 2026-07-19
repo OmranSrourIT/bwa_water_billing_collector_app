@@ -281,24 +281,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               l.code == selectedInvoiceStatus,
                                         );
 
-                                    final searchByAccountMatch =
-                                        searchAccountValue == null ||
-                                        searchAccountValue!.isEmpty ||
-                                        inv.accountNo.toLowerCase().contains(
-                                          searchAccountValue!.toLowerCase(),
-                                        );
+                       final searchByAccountMatch = searchAccountValue == null || searchAccountValue!.isEmpty || inv.accountNo.toLowerCase().contains(searchAccountValue!.toLowerCase(),);
 
-                                    final searchByNameMatch =
-                                        searchAccountValue == null ||
-                                        searchAccountValue!.isEmpty ||
-                                        inv.customerName.toLowerCase().contains(
-                                          searchAccountValue!.toLowerCase(),
-                                        );
+                       final searchByNameMatch = searchAccountValue == null ||  searchAccountValue!.isEmpty || inv.customerName.toLowerCase().contains(searchAccountValue!.toLowerCase(),);
 
                                     return collectionMatch &&
                                             statusMatch &&
-                                            searchByAccountMatch ||
-                                        searchByNameMatch;
+                                            (searchByAccountMatch ||  searchByNameMatch);
                                   }).toList();
                                   return Column(
                                     children: [
@@ -1834,11 +1823,12 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                       if (getInvoiceStatusCode(widget.invoice, context) ==
                               "ISS" ||
                           getInvoiceStatusCode(widget.invoice, context) ==
-                              "RDY" ||
-                          getInvoiceStatusCode(widget.invoice, context) ==
-                              "UNC" ||
-                          getInvoiceStatusCode(widget.invoice, context) ==
-                              "UEX")
+                              "RDY"
+                          // getInvoiceStatusCode(widget.invoice, context) ==
+                          //     "UNC" ||
+                          // getInvoiceStatusCode(widget.invoice, context) ==
+                          //     "UEX"
+                          )
                         _ActionButton(
                           title: Text(tr.t('unreachable')),
                           icon: Icons.report_problem_outlined,

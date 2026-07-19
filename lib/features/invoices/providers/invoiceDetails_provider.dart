@@ -32,7 +32,7 @@ final invoiceDetailProvider =
     ) async {
       final repository = ref.watch(invoiceDetailsRepositoryProvider);
 
-      return repository.getInvoice(invoiceNumber);
+      return repository.getInvoiceDeatils(invoiceNumber);
     });
 
 final noticePrintRepositoryProvider = Provider<NoticePrintRepository>((ref) {

@@ -16,9 +16,7 @@ class BatchRepository {
 
   Future<List<BatchModel>> getBatches() async {
     if (isOnline) {
-      final batches = await api.getBatches();
-
-    //  batches.sort((a, b) => a.assignedDate.compareTo(b.assignedDate));
+      final batches = await api.getBatches(); 
 
       batches.sort((a, b) => a.batchNumber.compareTo(b.batchNumber));
 

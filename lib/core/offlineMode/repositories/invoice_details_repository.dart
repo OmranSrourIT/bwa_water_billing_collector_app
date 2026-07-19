@@ -21,10 +21,40 @@ class InvoiceDetailsRepository {
     required this.imageStorage,
     required this.isOnline,
   });
+//later on working on this stracture 
 
-  Future<InvoiceInformationModel> getInvoice(String invoiceNo) async {
+//   Future<InvoiceInformationModel> getInvoiceDeatils(String invoiceNo) async {
+//   if (isOnline) {
+//     return await _downloadAndSave(invoiceNo);
+//   }
+
+//   final localData = await local.getInvoiceDetails(invoiceNo);
+
+//   if (localData == null) {
+//     throw Exception("No offline data");
+//   }
+
+//   return localData;
+// }
+
+// Future<void> downloadInvoiceDetails(String invoiceNo) async {
+//   if (!isOnline) return;
+
+//   await _downloadAndSave(invoiceNo);
+// }
+
+// Future<InvoiceInformationModel> _downloadAndSave(String invoiceNo) async {
+//   final result = await api.getInvoiceDeatils(invoiceNo);
+
+//   await _saveAttachments(result);
+//   await local.insertInvoiceDetails(result);
+
+//   return result;
+// }
+
+  Future<InvoiceInformationModel> getInvoiceDeatils(String invoiceNo) async {
     if (isOnline) {
-      final result = await api.getInvoice(invoiceNo);
+      final result = await api.getInvoiceDeatils(invoiceNo);
       await _saveAttachments(result);
 
       await local.insertInvoiceDetails(result);
@@ -96,5 +126,15 @@ class InvoiceDetailsRepository {
         }
       }
     }
+  }
+
+  Future<void> downloadInvoiceDetails(String invoiceNo) async {
+    if (!isOnline) return;
+
+    final result = await api.getInvoiceDeatils(invoiceNo);
+
+    await _saveAttachments(result);
+
+    await local.insertInvoiceDetails(result);
   }
 }

@@ -7,7 +7,7 @@ class InvoiceDetailsService {
 
   InvoiceDetailsService(this.dio);
 
-  Future<InvoiceInformationModel> getInvoice(String invoiceNumber) async {
+  Future<InvoiceInformationModel> getInvoiceDeatils(String invoiceNumber) async {
     final response = await dio.get(ApiConstants.invoiceDetails(invoiceNumber));
 
     return InvoiceInformationModel.fromJson(response.data);
