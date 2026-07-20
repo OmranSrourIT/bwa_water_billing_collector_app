@@ -2,9 +2,9 @@ import 'package:bwa_water_billing_collector_app/core/utlis/payment_error_mapper.
 import 'package:flutter/material.dart';
 
 class PaymentResultDialog extends StatelessWidget {
-  final bool success;
-
+  final bool success; 
   final Map<String, dynamic> data;
+    final String Invoicenumber;
 
   const PaymentResultDialog({
     super.key,
@@ -12,6 +12,7 @@ class PaymentResultDialog extends StatelessWidget {
     required this.success,
 
     required this.data,
+    required this.Invoicenumber,
   });
 
   @override
@@ -54,19 +55,24 @@ final Resultcode = match?.group(1) ?? "";
             const SizedBox(height: 20),
 
             if (success) ...{
-              _Info("رقم العملية", data["tranId"]),
+              _Info("رقم الفتورة", Invoicenumber.toString()),
 
-              _Info("المبلغ", "${data["amount"]} د.ع"),
+              // _Info("رقم العملية", data["tranId"]), 
 
-              _Info("البطاقة", data["maskedAccount"]),
+              // _Info("تتبع العملية", data["trace"]),  
 
-              _Info("طريقة الدفع", data["paymentMethod"]),
+              _Info("المبلغ", "${data["totalAmount"]} د.ع"),
 
-              _Info("RRN", data["rrn"]),
+              // _Info("البطاقة", data["maskedAccount"]),
+
+              // _Info("طريقة الدفع", data["paymentMethod"]),
+
+              // _Info("RRN", data["rrn"]),
+
+             
             } else
               _Info(
-                "السبب",
-
+                "السبب", 
                 PaymentErrorMapper.getMessage(Resultcode, data["rspMsg"]),
               ),
 

@@ -423,10 +423,11 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                         child: printWidget,
                       ),
                     ),
-                    pixelRatio: 0.8, // القيمة الأصلية الخاصة بك
+                    pixelRatio: 3,
+                    // 🔥 إضافة targetSize بارتفاع كبير جداً لمنع الـ Overflow نهائياً
                     targetSize: const Size(
-                      500,
-                      1500,
+                      576,
+                      3000,
                     ), // القيمة الأصلية الخاصة بك
                   );
 

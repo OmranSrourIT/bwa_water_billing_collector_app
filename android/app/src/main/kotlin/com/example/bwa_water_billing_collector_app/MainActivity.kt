@@ -113,11 +113,9 @@ class MainActivity : FlutterFragmentActivity() {
 
 
 
-        // =========================
-        // PAYMENT (كما هو بدون تغيير)
-        // =========================
-
-
+       
+        // PAYMENT  
+         
         methodChannel =
             MethodChannel(
                 flutterEngine.dartExecutor.binaryMessenger,
@@ -143,13 +141,22 @@ class MainActivity : FlutterFragmentActivity() {
                         "rspCode" to "00",
                         "rspMsg" to "APPROVED",
                         "tranId" to data.tranId,
+                        "trace" to data.trace,
+                        "tranStatus" to data.tranStatus,
                         "posMessageId" to data.posMessageId,
                         "totalAmount" to data.totalAmount.toString(),
                         "approvalCode" to data.approvalCode,
                         "rrn" to data.rrn,
                         "paymentMethod" to data.paymentMethod,
                         "maskedAccount" to data.maskedAccount,
-                        "createdAt" to data.createdAt,
+                        "cvmPerformed" to data.cvmPerformed,
+                        "acqMid" to data.acqMid,
+                        "acqTid" to data.acqTid,
+                        "mchAddress" to data.mchAddress,
+                        "mchName" to data.mchName,
+                        "createByName" to data.createByName,
+                         "createdAt" to data.createdAt,
+                         "updatedAt" to data.updatedAt,
                         "tranType" to data.tranType,
                         "entryMode" to data.entryMode
                     )
@@ -216,43 +223,47 @@ class MainActivity : FlutterFragmentActivity() {
     // BLUETOOTH PRINT
     // =================================
 
-  private fun sendToPrinter(
-    mac: String,
-    data: ByteArray
-) {
-    val adapter = android.bluetooth.BluetoothAdapter.getDefaultAdapter()
-    val device = adapter.getRemoteDevice(mac)
-    val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+    private fun sendToPrinter(
+        mac:String,
+        data:ByteArray
+    ){
 
-    var socket: android.bluetooth.BluetoothSocket? = null
-    try {
-        socket = device.createRfcommSocketToServiceRecord(uuid)
+
+        val adapter =
+            android.bluetooth.BluetoothAdapter.getDefaultAdapter()
+
+        val device =
+            adapter.getRemoteDevice(mac)
+
+        val uuid =
+            UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+
+
+        val socket =
+            device.createRfcommSocketToServiceRecord(uuid)
+
+
         socket.connect()
-        val output = socket.outputStream
 
-        // 🔥 تقسيم البيانات إلى أجزاء (Chunks) بحجم 2048 بايت
-        val chunkSize = 2048
-        var offset = 0
-        while (offset < data.size) {
-            val count = Math.min(chunkSize, data.size - offset)
-            output.write(data, offset, count)
-            output.flush()
-            offset += count
-            // تأخير بسيط جداً للسماح للطابعة بمعالجة البيانات
-            Thread.sleep(50) 
-        }
 
-        // feed paper
-        output.write(byteArrayOf(0x0A, 0x0A, 0x0A, 0x0A, 0x0A))
+        val output =
+            socket.outputStream
+
+
+        output.write(data)
         output.flush()
 
-        Thread.sleep(500)
-    } catch (e: Exception) {
-        throw e
-    } finally {
-        socket?.close()
+
+        // feed paper
+        output.write(byteArrayOf(0x0A,0x0A,0x0A,0x0A,0x0A))
+        output.flush()
+
+
+        Thread.sleep(300)
+
+        socket.close()
+
     }
-}
 
 
 

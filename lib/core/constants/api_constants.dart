@@ -33,4 +33,6 @@ class ApiConstants {
   //  static const currentVersion = "1.3.2";
 
   static String updateAppVersion(String version) => "/v1/apkRelease/$version";
+
+  static const String payment = "/collectormobileapi/v1/collectionbatch/Payment";
 }
