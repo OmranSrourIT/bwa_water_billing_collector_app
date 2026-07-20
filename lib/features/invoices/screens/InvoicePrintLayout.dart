@@ -4,6 +4,7 @@ import 'package:bwa_water_billing_collector_app/features/invoices/models/invoice
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+
 class InvoicePrintLayout extends StatelessWidget {
   final InvoiceInformationModel invoice;
 
@@ -65,6 +66,13 @@ class InvoicePrintLayout extends StatelessWidget {
     color: Colors.black,
   );
 
+  TextStyle get valueStyleFeesValue => const TextStyle(
+    fontFamily: "Cairo",
+    fontWeight: FontWeight.w600,
+    fontSize: 21,
+    color: Colors.black,
+  );
+
   String getLookupCodeValue(
     InvoiceInformationModel invoice,
     String lookupType,
@@ -88,13 +96,13 @@ class InvoicePrintLayout extends StatelessWidget {
           width: 576,
           color: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-          child: RepaintBoundary(child: _buildContent()),
+          child: RepaintBoundary(child: _buildContent(context)),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -135,22 +143,29 @@ class InvoicePrintLayout extends StatelessWidget {
 
                       Text(
                         "رقم الاصدارية: ${invoice.cycleCode}",
-                        style: valueStyle.copyWith(fontSize: 18),
+                        style: valueStyle.copyWith(fontSize: 20),
                       ),
 
                       Text(
                         "رقم الفاتورة: ${invoice.invoiceNumber}",
+                        style: valueStyle.copyWith(fontSize: 20),
+                      ),
+
+                      Text(
+                        getLookupCodeValue(
+                                  invoice,
+                                  "CollectionType",
+                                  context,
+                                ) ==
+                                "EST"
+                            ? "الفترة: من ${formatDate(invoice.periodFromDate)} - الى ${formatDate(invoice.periodToDate)}"
+                            : "من ${formatDate(invoice.previousReadingDateTime)} - الى ${formatDate(invoice.currentReadDateTime)}",
                         style: valueStyle.copyWith(fontSize: 18),
                       ),
 
                       Text(
-                        "الفترة: من ${formatDate(invoice.periodFromDate)} - الى ${formatDate(invoice.periodToDate)}",
-                        style: valueStyle.copyWith(fontSize: 16),
-                      ),
-
-                      Text(
                         "عدد أيام الاحتساب: ${invoice.activeCollectionPeriod} يوم",
-                        style: valueStyle.copyWith(fontSize: 16),
+                        style: valueStyle.copyWith(fontSize: 18),
                       ),
                     ],
                   );
@@ -165,7 +180,7 @@ class InvoicePrintLayout extends StatelessWidget {
 
         // ================= بيانات المشترك =================
         _sectionTitle("بيانات المشترك"),
-        _rowItem("أسم المشترك :", invoice.customerName),
+        _rowItem("اسم المشترك :", invoice.customerName),
         _rowItem("رقم الحساب :", invoice.accountNo),
         _rowItem("رقم الهاتف :", invoice.customerMobileNo),
         _rowItem("نوع الإشغال :", invoice.usageTypeName),
@@ -188,27 +203,44 @@ class InvoicePrintLayout extends StatelessWidget {
             children: [
               _rowItem("نوع الاشتراك :", invoice.invoiceTypeName),
               const Divider(height: 1, thickness: 3, color: Colors.black),
-              _rowItem(
-                "معدل الاستهلاك اليومي :",
-                "${invoice.estimatedPotableWater} م³",
-              ),
+              if (getLookupCodeValue(invoice, "CollectionType", context) ==
+                  "EST")
+                _rowItem(
+                  "معدل الاستهلاك اليومي :",
+                  "${invoice.estimatedPotableWater.toInt().toString()} م³",
+                ),
+              const Divider(height: 1, thickness: 3, color: Colors.black),
+              if (getLookupCodeValue(invoice, "CollectionType", context) ==
+                  "ACT")
+                _rowItem(
+                  "القراءة السابقة :",
+                  "${invoice.previousReading.toInt().toString()} م³",
+                ),
+
+              const Divider(height: 1, thickness: 3, color: Colors.black),
+              if (getLookupCodeValue(invoice, "CollectionType", context) ==
+                  "ACT")
+                _rowItem(
+                  "القراءة الحالية :",
+                  "${invoice.currentReading.toInt().toString()} م³",
+                ),
               const Divider(height: 1, thickness: 3, color: Colors.black),
               _rowItem(
-                "الاستهلاك الكلي:",
-                "${invoice.consumptionQtyPotable} م³",
+                "الاستهلاك الكلي :",
+                "${invoice.consumptionQtyPotable.toInt().toString()} م³",
               ),
             ],
           ),
         ),
-        _blackDivider(), // سطر فاصل صلب
+
         // ================= بنود الرسوم والخدمات =================
         _sectionTitle("بنود الرسوم والخدمات"),
+        _blackDivider(), // سطر فاصل صلب
         if (invoice.invoiceDetails.isNotEmpty)
           ...invoice.invoiceDetails.map((item) {
             return _rowItemFees(item.description, money(item.amount));
           }).toList(),
 
-        _blackDivider(), // سطر فاصل صلب
         // ================= TOTAL BOX =================
         Container(
           decoration: BoxDecoration(
@@ -217,7 +249,7 @@ class InvoicePrintLayout extends StatelessWidget {
           child: Column(
             children: [
               _rowItem(
-                "قيمة الفاتورة المطلوبة :",
+                "قيمة الفاتورة  :",
                 "${money(invoice.totalInvoiceAmount)} د.ع",
                 isTotal: true,
               ),
@@ -277,7 +309,7 @@ class InvoicePrintLayout extends StatelessWidget {
                     ),
                     SizedBox(height: 12),
                     Text(
-                      "امسح الرمز للتحقق والدفع الإلكتروني",
+                      "امسح الرمز للتحقق",
                       style: TextStyle(
                         fontFamily: "Cairo",
                         fontSize: 18, // تكبير الخط
@@ -292,25 +324,27 @@ class InvoicePrintLayout extends StatelessWidget {
             const SizedBox(width: 15),
 
             Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.black87, width: 1.5),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: QrImageView(
-                      data: AppConstant.verofNumberPrintNotice(invoice.payment!.paymentRefNo.toString()),
-                      size: 180,
-                      backgroundColor: Colors.white,
-                    ),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.black87, width: 1.5),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
+                ],
+              ),
+              child: QrImageView(
+                data: AppConstant.verofNumberPrintNotice(
+                  invoice.payment!.paymentRefNo.toString(),
+                ),
+                size: 180,
+                backgroundColor: Colors.white,
+              ),
+            ),
           ],
         ),
 
@@ -377,7 +411,7 @@ class InvoicePrintLayout extends StatelessWidget {
                   child: Text(
                     value,
                     textAlign: TextAlign.left,
-                    style: valueStyleFees,
+                    style: valueStyleFeesValue, //omran
                   ),
                 ),
 

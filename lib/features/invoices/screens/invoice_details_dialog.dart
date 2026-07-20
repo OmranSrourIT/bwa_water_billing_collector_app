@@ -68,6 +68,9 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
     final invoiceAsync = ref.watch(invoiceDetailProvider(widget.invoiceNumber));
     final isOnlineMODE = ref.watch(connectionProvider);
 
+    String formatDate(DateTime? d) =>
+        d == null ? '-' : DateFormat('dd-MM-yyyy').format(d);
+
     return invoiceAsync.when(
       loading: () => BwaLoadingOverlay(isLoading: true),
       error: (error, stack) {
@@ -77,7 +80,9 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             AppPopupAlert.show(
               context,
-              message: parseError(error).toString().replaceFirst("Exception: ", ""),
+              message: parseError(
+                error,
+              ).toString().replaceFirst("Exception: ", ""),
               isError: true,
               onOk: () {
                 Navigator.of(context).pop(); // يغلق InvoiceDetailsDialog
@@ -207,7 +212,14 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
                                         "رقم الفاتورة",
                                         invoice.invoiceNumber,
                                         "فترة الخدمة",
-                                        invoice.collectionPeriodDescription,
+                                        getLookupCodeValue(
+                                                  invoice,
+                                                  "CollectionType",
+                                                  context,
+                                                ) ==
+                                                "EST"
+                                            ?  "من ${formatDate(invoice.periodFromDate)} - الى ${formatDate(invoice.periodToDate)}"
+                                            : "من ${formatDate(invoice.previousReadingDateTime)} - الى ${formatDate(invoice.currentReadDateTime)}",
                                       ),
                                       _Row(
                                         "رقم الحساب",
@@ -259,15 +271,20 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
                                           "CollectionType",
                                           context,
                                         ),
-                                        "صافي الاستهلاك",
+                                         getLookupCodeValue(
+                                                  invoice,
+                                                  "CollectionType",
+                                                  context,
+                                                ) ==
+                                                "EST" ? "معدل الإستهلاك اليومي" :"الإستهلاك الكلي"   ,
                                         getLookupCodeValue(
                                                   invoice,
                                                   "CollectionType",
                                                   context,
                                                 ) ==
                                                 "EST"
-                                            ? "${invoice.estimatedPotableWater}"
-                                            : "${invoice.consumptionQtyPotable}",
+                                            ? "${invoice.estimatedPotableWater.toInt().toString()}  م³"
+                                            : "${invoice.consumptionQtyPotable.toInt().toString()}  م³",
                                       ),
                                       if (getLookupCodeValue(
                                             invoice,
@@ -278,8 +295,8 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
                                         _Row(
                                           "تاريخ التنصيب",
                                           _formatDate(invoice.installationDate),
-                                          "الدفعة",
-                                          _formatDate(invoice.installationDate),
+                                          "",
+                                          "",
                                         ),
                                       if (getLookupCodeValue(
                                             invoice,
@@ -289,7 +306,7 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
                                           "ACT")
                                         _Row(
                                           "حجم المنفذ",
-                                          invoice.consumptionQtyRow.toString(),
+                                          invoice.consumptionQtyRow.toInt().toString(),
                                           "إعادة تدوير المقياس",
                                           invoice.isMeterRollover
                                               ? "نعم"
@@ -303,9 +320,9 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
                                           "ACT")
                                         _Row(
                                           "القراءة السابقة",
-                                          "${invoice.previousReading}",
+                                          "${invoice.previousReading.toInt().toString()}",
                                           "القراءة الحالية",
-                                          "${invoice.currentReading}",
+                                          "${invoice.currentReading.toInt().toString()}",
                                         ),
                                       if (invoice.attachment != null &&
                                           invoice.attachment!.isNotEmpty)

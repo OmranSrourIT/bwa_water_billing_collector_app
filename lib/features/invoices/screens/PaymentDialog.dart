@@ -212,17 +212,11 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                             icon: const Icon(Icons.close, color: Colors.white),
                           ),
                         ),
-                        const Text(
-                          "دفع الفاتورة",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(width: 25),
-                        IconButton(
-                          icon: const Icon(Icons.bug_report),
+
+                         Align(
+                          alignment: Alignment.centerLeft,
+                          child: IconButton(
+                          icon:  Icon(Icons.bug_report ,color:Colors.white,),
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -232,6 +226,21 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                             );
                           },
                         ),
+                        ),
+
+
+                        
+                        
+                        const Text(
+                          "دفع الفاتورة",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                       
+                        
                       ],
                     ),
                   ),
@@ -257,7 +266,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: _InfoCard(
-                                        title: "تاريخ وزمن الدفع",
+                                        title: "تاريخ الدفع",
                                         value: formatDate(paymentDate),
                                       ),
                                     ),
@@ -304,29 +313,29 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
                           const SizedBox(height: 16),
 
-                          isLoadingInvoice
-                              ? const Center(child: CircularProgressIndicator())
-                              : Row(
-                                  children: [
-                                    Expanded(
-                                      child: _InfoCard(
-                                        title: "القراءة السابقة",
-                                        value: (previousReading ?? 0)
-                                            .toStringAsFixed(2),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: _InfoCard(
-                                        title: "القراءة الحالية",
-                                        value: (currentReading ?? 0)
-                                            .toStringAsFixed(2),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                          // isLoadingInvoice
+                          //     ? const Center(child: CircularProgressIndicator())
+                          //     : Row(
+                          //         children: [
+                          //           Expanded(
+                          //             child: _InfoCard(
+                          //               title: "القراءة السابقة",
+                          //               value: (previousReading ?? 0)
+                          //                   .toStringAsFixed(2),
+                          //             ),
+                          //           ),
+                          //           const SizedBox(width: 12),
+                          //           Expanded(
+                          //             child: _InfoCard(
+                          //               title: "القراءة الحالية",
+                          //               value: (currentReading ?? 0)
+                          //                   .toStringAsFixed(2),
+                          //             ),
+                          //           ),
+                          //         ],
+                          //       ),
 
-                          const SizedBox(height: 16),
+                          // const SizedBox(height: 16),
 
                           Container(
                             width: double.infinity,
@@ -341,7 +350,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                                 SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    "يرجى التأكد من بيانات الدفع قبل تأكيد العملية",
+                                 " يرجى التاكد من مبلغ الفاتورة قبل تأكيد عملية الدفع"
                                   ),
                                 ),
                               ],

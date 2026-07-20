@@ -419,7 +419,13 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                         ),
 
                         Text(
-                          "الفترة: من ${formatDate(invoice.periodFromDate)} - الى ${formatDate(invoice.periodToDate)}",
+                           getLookupCodeValue(
+                                                  invoice,
+                                                  "CollectionType",
+                                                  context,
+                                                ) ==
+                                                "EST" ?
+                          "الفترة: من ${formatDate(invoice.periodFromDate)} - الى ${formatDate(invoice.periodToDate)}" :"من ${formatDate(invoice.previousReadingDateTime)} - الى ${formatDate(invoice.currentReadDateTime)}",
                           style: const TextStyle(fontSize: 14),
                         ),
 
@@ -558,6 +564,18 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
   //================================================
 
   Widget _buildSubscriptionSection(InvoiceInformationModel invoice) {
+     String getLookupCodeValue(
+    InvoiceInformationModel invoice,
+    String lookupType,
+    BuildContext context,
+  ) {
+    final item = invoice.lookup.firstWhere(
+      (e) => e.lookupType == lookupType,
+      orElse: () => LookupModel.empty(),
+    );
+
+    return item.code;
+  }
     return _SectionCard(
       title: "بيانات الاشتراك",
       child: Column(
@@ -572,13 +590,17 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                 ),
               ),
               const SizedBox(width: 10),
+              if (getLookupCodeValue(invoice,"CollectionType",context) == "EST" )
               Expanded(
                 child: _InfoRow(
                   icon: Icons.show_chart_outlined,
                   label: "معدل الاستهلاك اليومي",
-                  value: invoice.estimatedPotableWater.toStringAsFixed(2),
+                  value: invoice.estimatedPotableWater.toInt().toString(),
                 ),
               ),
+
+               
+
             ],
           ),
 
@@ -590,7 +612,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                 child: _InfoRow(
                   icon: Icons.water_drop_outlined,
                   label: "الاستهلاك الكلي",
-                  value: invoice.consumptionQtyPotable.toString(),
+                  value: invoice.consumptionQtyPotable.toInt().toString(),
                 ),
               ),
               const SizedBox(width: 10),
@@ -606,24 +628,29 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
 
           const SizedBox(height: 10),
 
+          
+
           Row(
             children: [
-              // Expanded(
-              //   child: _InfoRow(
-              //     icon: Icons.alt_route_outlined,
-              //     label: "المسار",
-              //     value: invoice.routeNo,
-              //   ),
-              // ),
-              const SizedBox(width: 10),
-              // Expanded(
-              //   // child: _InfoRow(
-              //   //   icon: Icons.repeat_outlined,
-              //   //   label: "الدورة",
-              //   //   value: invoice.cycleNo,
-              //   //   isLast: true,
-              //   // ),
-              // ),
+                if (getLookupCodeValue(invoice,"CollectionType",context) == "ACT" )
+                 Expanded(
+                child: _InfoRow(
+                  icon: Icons.show_chart_outlined,
+                  label:    "القراءة السابقة",
+                  value:   "${invoice.previousReading.toInt().toString()}",
+                ),
+              ),
+                const SizedBox(width: 10),
+             if (getLookupCodeValue(invoice,"CollectionType",context) == "ACT" )
+              Expanded(
+                child: _InfoRow(
+                  icon: Icons.show_chart_outlined,
+                  label:     "القراءة الحالية",
+                  value:   "${invoice.currentReading.toInt().toString()}",
+                ),
+              ),
+            
+             
             ],
           ),
         ],
@@ -748,7 +775,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                 Text("info@water.mayorality.gov.iq"),
                 SizedBox(height: 10),
                 Text(
-                  "امسح الرمز للتحقق والدفع الإلكتروني",
+                  "امسح الرمز للتحقق ",
                   textAlign: TextAlign.right,
                 ),
               ],

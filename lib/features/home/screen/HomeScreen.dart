@@ -1714,6 +1714,9 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                     runSpacing: 8,
                     alignment: WrapAlignment.end,
                     children: [
+                       if (getInvoiceStatusCode(widget.invoice, context) !=
+                          "UEX" && getInvoiceStatusCode(widget.invoice, context) !=
+                          "ISS" )
                       _ActionButton(
                         title: Text(tr.t('view')),
                         icon: Icons.visibility_outlined,
