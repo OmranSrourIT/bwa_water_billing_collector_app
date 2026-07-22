@@ -4,6 +4,7 @@ import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offli
 import 'package:bwa_water_billing_collector_app/core/storage/PrinterStorage.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/ConnectionBanner.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/connection_provider.dart';
+import 'package:bwa_water_billing_collector_app/core/utlis/requestAppPermissions.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/responsive.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/InitialSyncLoadingScreen.dart';
@@ -33,6 +34,7 @@ import 'package:bwa_water_billing_collector_app/features/invoices/screens/invoic
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'dart:ui' as ui;
 
@@ -53,16 +55,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool isInitialBatchSelectionDone = false;
 
   @override
-  void initState() {
+  void initState()  {
     super.initState();
-
+   
     initPrinter();
   }
 
   Future<void> initPrinter() async {
-    final granted = await requestBluetoothPermissions();
-    if (!granted) return;
 
+    await requestAppPermissions();
     final printers = await PrinterChannel.getPairedPrinters();
     if (!mounted) return;
 
@@ -281,13 +282,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               l.code == selectedInvoiceStatus,
                                         );
 
-                       final searchByAccountMatch = searchAccountValue == null || searchAccountValue!.isEmpty || inv.accountNo.toLowerCase().contains(searchAccountValue!.toLowerCase(),);
+                                    final searchByAccountMatch =
+                                        searchAccountValue == null ||
+                                        searchAccountValue!.isEmpty ||
+                                        inv.accountNo.toLowerCase().contains(
+                                          searchAccountValue!.toLowerCase(),
+                                        );
 
-                       final searchByNameMatch = searchAccountValue == null ||  searchAccountValue!.isEmpty || inv.customerName.toLowerCase().contains(searchAccountValue!.toLowerCase(),);
+                                    final searchByNameMatch =
+                                        searchAccountValue == null ||
+                                        searchAccountValue!.isEmpty ||
+                                        inv.customerName.toLowerCase().contains(
+                                          searchAccountValue!.toLowerCase(),
+                                        );
 
                                     return collectionMatch &&
-                                            statusMatch &&
-                                            (searchByAccountMatch ||  searchByNameMatch);
+                                        statusMatch &&
+                                        (searchByAccountMatch ||
+                                            searchByNameMatch);
                                   }).toList();
                                   return Column(
                                     children: [
@@ -1714,24 +1726,25 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                     runSpacing: 8,
                     alignment: WrapAlignment.end,
                     children: [
-                       if (getInvoiceStatusCode(widget.invoice, context) !=
-                          "UEX" && getInvoiceStatusCode(widget.invoice, context) !=
-                          "ISS" )
-                      _ActionButton(
-                        title: Text(tr.t('view')),
-                        icon: Icons.visibility_outlined,
-                        color: Colors.grey.shade500,
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (_) => InvoiceDetailsDialog(
-                              invoiceNumber: widget.invoice.invoiceNo,
-                            ),
-                          );
-                        },
-                      ),
+                      if (getInvoiceStatusCode(widget.invoice, context) !=
+                              "UEX" &&
+                          getInvoiceStatusCode(widget.invoice, context) !=
+                              "ISS")
+                        _ActionButton(
+                          title: Text(tr.t('view')),
+                          icon: Icons.visibility_outlined,
+                          color: Colors.grey.shade500,
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => InvoiceDetailsDialog(
+                                invoiceNumber: widget.invoice.invoiceNo,
+                              ),
+                            );
+                          },
+                        ),
                       if (getInvoiceStatusCode(widget.invoice, context) ==
-                          "RDY")
+                          "RDY" ||  getInvoiceStatusCode(widget.invoice, context) =="UNC")
                         _ActionButton(
                           title: Text(tr.t('print_notice')),
                           icon: Icons.print_outlined,
@@ -1772,7 +1785,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                         _ActionButton(
                           title: Text(tr.t('enter_reading')),
                           icon: Icons.speed,
-                       color: const Color(0xFF2AAAE1),
+                          color: const Color(0xFF2AAAE1),
                           onPressed: () {
                             showDialog(
                               context: context,
@@ -1825,13 +1838,12 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                         ),
                       if (getInvoiceStatusCode(widget.invoice, context) ==
                               "ISS" ||
-                          getInvoiceStatusCode(widget.invoice, context) ==
-                              "RDY"
-                          // getInvoiceStatusCode(widget.invoice, context) ==
-                          //     "UNC" ||
-                          // getInvoiceStatusCode(widget.invoice, context) ==
-                          //     "UEX"
-                          )
+                          getInvoiceStatusCode(widget.invoice, context) == "RDY"
+                      // getInvoiceStatusCode(widget.invoice, context) ==
+                      //     "UNC" ||
+                      // getInvoiceStatusCode(widget.invoice, context) ==
+                      //     "UEX"
+                      )
                         _ActionButton(
                           title: Text(tr.t('unreachable')),
                           icon: Icons.report_problem_outlined,

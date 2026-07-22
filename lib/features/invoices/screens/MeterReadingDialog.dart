@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
+import 'package:bwa_water_billing_collector_app/features/Printer%20VAN_GOLD/printer_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/reading_request_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
@@ -84,25 +85,7 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
   //   }
   // }
 
-  Future<Position?> getLocation() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
-    if (!serviceEnabled) {
-      return null;
-    }
-
-    LocationPermission permission = await Geolocator.checkPermission();
-
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      return null;
-    }
-
-    return await Geolocator.getCurrentPosition();
-  }
 
   Future<void> saveReading(InvoiceInformationModel invoice) async {
     FocusManager.instance.primaryFocus?.unfocus();

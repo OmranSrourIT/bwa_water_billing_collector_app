@@ -68,6 +68,14 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
     final invoiceAsync = ref.watch(invoiceDetailProvider(widget.invoiceNumber));
     final isOnlineMODE = ref.watch(connectionProvider);
 
+    String getInvoiceStatusIcon(InvoiceInformationModel invoice) {
+      final status = invoice.lookup.firstWhere(
+        (e) => e.lookupType == "InvoiceStatus",
+        orElse: () => LookupModel.empty(),
+      );
+      return status.code;
+    }
+
     String formatDate(DateTime? d) =>
         d == null ? '-' : DateFormat('dd-MM-yyyy').format(d);
 
@@ -218,7 +226,7 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
                                                   context,
                                                 ) ==
                                                 "EST"
-                                            ?  "من ${formatDate(invoice.periodFromDate)} - الى ${formatDate(invoice.periodToDate)}"
+                                            ? "من ${formatDate(invoice.periodFromDate)} - الى ${formatDate(invoice.periodToDate)}"
                                             : "من ${formatDate(invoice.previousReadingDateTime)} - الى ${formatDate(invoice.currentReadDateTime)}",
                                       ),
                                       _Row(
@@ -271,12 +279,14 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
                                           "CollectionType",
                                           context,
                                         ),
-                                         getLookupCodeValue(
+                                        getLookupCodeValue(
                                                   invoice,
                                                   "CollectionType",
                                                   context,
                                                 ) ==
-                                                "EST" ? "معدل الإستهلاك اليومي" :"الإستهلاك الكلي"   ,
+                                                "EST"
+                                            ? "معدل الإستهلاك اليومي"
+                                            : "الإستهلاك الكلي",
                                         getLookupCodeValue(
                                                   invoice,
                                                   "CollectionType",
@@ -306,7 +316,9 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
                                           "ACT")
                                         _Row(
                                           "حجم المنفذ",
-                                          invoice.consumptionQtyRow.toInt().toString(),
+                                          invoice.consumptionQtyRow
+                                              .toInt()
+                                              .toString(),
                                           "إعادة تدوير المقياس",
                                           invoice.isMeterRollover
                                               ? "نعم"
@@ -349,12 +361,15 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
                                     charges: invoice.invoiceDetails,
                                   ),
 
-                                  const SizedBox(height: 16),
+                                  if (getInvoiceStatusIcon(invoice) !=
+                                      "COL") ...[
+                                    const SizedBox(height: 16),
 
-                                  _FailureReasonsTable(
-                                    reasons: invoice.failureReasons,
-                                    invoice: invoice,
-                                  ),
+                                    _FailureReasonsTable(
+                                      reasons: invoice.failureReasons,
+                                      invoice: invoice,
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),

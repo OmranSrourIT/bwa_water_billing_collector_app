@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:bwa_water_billing_collector_app/core/constants/AppConstant.dart';
 import 'package:bwa_water_billing_collector_app/core/storage/PrinterStorage.dart';
+import 'package:bwa_water_billing_collector_app/core/utlis/requestAppPermissions.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';

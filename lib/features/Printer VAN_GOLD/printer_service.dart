@@ -1,12 +1,26 @@
 
+import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-Future<bool> requestBluetoothPermissions() async {
-  final bluetooth = await Permission.bluetooth.request();
-  final connect = await Permission.bluetoothConnect.request();
-  final scan = await Permission.bluetoothScan.request();
 
-  return bluetooth.isGranted && connect.isGranted && scan.isGranted;
-}
 
+  Future<Position?> getLocation() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+
+    if (!serviceEnabled) {
+      return null;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return null;
+    }
+
+    return await Geolocator.getCurrentPosition();
+  }
 

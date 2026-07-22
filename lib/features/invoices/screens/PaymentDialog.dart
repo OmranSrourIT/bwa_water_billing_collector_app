@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:bwa_water_billing_collector_app/core/Serivces/minesec_service.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/ConnectionBanner.dart';
-import 'package:bwa_water_billing_collector_app/core/utlis/PaymentResultDialog.dart';
+import 'package:bwa_water_billing_collector_app/features/Payment/utils/PaymentResultDialog.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/connection_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart'
@@ -117,51 +117,57 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
         if (!mounted) return;
 
-         await ref.read(
+        await ref.read(
           updateInvoiceStatusProvider((
             invoiceNo: widget.Invoicenumber,
             status: "COL",
           )).future,
         );
 
-        
-
-
-        AppPopupAlert.show(
-          context,
-          message: "تم إرسال بيانات الدفع بنجاح",
-          isError: false,
-        );
-
-        
         ref.invalidate(invoicesProvider(widget.batchId.toString()));
+        ref.invalidate(invoiceDetailProvider(widget.Invoicenumber));
 
-        ref.invalidate(invoiceDetailProvider(widget.Invoicenumber.toString()));
+        if (mounted) Navigator.pop(context);
 
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false, // منع الإغلاق بالضغط خارجاً
+            builder: (_) => PaymentResultDialog(
+              success: true,
+              data: data,
+              Invoicenumber: widget.Invoicenumber,
+              onClose: () {
+                // عند الضغط على إغلاق في شاشة النجاح، نعود للشاشة الرئيسية
+                // هذا سيسكر كل الشاشات المفتوحة (مثل شاشة تفاصيل الفاتورة)
+                // ويعود لشاشة الدفعة (Batch) المحدثة
+                Navigator.popUntil(
+                  context,
+                  (route) => route.isFirst || route.settings.name == '/home',
+                );
+              },
+            ),
+          );
+        }
       } catch (e) {
         final message = parseError(e);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           AppPopupAlert.show(context, message: message, isError: true);
         });
       }
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    } else {
       if (!mounted) return;
-      PaymentDebugService.finish(
-        success: status == "success",
-        response: Map<String, dynamic>.from(data),
-      );
 
       showDialog(
         context: context,
+        barrierDismissible: false,
         builder: (_) => PaymentResultDialog(
-          success: status == "success",
-          data: data,
+          success: false,
+          data: Map<String, dynamic>.from(data),
           Invoicenumber: widget.Invoicenumber,
         ),
       );
-    });
+    }
   }
 
   DateTime paymentDate = DateTime.now();
@@ -213,24 +219,21 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                           ),
                         ),
 
-                         Align(
+                        Align(
                           alignment: Alignment.centerLeft,
                           child: IconButton(
-                          icon:  Icon(Icons.bug_report ,color:Colors.white,),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const PaymentDebugScreen(),
-                              ),
-                            );
-                          },
-                        ),
+                            icon: Icon(Icons.bug_report, color: Colors.white),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const PaymentDebugScreen(),
+                                ),
+                              );
+                            },
+                          ),
                         ),
 
-
-                        
-                        
                         const Text(
                           "دفع الفاتورة",
                           style: TextStyle(
@@ -239,8 +242,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                       
-                        
                       ],
                     ),
                   ),
@@ -336,7 +337,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                           //       ),
 
                           // const SizedBox(height: 16),
-
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(14),
@@ -350,7 +350,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                                 SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                 " يرجى التاكد من مبلغ الفاتورة قبل تأكيد عملية الدفع"
+                                    " يرجى التاكد من مبلغ الفاتورة قبل تأكيد عملية الدفع",
                                   ),
                                 ),
                               ],
