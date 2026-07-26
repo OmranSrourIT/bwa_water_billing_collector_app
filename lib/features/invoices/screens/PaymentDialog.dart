@@ -77,6 +77,11 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       description: data.toString(),
     );
 
+    PaymentDebugService.finish(
+      success: status == "success",
+      response: Map<String, dynamic>.from(data),
+    );
+
     if (!mounted) return;
 
     setState(() {

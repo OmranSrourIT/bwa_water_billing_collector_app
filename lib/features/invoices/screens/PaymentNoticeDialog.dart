@@ -1,11 +1,10 @@
 import 'dart:ui';
 import 'package:bwa_water_billing_collector_app/core/constants/AppConstant.dart';
 import 'package:bwa_water_billing_collector_app/core/storage/PrinterStorage.dart';
-import 'package:bwa_water_billing_collector_app/core/utlis/requestAppPermissions.dart';
+import 'package:bwa_water_billing_collector_app/core/utlis/request_AppPermissions.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
-import 'package:bwa_water_billing_collector_app/features/Printer%20VAN_GOLD/printer_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
 import 'package:flutter/material.dart';
@@ -101,7 +100,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                     width: 70,
                                     height: 70,
                                     child: Image.asset(
-                                      "assets/images/BWA_Logo.png",
+                                      "assets/images/Governerate2_logo.png",
                                     ),
                                   ),
 
@@ -111,7 +110,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                     child: Column(
                                       children: [
                                         Text(
-                                          "هيئة مياه بغداد",
+                                          "دائرة ماء بغداد",
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
                                             fontSize: 25,
@@ -121,7 +120,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                         ),
                                         SizedBox(height: 4),
                                         Text(
-                                          "نظام فوترة خدمات المياه",
+                                          "نظام فوترة وجباية الماء",
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
                                             fontSize: 13,
@@ -130,7 +129,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                         ),
                                         SizedBox(height: 6),
                                         Text(
-                                          "إشعار تسديد",
+                                          "إشعار تسديد الأجور",
                                           style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
@@ -160,21 +159,25 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                 return Column(
                                   children: [
                                     _NoticeCard(
-                                      title: "بيانات المشترك",
+                                      title: "بيانات المشترك والفاتورة",
                                       child: Column(
                                         children: [
                                           _NoticeRow(
-                                            "رقم الفاتورة / الإصدارية :",
+                                            "رقم الفاتورة / الإصدارية : ",
                                             invoice.invoiceNumber +
                                                 " / ${invoice.cycleCode}",
                                           ),
                                           _NoticeRow(
-                                            "رقم الحساب :",
+                                            "رقم الحساب : ",
                                             invoice.accountNo,
                                           ),
                                           _NoticeRow(
-                                            "أسم المشترك :",
+                                            "اسم المشترك : ",
                                             invoice.customerName,
+                                          ),
+                                          _NoticeRow(
+                                            "رقم الهاتف : ",
+                                            invoice.customerMobileNo,
                                           ),
                                           _NoticeRow(
                                             "العنوان",
@@ -182,7 +185,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                           ),
                                           _NoticeRow("تاريخ الإشعار : ", today),
                                           _NoticeRow(
-                                            "أسم الجابي : ",
+                                            "اسم الجابي : ",
                                             invoice.collectorName,
                                           ),
                                         ],
@@ -204,7 +207,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                       ),
                                       child: Column(
                                         children: [
-                                          const Text("المبلغ المترتب"),
+                                           Text("مبلغ الفاتورة المستحق",style: TextStyle(fontSize: 20),),
                                           const SizedBox(height: 8),
                                           Text(
                                             "${NumberFormat('#,##0.000').format(invoice.totalInvoiceAmount)} د.ع",
@@ -229,7 +232,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                         borderRadius: BorderRadius.circular(14),
                                       ),
                                       child: const Text(
-                                        "يرجى تسديد المبلغ خلال ثلاثة أيام من تاريخ هذا الإشعار , ونشكر تعاملكم معنا ",
+                                        "يرجى تسديد المبلغ خلال ثلاثة أيام من تاريخ هذا الإشعار لخدمة الصالح العام شاكرين تعاونكم معنا ",
                                         textAlign: TextAlign.center,
                                       ),
                                     ),
@@ -251,7 +254,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           const Text(
-                                            "أمسح الرمز للتحقق والدفع الألكتروني",
+                                            "امسح الرمز للتحقق والدفع الإلكتروني",
                                             textAlign: TextAlign.center,
                                             style: TextStyle(
                                               fontWeight: FontWeight.w600,
@@ -282,6 +285,57 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                               size: 142,
                                               backgroundColor: Colors.white,
                                             ),
+                                          ),
+
+                                          const SizedBox(height: 20),
+
+                                          const Center(
+                                            child: Text(
+                                              "دائرة ماء بغداد",
+                                              textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            ),
+                                          ),
+
+                                          const SizedBox(height: 5),
+
+                                          const Divider(
+                                            thickness: 1,
+                                            color: Colors.black,
+                                          ),
+                                           const SizedBox(height: 6),
+
+                                          const Center(
+                                            child: Text(
+                                              "يمكنك أيضاً دفع الفاتورة إلكترونياً من خلال زيارة الرابط التالي:",
+                                              textAlign: TextAlign.center,
+                                                 style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            ),
+                                          ),
+
+                                          const SizedBox(height: 6),
+
+                                          const Center(
+                                            child: Text(
+                                              "https://bwa.asimti.iq",
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                fontFamily: 'Cairo',
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
+                                            ),
+                                          ),
+
+                                          const Divider(
+                                            thickness: 1,
+                                            color: Colors.black,
                                           ),
                                         ],
                                       ),
@@ -408,6 +462,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                     invoiceNo: infoDetials.invoiceNumber,
                     accountNo: infoDetials.accountNo,
                     customerName: infoDetials.customerName,
+                    customerMobileNo: infoDetials.customerMobileNo,
                     address: infoDetials.propertyAddress,
                     collectorName: infoDetials.collectorName,
                     amount: infoDetials.totalInvoiceAmount,
@@ -458,7 +513,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
 
                     AppPopupAlert.show(
                       context,
-                      message: "تم الطباعة وتحديث الإشعار بنجاح",
+                      message: "تم طباعة إشعار التسديد بنجاح",
                       isError: false,
                     );
                   }

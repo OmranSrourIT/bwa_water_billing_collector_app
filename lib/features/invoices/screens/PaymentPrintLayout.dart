@@ -7,23 +7,25 @@ class PaymentPrintLayout extends StatelessWidget {
   final String invoiceNo;
   final String accountNo;
   final String customerName;
+  final String customerMobileNo;
   final String address;
   final String collectorName;
   final double amount;
   final String today;
   final int cycleCode;
- final int paymentRefNo;
+  final int paymentRefNo;
   const PaymentPrintLayout({
     super.key,
     required this.invoiceNo,
     required this.accountNo,
     required this.customerName,
+    required this.customerMobileNo,
     required this.address,
     required this.collectorName,
     required this.amount,
     required this.today,
     required this.cycleCode,
-    required this.paymentRefNo
+    required this.paymentRefNo,
   });
 
   TextStyle get sectionTitleStyle => const TextStyle(
@@ -65,7 +67,7 @@ class PaymentPrintLayout extends StatelessWidget {
                     Container(
                       color: Colors.white,
                       child: Image.asset(
-                        "assets/images/BWA_Logo.png",
+                        "assets/images/Governerate2_logo.png",
                         width: 120,
                         height: 120,
                         filterQuality: FilterQuality.high,
@@ -76,7 +78,7 @@ class PaymentPrintLayout extends StatelessWidget {
                       child: Column(
                         children: const [
                           Text(
-                            "هيئة مياه بغداد",
+                            "دائرة ماء بغداد",
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 34, // خط كبير وواضح
@@ -87,7 +89,7 @@ class PaymentPrintLayout extends StatelessWidget {
                           ),
                           SizedBox(height: 6),
                           Text(
-                            "نظام فوترة خدمات المياه",
+                            "نظام فوترة وجباية الماء",
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 22,
@@ -97,7 +99,7 @@ class PaymentPrintLayout extends StatelessWidget {
                           ),
                           SizedBox(height: 8),
                           Text(
-                            "إشعار تسديد",
+                            "إشعار تسديد الأجور",
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 28,
@@ -110,8 +112,8 @@ class PaymentPrintLayout extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     SizedBox(
-                         width: 120,
-                        height: 120, 
+                      width: 120,
+                      height: 120,
                       child: Image.asset(
                         "assets/images/VerticalAsimati.png",
                         fit: BoxFit.contain,
@@ -124,17 +126,18 @@ class PaymentPrintLayout extends StatelessWidget {
 
                 const SizedBox(height: 10),
                 const Divider(thickness: 2, color: Colors.black),
-                _sectionTitle("بيانات المشترك"),
+                _sectionTitle("بيانات المشترك والفاتورة"),
                 // ================= INFO =================
                 _row(
                   "رقم الفاتورة / الإصدارية :",
                   invoiceNo + " / ${cycleCode}",
                 ),
                 _row("رقم الحساب : ", accountNo),
-                _row("أسم المشترك : ", customerName),
+                _row("اسم المشترك : ", customerName),
+                _row("رقم الهاتف : ", customerMobileNo),
                 _row("العنوان : ", address),
                 _row("تاريخ الإشعار : ", today),
-                _row("أسم الجابي : ", collectorName),
+                _row("اسم الجابي : ", collectorName),
 
                 const SizedBox(height: 10),
                 const Divider(thickness: 2, color: Colors.black),
@@ -157,7 +160,7 @@ class PaymentPrintLayout extends StatelessWidget {
                   child: Column(
                     children: [
                       const Text(
-                        "المبلغ المترتب",
+                        "مبلغ الفاتورة المستحق",
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
@@ -178,7 +181,7 @@ class PaymentPrintLayout extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 const Text(
-                  "يرجى تسديد المبلغ خلال ثلاثة أيام من تاريخ هذا الإشعار , ونشكر تعاملكم معنا لخدمة الصالح العام ",
+                  "يرجى تسديد المبلغ خلال ثلاثة أيام من تاريخ هذا الإشعار لخدمة الصالح العام , شاكرين تعاونكم معنا ",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 18,
@@ -190,7 +193,7 @@ class PaymentPrintLayout extends StatelessWidget {
                 const SizedBox(height: 20),
                 // ================= QR =================
                 const Text(
-                  "أمسح الرمز للتحقق والدفع الألكتروني",
+                  "امسح الرمز للتحقق والدفع الإلكتروني",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 19,
@@ -216,7 +219,9 @@ class PaymentPrintLayout extends StatelessWidget {
                       ],
                     ),
                     child: QrImageView(
-                      data: AppConstant.verofNumberPrintNotice(paymentRefNo.toString()),
+                      data: AppConstant.verofNumberPrintNotice(
+                        paymentRefNo.toString(),
+                      ),
                       size: 240,
                       backgroundColor: Colors.white,
                     ),
@@ -224,10 +229,11 @@ class PaymentPrintLayout extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 20),
-                const Divider(thickness: 2, color: Colors.black),
+
                 const Center(
                   child: Text(
-                    "شكراً لكم",
+                    "دائرة ماء بغداد",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -235,7 +241,39 @@ class PaymentPrintLayout extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 5), // مساحة في النهاية لمنع القص
+
+                const SizedBox(height: 5),
+
+                const Divider(thickness: 2, color: Colors.black),
+
+                const Center(
+                  child: Text(
+                    "يمكنك أيضاً دفع الفاتورة إلكترونياً من خلال زيارة الرابط التالي:",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Cairo',
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                const Center(
+                  child: Text(
+                    "https://bwa.asimti.iq",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Cairo',
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+
+                const Divider(thickness: 2, color: Colors.black),
               ],
             ),
           ),

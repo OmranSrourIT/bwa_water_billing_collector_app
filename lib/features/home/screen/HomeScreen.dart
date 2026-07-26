@@ -4,7 +4,7 @@ import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offli
 import 'package:bwa_water_billing_collector_app/core/storage/PrinterStorage.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/ConnectionBanner.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/connection_provider.dart';
-import 'package:bwa_water_billing_collector_app/core/utlis/requestAppPermissions.dart';
+import 'package:bwa_water_billing_collector_app/core/utlis/request_AppPermissions.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/responsive.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/InitialSyncLoadingScreen.dart';
@@ -16,7 +16,6 @@ import 'package:bwa_water_billing_collector_app/features/Account/provider/accoun
 import 'package:bwa_water_billing_collector_app/features/Account/screen/AccountDetailsDialog.dart';
 import 'package:bwa_water_billing_collector_app/features/Account/screen/ChangePasswordDialog.dart';
 import 'package:bwa_water_billing_collector_app/features/Payment/printer_channel.dart';
-import 'package:bwa_water_billing_collector_app/features/Printer%20VAN_GOLD/printer_service.dart';
 import 'package:bwa_water_billing_collector_app/features/auth/providers/auth_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/batch/models/batch_model.dart';
 import 'package:bwa_water_billing_collector_app/features/batch/providers/batch_provider.dart';
@@ -34,7 +33,6 @@ import 'package:bwa_water_billing_collector_app/features/invoices/screens/invoic
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'dart:ui' as ui;
 
@@ -55,14 +53,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool isInitialBatchSelectionDone = false;
 
   @override
-  void initState()  {
+  void initState() {
     super.initState();
-   
+
     initPrinter();
   }
 
   Future<void> initPrinter() async {
-
     await requestAppPermissions();
     final printers = await PrinterChannel.getPairedPrinters();
     if (!mounted) return;
@@ -505,9 +502,134 @@ class MessageSelectedBacth extends StatelessWidget {
   }
 }
 
-class _Header extends ConsumerWidget {
+class _Header extends ConsumerStatefulWidget {
+  const _Header();
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Header> createState() => _HeaderState();
+}
+
+class _HeaderState extends ConsumerState<_Header> {
+  final LayerLink _layerLink = LayerLink();
+
+  OverlayEntry? _overlayEntry;
+
+  bool isMenuOpen = false;
+
+  void showAccountMenu() {
+    if (_overlayEntry != null) {
+      hideAccountMenu();
+      return;
+    }
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) {
+        return Positioned.fill(
+          child: Stack(
+            children: [
+              GestureDetector(
+                onTap: hideAccountMenu,
+                child: Container(color: Colors.transparent),
+              ),
+
+              CompositedTransformFollower(
+                link: _layerLink,
+
+                showWhenUnlinked: false,
+
+                offset: const Offset(0, 60),
+
+                child: Material(
+                  color: Colors.transparent,
+
+                  child: Directionality(
+                    textDirection:
+                        Localizations.localeOf(context).languageCode == 'ar'
+                        ? ui.TextDirection.rtl
+                        :  ui.TextDirection.ltr,
+
+                    child: Container(
+                      width: 240,
+
+                      padding: const EdgeInsets.all(8),
+
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+
+                        borderRadius: BorderRadius.circular(16),
+
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+
+                            blurRadius: 20,
+
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+
+                        border: Border.all(
+                          color: Colors.grey.withOpacity(0.15),
+                        ),
+                      ),
+
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+
+                        children: [
+                          _AccountMenuItem(
+                            icon: Icons.person_outline,
+                            title: AppLocalizations.of(
+                              context,
+                            ).t('account_info'),
+                            color: AppColors.primary,
+
+                            onTap: () {
+                              hideAccountMenu();
+
+                              showDialog(
+                                context: context,
+                                builder: (_) => const AccountDetailsDialog(),
+                              );
+                            },
+                          ),
+
+                          const Divider(height: 15),
+
+                          _AccountMenuItem(
+                            icon: Icons.logout,
+                            title: AppLocalizations.of(context).t('logout'),
+                            color: Colors.redAccent,
+
+                            onTap: () async {
+                              hideAccountMenu();
+
+                              await ref.read(authProvider.notifier).logout();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    Overlay.of(context, rootOverlay: true).insert(_overlayEntry!);
+  }
+
+  void hideAccountMenu() {
+    _overlayEntry?.remove();
+
+    _overlayEntry = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isTablet = Responsive.isTablet(context);
     final tr = AppLocalizations.of(context);
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
@@ -528,137 +650,83 @@ class _Header extends ConsumerWidget {
               alignment: isArabic
                   ? Alignment.centerLeft
                   : Alignment.centerRight,
-              child: PopupMenuButton<String>(
-                offset: const Offset(0, 50),
-                onSelected: (value) async {
-                  switch (value) {
-                    case 'profile':
-                      showDialog(
-                        context: context,
-                        builder: (_) => const AccountDetailsDialog(),
-                      );
-                      break;
+              child: CompositedTransformTarget(
+                link: _layerLink,
 
-                    case 'changePassword':
-                      showDialog(
-                        context: context,
-                        builder: (_) => ChangePasswordDialog(),
-                      );
-                      break;
+                child: GestureDetector(
+                  onTap: showAccountMenu,
 
-                    case 'logout':
-                      await ref
-                          .read(authProvider.notifier)
-                          .logout(); // 👈 مهم جداً
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 5,
+                    ),
 
-                      break;
-                  }
-                },
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.12),
 
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'profile',
+                      borderRadius: BorderRadius.circular(30),
+
+                      border: Border.all(color: Colors.white.withOpacity(0.25)),
+                    ),
+
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      textDirection: isArabic
+                          ? ui.TextDirection.ltr
+                          : ui.TextDirection.rtl,
+
                       children: [
-                        const Icon(Icons.person_outline),
-                        const SizedBox(width: 10),
-                        Text(tr.t('account_info')),
-                      ],
-                    ),
-                  ),
-
-                  // PopupMenuItem(
-                  //   value: 'changePassword',
-                  //   child: Row(
-                  //     children: [
-                  //       const Icon(Icons.lock_reset),
-                  //       const SizedBox(width: 10),
-                  //       Text(tr.t('change_password')),
-                  //     ],
-                  //   ),
-                  // ),
-                  const PopupMenuDivider(),
-
-                  PopupMenuItem(
-                    value: 'logout',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.logout),
-                        const SizedBox(width: 10),
-                        Text(tr.t('logout')),
-                      ],
-                    ),
-                  ),
-                ],
-
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  textDirection: isArabic
-                      ? ui.TextDirection.ltr
-                      : ui.TextDirection.rtl,
-                  children: [
-                    const CircleAvatar(
-                      radius: 20,
-                      backgroundColor: Colors.white24,
-                      child: Icon(Icons.person, color: Colors.white),
-                    ),
-
-                    const SizedBox(width: 8),
-                    accountAsync.when(
-                      loading: () => const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(40),
-                          child: CircularProgressIndicator(),
+                        const CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.white24,
+                          child: Icon(Icons.person, color: Colors.white),
                         ),
-                      ),
-                      error: (error, stack) {
-                        final message = parseError(error);
 
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          AppPopupAlert.show(
-                            context,
-                            message: message,
-                            isError: true,
-                          );
-                        });
+                        const SizedBox(width: 8),
 
-                        return const SizedBox();
-                      },
-                      data: (account) {
-                        final NameArabic =
-                            account.firstNameAr +
-                            " " +
-                            account.fatherNameAr +
-                            " " +
-                            account.grandfatherNameAr +
-                            " " +
-                            account.familyNameAr;
-                        final NameEnglish =
-                            account.firstNameEn +
-                            " " +
-                            account.fatherNameEn +
-                            " " +
-                            account.grandfatherNameEn +
-                            " " +
-                            account.familyNameEn;
-                        return Flexible(
-                          child: Text(
-                            isArabic ? NameArabic : NameEnglish,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                        accountAsync.when(
+                          loading: () => const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
                               color: Colors.white,
-                              fontSize: isTablet ? 14 : 13,
-                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        );
-                      },
-                    ),
 
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_drop_down, color: Colors.white70),
-                  ],
+                          error: (_, __) => const SizedBox(),
+
+                          data: (account) {
+                            final name = isArabic
+                                ? "${account.firstNameAr} ${account.fatherNameAr} ${account.familyNameAr}"
+                                : "${account.firstNameEn} ${account.fatherNameEn} ${account.familyNameEn}";
+
+                            return Flexible(
+                              child: Text(
+                                name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: isTablet ? 14 : 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(width: 5),
+
+                        const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: Colors.white70,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -684,7 +752,7 @@ class _Header extends ConsumerWidget {
                   ),
                   padding: const EdgeInsets.all(6),
                   child: Image.asset(
-                    'assets/images/BWA_Logo.png',
+                    'assets/images/Governerate2_logo.png',
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -728,6 +796,64 @@ class _Header extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AccountMenuItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _AccountMenuItem({
+    required this.icon,
+    required this.title,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+
+      onTap: onTap,
+
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+
+                borderRadius: BorderRadius.circular(10),
+              ),
+
+              child: Icon(icon, color: color, size: 20),
+            ),
+
+            const SizedBox(width: 12),
+
+            Text(
+              title,
+
+              style: const TextStyle(
+                color: Colors.black87,
+
+                fontSize: 14,
+
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -787,7 +913,7 @@ class _BatchSummary extends StatelessWidget {
             Expanded(
               child: _SummaryCard(
                 title: tr.t('pending'),
-                value: summary.pending.toString(),
+                value: summary.unrechable.toString(),
                 icon: Icons.report_problem_rounded,
                 color: Colors.redAccent,
               ),
@@ -1422,6 +1548,10 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
     setState(() => _pressed = value);
   }
 
+  void _selectCard() {
+    widget.onSelect?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isTablet = Responsive.isTablet(context);
@@ -1431,7 +1561,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => _setPressed(true),
+
       onTapUp: (_) {
         _setPressed(false);
         widget.onSelect?.call();
@@ -1688,34 +1818,37 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                     vertical: 12,
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _InlineItem(
-                        title: tr.t('service_address'),
-                        value: widget.invoice.address,
-                      ),
-                      const SizedBox(width: 16),
-                      _InlineItem(
-                        title: tr.t('subscription_type'),
-                        value: getLookupValue(
-                          widget.invoice,
-                          "CollectionType",
-                          context,
+                      Expanded(
+                        child: _InlineItem(
+                          title: tr.t('service_address'),
+                          value: widget.invoice.address,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      _InlineItem(
-                        title: tr.t('consumption'),
-                        value:
-                            NumberFormat(
-                              '#,##',
-                            ).format(widget.invoice.consumptionQtyPotable) +
-                            " م³ ",
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        child: _InlineItem(
+                          title: tr.t('subscription_type'),
+                          value: getLookupValue(
+                            widget.invoice,
+                            "CollectionType",
+                            context,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        child: _InlineItem(
+                          title: tr.t('consumption'),
+                          value:
+                              "${widget.invoice.consumptionQtyPotable.toInt()} م³",
+                        ),
                       ),
                     ],
                   ),
                 ),
-
                 const Divider(height: 1),
 
                 /// ================= ACTIONS =================
@@ -1734,6 +1867,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                           title: Text(tr.t('view')),
                           icon: Icons.visibility_outlined,
                           color: Colors.grey.shade500,
+                          onBeforePressed: _selectCard,
                           onPressed: () {
                             showDialog(
                               context: context,
@@ -1744,11 +1878,14 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                           },
                         ),
                       if (getInvoiceStatusCode(widget.invoice, context) ==
-                          "RDY" ||  getInvoiceStatusCode(widget.invoice, context) =="UNC")
+                              "RDY" ||
+                          getInvoiceStatusCode(widget.invoice, context) ==
+                              "UNC")
                         _ActionButton(
                           title: Text(tr.t('print_notice')),
                           icon: Icons.print_outlined,
                           color: AppColors.warning,
+                          onBeforePressed: _selectCard,
                           onPressed: () async {
                             showDialog(
                               context: context,
@@ -1764,6 +1901,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                           title: Text(tr.t('print_invoice')),
                           icon: Icons.receipt_long,
                           color: AppColors.warning,
+                          onBeforePressed: _selectCard,
                           onPressed: () {
                             showDialog(
                               context: context,
@@ -1786,6 +1924,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                           title: Text(tr.t('enter_reading')),
                           icon: Icons.speed,
                           color: const Color(0xFF2AAAE1),
+                          onBeforePressed: _selectCard,
                           onPressed: () {
                             showDialog(
                               context: context,
@@ -1819,6 +1958,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                                 ),
                           icon: Icons.payments_outlined,
                           color: Colors.green,
+                          onBeforePressed: _selectCard,
                           onPressed: () async {
                             showDialog(
                               context: context,
@@ -1848,6 +1988,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                           title: Text(tr.t('unreachable')),
                           icon: Icons.report_problem_outlined,
                           color: AppColors.danger,
+                          onBeforePressed: _selectCard,
                           onPressed: () {
                             showDialog(
                               context: context,
@@ -1878,23 +2019,32 @@ class _InlineItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          "$title : ",
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade700,
-            fontWeight: FontWeight.w600,
+    return SizedBox(
+      width: MediaQuery.of(context).size.width * 0.28,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "$title : ",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
 
-        Text(
-          value,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-        ),
-      ],
+          Expanded(
+            child: Text(
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1940,12 +2090,14 @@ class _ActionButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback? onPressed;
+  final VoidCallback? onBeforePressed;
 
   const _ActionButton({
     required this.title,
     required this.icon,
     required this.color,
     this.onPressed,
+    this.onBeforePressed,
   });
 
   @override
@@ -1953,7 +2105,10 @@ class _ActionButton extends StatelessWidget {
     return SizedBox(
       height: 42,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: () {
+          onBeforePressed?.call(); // ⭐ يحدد الكارد
+          onPressed?.call(); // ينفذ العملية
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: Colors.white,

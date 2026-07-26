@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -40,7 +41,7 @@ class _UpdateScreenState extends State<UpdateScreen> {
       Dio dio = Dio();
 
       await dio.download(
-       widget.apkUrl,
+        widget.apkUrl,
 
         filePath,
 
@@ -65,7 +66,6 @@ class _UpdateScreenState extends State<UpdateScreen> {
         await OpenFile.open(filePath);
       }
     } catch (e) {
-    
       if (mounted) {
         final message = "فشل التحميل: تأكد من اتصالك بالإنترنت";
 
@@ -90,19 +90,15 @@ class _UpdateScreenState extends State<UpdateScreen> {
       body: Stack(
         children: [
           Positioned(
-            top: -120,
-
-            left: -80,
-
-            child: _circle(const Color(0xff1976D2)),
+            top: 20, 
+            left: 0,
+            child: _svgBackgroundIcon(const Color(0xff1976D2)),
           ),
 
           Positioned(
-            bottom: -140,
-
-            right: -90,
-
-            child: _circle(const Color(0xff0D47A1)),
+            bottom: 0, 
+            right: 0, 
+            child: _svgBackgroundIcon(const Color(0xff0D47A1)),
           ),
 
           SafeArea(
@@ -183,8 +179,7 @@ class _UpdateScreenState extends State<UpdateScreen> {
                         textAlign: TextAlign.center,
 
                         style: TextStyle(
-                          fontSize: 13,
-
+                          fontSize: 18, 
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -199,9 +194,9 @@ class _UpdateScreenState extends State<UpdateScreen> {
                       const SizedBox(height: 15),
 
                       Text(
-                        'نظام تحصيل فواتير المياه',
+                        "نظام فوترة وجباية الماء",
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: Colors.grey.shade600,
                         ),
@@ -315,57 +310,17 @@ class _UpdateScreenState extends State<UpdateScreen> {
     );
   }
 
-  Widget _circle(Color color) {
+      Widget _svgBackgroundIcon(Color color) {
     return SizedBox(
-      width: 280,
-
-      height: 280,
-
-      child: CustomPaint(painter: _WaterDropPainter(color)),
+      width: 120,
+      height: 120,
+      child: SvgPicture.asset(
+        "assets/images/waterDropIcon.svg",
+        colorFilter: ColorFilter.mode(
+          color.withOpacity(0.10),
+          BlendMode.srcIn,
+        ),
+      ),
     );
   }
-}
-
-class _WaterDropPainter extends CustomPainter {
-  final Color color;
-
-  _WaterDropPainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color.withOpacity(.10);
-
-    final path = Path();
-
-    path.moveTo(size.width * .5, size.height * .95);
-
-    path.quadraticBezierTo(
-      size.width * .15,
-      size.height * .65,
-
-      size.width * .35,
-      size.height * .30,
-    );
-
-    path.quadraticBezierTo(
-      size.width * .5,
-      size.height * .05,
-
-      size.width * .65,
-      size.height * .30,
-    );
-
-    path.quadraticBezierTo(
-      size.width * .85,
-      size.height * .65,
-
-      size.width * .5,
-      size.height * .95,
-    );
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

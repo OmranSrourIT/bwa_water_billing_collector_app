@@ -66,7 +66,7 @@ class _BwaLoadingOverlayState extends State<BwaLoadingOverlay>
                 shape: BoxShape.circle,
               ),
               child: Image.asset(
-                "assets/images/BWA_Logo.png",
+                "assets/images/Governerate2_logo.png",
                 fit: BoxFit.contain,
               ),
             ),

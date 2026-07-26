@@ -69,7 +69,7 @@ class InvoicePrintLayout extends StatelessWidget {
   TextStyle get valueStyleFeesValue => const TextStyle(
     fontFamily: "Cairo",
     fontWeight: FontWeight.w600,
-    fontSize: 21,
+    fontSize: 22,
     color: Colors.black,
   );
 
@@ -111,7 +111,7 @@ class InvoicePrintLayout extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Image.asset("assets/images/BWA_Logo.png", width: 100),
+            Image.asset("assets/images/Governerate2_logo.png", width: 100),
             Expanded(
               child: Builder(
                 builder: (context) {
@@ -137,7 +137,7 @@ class InvoicePrintLayout extends StatelessWidget {
 
                   return Column(
                     children: [
-                      Text("هيئة مياه بغداد", style: headerStyle),
+                      Text("دائرة ماء بغداد", style: headerStyle),
                       Text("فاتورة استهلاك المياه", style: subHeaderStyle),
                       const SizedBox(height: 3),
 
@@ -151,21 +151,121 @@ class InvoicePrintLayout extends StatelessWidget {
                         style: valueStyle.copyWith(fontSize: 20),
                       ),
 
-                      Text(
+                      Text.rich(
                         getLookupCodeValue(
                                   invoice,
                                   "CollectionType",
                                   context,
                                 ) ==
                                 "EST"
-                            ? "الفترة: من ${formatDate(invoice.periodFromDate)} - الى ${formatDate(invoice.periodToDate)}"
-                            : "من ${formatDate(invoice.previousReadingDateTime)} - الى ${formatDate(invoice.currentReadDateTime)}",
-                        style: valueStyle.copyWith(fontSize: 18),
+                            ? TextSpan(
+                                children: [
+                                  const TextSpan(
+                                    text: "الفترة: من ",
+                                    style: TextStyle(
+                                      fontFamily: "Cairo",
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 19,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: formatDate(invoice.periodFromDate),
+                                    style: const TextStyle(
+                                      fontFamily: "Cairo",
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 19,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  const TextSpan(
+                                    text: " - إلى ",
+                                    style: TextStyle(
+                                      fontFamily: "Cairo",
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 19,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: formatDate(invoice.periodToDate),
+                                    style: const TextStyle(
+                                      fontFamily: "Cairo",
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 19,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : TextSpan(
+                                children: [
+                                  const TextSpan(
+                                    text: "من ",
+                                    style: TextStyle(
+                                      fontFamily: "Cairo",
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 19,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: formatDate(
+                                      invoice.previousReadingDateTime,
+                                    ),
+                                    style: const TextStyle(
+                                      fontFamily: "Cairo",
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 19,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  const TextSpan(
+                                    text: " - إلى ",
+                                    style: TextStyle(
+                                      fontFamily: "Cairo",
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 19,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: formatDate(
+                                      invoice.currentReadDateTime,
+                                    ),
+                                    style: const TextStyle(
+                                      fontFamily: "Cairo",
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 19,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ],
+                              ),
                       ),
-
-                      Text(
-                        "عدد أيام الاحتساب: ${invoice.activeCollectionPeriod} يوم",
-                        style: valueStyle.copyWith(fontSize: 18),
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: "عدد أيام الاحتساب: ",
+                              style: const TextStyle(
+                                fontFamily: "Cairo",
+                                fontWeight: FontWeight.w600,
+                                fontSize: 20,
+                                color: Colors.black,
+                              ),
+                            ),
+                            TextSpan(
+                              text: "${invoice.activeCollectionPeriod} يوم",
+                              style: const TextStyle(
+                                fontFamily: "Cairo",
+                                fontWeight: FontWeight.bold,
+                                fontSize: 22,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   );
@@ -249,12 +349,12 @@ class InvoicePrintLayout extends StatelessWidget {
           child: Column(
             children: [
               _rowItem(
-                "قيمة الفاتورة  :",
+                "مبلغ الفاتورة المستحق :",
                 "${money(invoice.totalInvoiceAmount)} د.ع",
                 isTotal: true,
               ),
               const Divider(height: 1, thickness: 3, color: Colors.black),
-              _rowItem("حالة الفاتورة:", "محصلة", isTotal: true),
+              _rowItem("حالة الفاتورة:", "محصلة / تم التسديد", isTotal: true),
             ],
           ),
         ),
@@ -274,7 +374,7 @@ class InvoicePrintLayout extends StatelessWidget {
                       CrossAxisAlignment.start, // يمين في نظام RTL
                   children: const [
                     Text(
-                      "هيئة مياه بغداد",
+                      "دائرة ماء بغداد",
                       style: TextStyle(
                         fontFamily: "Cairo",
                         fontWeight: FontWeight.bold,
@@ -351,12 +451,12 @@ class InvoicePrintLayout extends StatelessWidget {
         const SizedBox(height: 5),
         _blackDivider(), // السطر الأخير قبل الخاتمة
         const SizedBox(height: 2),
-        Center(
-          child: Text(
-            "شكراً لتعاملكم معنا",
-            style: subHeaderStyle.copyWith(fontSize: 18),
-          ),
-        ),
+        // Center(
+        //   child: Text(
+        //     "دائرة ماء بغداد",
+        //     style: subHeaderStyle.copyWith(fontSize: 25),
+        //   ),
+        // ),
       ],
     );
   }

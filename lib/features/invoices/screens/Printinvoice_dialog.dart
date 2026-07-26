@@ -1,12 +1,11 @@
 import 'dart:ui';
 import 'package:bwa_water_billing_collector_app/core/constants/AppConstant.dart';
 import 'package:bwa_water_billing_collector_app/core/storage/PrinterStorage.dart';
-import 'package:bwa_water_billing_collector_app/core/utlis/requestAppPermissions.dart';
+import 'package:bwa_water_billing_collector_app/core/utlis/request_AppPermissions.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
 import 'package:bwa_water_billing_collector_app/features/Payment/printer_channel.dart';
-import 'package:bwa_water_billing_collector_app/features/Printer%20VAN_GOLD/printer_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/screens/InvoicePrintLayout.dart';
@@ -115,9 +114,9 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
 
                               _buildQrSection(invoice),
 
-                              const SizedBox(height: 12),
+                              // const SizedBox(height: 12),
 
-                              _buildFooter(context, invoice),
+                              // _buildFooter(context, invoice),
                             ],
                           );
                         },
@@ -364,7 +363,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
         children: [
           Row(
             children: [
-              Image.asset("assets/images/BWA_Logo.png", width: 90, height: 90),
+              Image.asset("assets/images/Governerate2_logo.png", width: 90, height: 90),
               Expanded(
                 child: Builder(
                   builder: (context) {
@@ -391,7 +390,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                     return Column(
                       children: [
                         const Text(
-                          "هيئة مياه بغداد",
+                          "دائرة ماء بغداد",
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -427,12 +426,12 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                                                 ) ==
                                                 "EST" ?
                           "الفترة: من ${formatDate(invoice.periodFromDate)} - الى ${formatDate(invoice.periodToDate)}" :"من ${formatDate(invoice.previousReadingDateTime)} - الى ${formatDate(invoice.currentReadDateTime)}",
-                          style: const TextStyle(fontSize: 14),
-                        ),
+                          style: const TextStyle(fontSize: 14,fontWeight: FontWeight.bold)),
+                        
 
                         Text(
                           "عدد أيام الاحتساب: ${invoice.activeCollectionPeriod} يوم",
-                          style: const TextStyle(fontSize: 14),
+                          style: const TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
                         ),
                       ],
                     );
@@ -468,7 +467,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
         children: [
           const Expanded(
             child: Text(
-              "قيمة الفاتورة المطلوبة",
+             "مبلغ الفاتورة المستحق :",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
@@ -720,9 +719,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
               color: Colors.green.shade100,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text(
-              widget.getInvoiceStatusCode(invoice, context),
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            child: Text(widget.getInvoiceStatusCode(invoice, context) +" / تم التسديد",  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -765,7 +762,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "هيئة مياه بغداد",
+                  "دائرة ماء بغداد",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 SizedBox(height: 6),
@@ -795,8 +792,8 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
     return Column(
       children: [
         const Text(
-          "شكراً لتعاملكم معنا",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          "دائرة ماء بغداد",
+          style: TextStyle(fontWeight: FontWeight.bold ,fontSize: 20),
         ),
       ],
     );

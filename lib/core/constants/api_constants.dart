@@ -1,5 +1,7 @@
 class ApiConstants {
-  static const String baseUrl = "https://bwa.asimti.iq/rest";
+  static const String baseUrl = "https://bwa.infinite-tek.com:8443/rest";
+  //ProdIraq   ===> https://bwa.asimti.iq
+  //Test Amman ===> https://bwa.infinite-tek.com:8443
 
   static const String authToken = "/auth/v1/auth/token";
   static const String batches =

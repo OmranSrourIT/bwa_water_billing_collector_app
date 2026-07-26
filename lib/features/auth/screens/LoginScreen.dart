@@ -8,6 +8,7 @@ import 'package:bwa_water_billing_collector_app/features/auth/providers/auth_pro
 import 'package:bwa_water_billing_collector_app/features/auth/services/auth_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
  
 class LoginScreen extends ConsumerStatefulWidget {
   final VoidCallback onToggleLang;
@@ -154,14 +155,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: Stack(
         children: [
           Positioned(
-            top: -120,
-            left: -80,
-            child: _circle(const Color(0xff1976D2)),
+            top: 20,
+            left: 0, 
+            child: _svgBackgroundIcon(const Color(0xff1976D2)),
           ),
           Positioned(
-            bottom: -140,
-            right: -90,
-            child: _circle(const Color(0xff0D47A1)),
+            bottom: 0,
+            right: 0,
+            child: _svgBackgroundIcon(const Color(0xff0D47A1)),
           ),
           SafeArea(
             child: Center(
@@ -170,7 +171,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   right: 10,
                   left: 10,
                   top: 0,
-                  bottom: 50,
+                  bottom: 10,
                 ),
                 child: Container(
                   width: cardWidth,
@@ -202,7 +203,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               width: 65,
                               height: 65,
                               child: Image.asset(
-                                "assets/images/VerticalAsimati.png",
+                                "assets/images/Governerate2_logo.png",
                               ),
                             ),
                           ],
@@ -219,15 +220,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             color: Color(0xff0D47A1),
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          t.t("subtitle"),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey,
-                          ),
-                        ),
+                        // const SizedBox(height: 6),
+                        // Text(
+                        //   t.t("subtitle"),
+                        //   textAlign: TextAlign.center,
+                        //   style: const TextStyle(
+                        //     fontSize: 13,
+                        //     color: Colors.grey,
+                        //   ),
+                        // ),
                         const SizedBox(height: 28),
                         _input(
                           controller: _usernameController,
@@ -372,7 +373,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ],
       ),
     );
+
+    
   }
+
+    Widget _svgBackgroundIcon(Color color) {
+    return SizedBox(
+      width: 120,
+      height: 120,
+      child: SvgPicture.asset(
+        "assets/images/waterDropIcon.svg",
+        colorFilter: ColorFilter.mode(
+          color.withOpacity(0.10),
+          BlendMode.srcIn,
+        ),
+      ),
+    );
+  }
+
 
   void _showForgotPasswordDialog(BuildContext context) {
     final emailController = TextEditingController();
@@ -548,7 +566,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         color: const Color(0xffEAF2FF),
         borderRadius: BorderRadius.circular(22),
       ),
-      child: Image.asset("assets/images/BWA_Logo.png"),
+      child: Image.asset("assets/images/VerticalAsimati.png"),
     );
   }
 
@@ -710,32 +728,6 @@ class LanguageArEn extends StatelessWidget {
   }
 }
 
-Widget _circle(Color color) {
-  return SizedBox(
-    width: 280,
-    height: 280,
-    child: CustomPaint(painter: _WaterDropPainter(color)),
-  );
-}
+ 
 
-class _WaterDropPainter extends CustomPainter {
-  final Color color;
-  _WaterDropPainter(this.color);
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color.withOpacity(0.10)
-      ..style = PaintingStyle.fill;
-    final path = Path();
-    final w = size.width;
-    final h = size.height;
-    path.moveTo(w * 0.5, h * 0.05);
-    path.quadraticBezierTo(w * 0.15, h * 0.35, w * 0.35, h * 0.70);
-    path.quadraticBezierTo(w * 0.5, h * 0.95, w * 0.65, h * 0.70);
-    path.quadraticBezierTo(w * 0.85, h * 0.35, w * 0.5, h * 0.05);
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
+ 

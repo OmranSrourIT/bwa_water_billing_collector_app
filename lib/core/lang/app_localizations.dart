@@ -72,7 +72,7 @@ class AppLocalizations {
       'enter_password': 'أدخل كلمة المرور',
       'username_required': 'اسم المستخدم مطلوب',
       'password_required': 'كلمة المرور مطلوبة',
-      'title': 'نظام تحصيل فواتير المياه',
+      'title': 'نظام فوترة وجباية الماء',
       'subtitle': 'نظام إدارة الفواتير والتحصيل',
       'version': 'الإصدار',
       'password_forgot': 'هل نسيت كلمة السر؟',

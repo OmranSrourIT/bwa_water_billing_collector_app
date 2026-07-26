@@ -125,46 +125,7 @@ class AppErrorState extends StatelessWidget {
       ),
     );
   }
-
-  Widget _circle(Color color) {
-    return SizedBox(
-      width: 280,
-      height: 280,
-      child: CustomPaint(painter: _WaterDropPainter(color)),
-    );
-  }
+ 
 }
 
-class _WaterDropPainter extends CustomPainter {
-  final Color color;
-
-  _WaterDropPainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color.withOpacity(0.10)
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-
-    final w = size.width;
-    final h = size.height;
-
-    double x(double v) => v;
-    double y(double v) => h - v;
-
-    path.moveTo(x(w * 0.5), y(h * 0.95));
-
-    path.quadraticBezierTo(x(w * 0.15), y(h * 0.65), x(w * 0.35), y(h * 0.30));
-
-    path.quadraticBezierTo(x(w * 0.5), y(h * 0.05), x(w * 0.65), y(h * 0.30));
-
-    path.quadraticBezierTo(x(w * 0.85), y(h * 0.65), x(w * 0.5), y(h * 0.95));
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
+ 

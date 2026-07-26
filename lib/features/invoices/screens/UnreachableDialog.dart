@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:bwa_water_billing_collector_app/core/constants/AppColors.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/image_helper.dart';
@@ -240,28 +241,139 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
 
                                       return DropdownButtonFormField<String>(
                                         value: selectedReasonCode,
+
+                                        isExpanded: true,
+
+                                        icon: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary
+                                                .withOpacity(.1),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.keyboard_arrow_down_rounded,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+
                                         decoration: InputDecoration(
                                           filled: true,
-                                          fillColor: Colors.grey.shade100,
-                                          border: OutlineInputBorder(
+
+                                          fillColor: Colors.white,
+
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 14,
+                                              ),
+
+                                          hintText: "اختر سبب التعذر",
+
+                                          hintStyle: TextStyle(
+                                            color: Colors.grey.shade500,
+                                            fontSize: 14,
+                                          ),
+
+                                          enabledBorder: OutlineInputBorder(
                                             borderRadius: BorderRadius.circular(
                                               16,
                                             ),
+
+                                            borderSide: BorderSide(
+                                              color: Colors.grey.shade200,
+                                            ),
+                                          ),
+
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+
+                                            borderSide: BorderSide(
+                                              color: AppColors.primary,
+                                              width: 1.5,
+                                            ),
+                                          ),
+
+                                          errorBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+
+                                            borderSide: const BorderSide(
+                                              color: Colors.red,
+                                            ),
                                           ),
                                         ),
+
+                                        dropdownColor: Colors.white,
+
+                                        borderRadius: BorderRadius.circular(16),
+
                                         items: filteredData.map((item) {
                                           return DropdownMenuItem<String>(
                                             value: item.code,
-                                            child: Text(
-                                              isArabic
-                                                  ? item.arDesc
-                                                  : item.enDesc,
+
+                                            child: Directionality(
+                                              textDirection: isArabic
+                                                  ? TextDirection.rtl
+                                                  : TextDirection.ltr,
+
+                                              child: Row(
+                                                children: [
+                                                  Container(
+                                                    width: 34,
+                                                    height: 34,
+
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.primary
+                                                          .withOpacity(.1),
+
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            10,
+                                                          ),
+                                                    ),
+
+                                                    child: const Icon(
+                                                      Icons
+                                                          .report_problem_outlined,
+                                                      size: 18,
+                                                      color: AppColors.primary,
+                                                    ),
+                                                  ),
+
+                                                  const SizedBox(width: 12),
+
+                                                  Expanded(
+                                                    child: Text(
+                                                      isArabic
+                                                          ? item.arDesc
+                                                          : item.enDesc,
+
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+
+                                                        fontWeight:
+                                                            FontWeight.w600,
+
+                                                        color: Colors.black87,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           );
                                         }).toList(),
+
                                         onChanged: (value) {
                                           setState(() {
                                             selectedReasonCode = value;
+
                                             base64Image = null;
                                           });
                                         },
@@ -290,7 +402,7 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
                                 decoration: InputDecoration(
                                   hintText: "اكتب تفاصيل إضافية...",
                                   filled: true,
-                                  fillColor: Colors.grey.shade100,
+                                  fillColor: Colors.white,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
@@ -451,7 +563,8 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
                                           // 🔥 تحديث الحالة
                                           await ref.read(
                                             updateInvoiceStatusProvider((
-                                              invoiceNo: widget.invoiceNumber.toString(),
+                                              invoiceNo: widget.invoiceNumber
+                                                  .toString(),
                                               status: newStatus,
                                             )).future,
                                           );

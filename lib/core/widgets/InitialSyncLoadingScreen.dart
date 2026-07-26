@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 
 class InitialSyncLoadingScreen extends StatefulWidget {
   final String message;
@@ -38,15 +39,14 @@ class _InitialSyncLoadingScreenState extends State<InitialSyncLoadingScreen>
       body: Stack(
         children: [
           Positioned(
-            top: -120,
-            left: -80,
-            child: _circle(const Color(0xff1976D2)),
+            top: 20,
+            left: 0,
+            child: _svgBackgroundIcon(const Color(0xff1976D2)),
           ),
-
           Positioned(
-            bottom: -140,
-            right: -90,
-            child: _circle(const Color(0xff0D47A1)),
+            bottom: 0,
+            right: 0,
+            child: _svgBackgroundIcon(const Color(0xff0D47A1)),
           ),
 
           Center(
@@ -149,79 +149,14 @@ class _InitialSyncLoadingScreenState extends State<InitialSyncLoadingScreen>
     );
   }
 
-  Widget _circle(Color color) {
-  return SizedBox(
-    width: 280,
-    height: 280,
-    child: CustomPaint(
-      painter: _WaterDropPainter(color),
-    ),
-  );
-}
-
-}
-class _WaterDropPainter extends CustomPainter {
-
-  final Color color;
-
-  _WaterDropPainter(this.color);
-
-
-  @override
-  void paint(Canvas canvas, Size size) {
-
-    final paint = Paint()
-      ..color = color.withOpacity(0.10)
-      ..style = PaintingStyle.fill;
-
-
-    final path = Path();
-
-
-    final w = size.width;
-    final h = size.height;
-
-
-    double x(double v) => v;
-    double y(double v) => h - v;
-
-
-    path.moveTo(
-      x(w * 0.5),
-      y(h * 0.95),
+  Widget _svgBackgroundIcon(Color color) {
+    return SizedBox(
+      width: 120,
+      height: 120,
+      child: SvgPicture.asset(
+        "assets/images/waterDropIcon.svg",
+        colorFilter: ColorFilter.mode(color.withOpacity(0.10), BlendMode.srcIn),
+      ),
     );
-
-
-    path.quadraticBezierTo(
-      x(w * 0.15),
-      y(h * 0.65),
-      x(w * 0.35),
-      y(h * 0.30),
-    );
-
-
-    path.quadraticBezierTo(
-      x(w * 0.5),
-      y(h * 0.05),
-      x(w * 0.65),
-      y(h * 0.30),
-    );
-
-
-    path.quadraticBezierTo(
-      x(w * 0.85),
-      y(h * 0.65),
-      x(w * 0.5),
-      y(h * 0.95),
-    );
-
-
-    canvas.drawPath(path, paint);
   }
-
-
-  @override
-  bool shouldRepaint(
-    covariant CustomPainter oldDelegate,
-  ) => false;
 }

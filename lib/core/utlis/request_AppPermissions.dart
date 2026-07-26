@@ -1,4 +1,3 @@
-import 'package:bwa_water_billing_collector_app/features/Printer%20VAN_GOLD/printer_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 Future<void> requestAppPermissions() async {

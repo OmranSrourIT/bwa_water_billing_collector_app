@@ -4,14 +4,14 @@ class InvoiceSummary {
   final double collectedAmount;
   final int completed;
   final int remaining;
-  final int pending;
+  final int unrechable;
   final int rejected;
 
   InvoiceSummary({
     required this.collectedAmount,
     required this.completed,
     required this.remaining,
-    required this.pending,
+    required this.unrechable,
     required this.rejected,
   });
 }
@@ -20,7 +20,7 @@ InvoiceSummary calculateSummary(List<InvoiceModel> invoices) {
   double collectedAmount = 0;
   int completed = 0;
   int remaining = 0;
-  int pending = 0;
+  int unrechable = 0;
   int rejected = 0;
 
   for (final inv in invoices) {
@@ -34,12 +34,12 @@ InvoiceSummary calculateSummary(List<InvoiceModel> invoices) {
     if (status.code == "COL") {
       completed++;
       collectedAmount += amount;
-    } 
-    else if (status.code == "ISS") {
+    } else if (status.code == "ISS") {
       remaining++;
-    } 
-    else if (status.code == "UNC") {
-      pending++;
+    } else if (status.code == "UNC") {
+      unrechable++;
+    } else if (status.code == "UEX") {
+      unrechable++;
     }
   }
 
@@ -47,7 +47,7 @@ InvoiceSummary calculateSummary(List<InvoiceModel> invoices) {
     collectedAmount: collectedAmount,
     completed: completed,
     remaining: remaining,
-    pending: pending,
-    rejected:rejected
+    unrechable: unrechable,
+    rejected: rejected,
   );
 }
