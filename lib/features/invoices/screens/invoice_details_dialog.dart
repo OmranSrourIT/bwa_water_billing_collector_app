@@ -88,12 +88,10 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             AppPopupAlert.show(
               context,
-              message: parseError(
-                error,
-              ).toString().replaceFirst("Exception: ", ""),
+              message: parseError( error).toString().replaceFirst("Exception: ", ""),
               isError: true,
               onOk: () {
-                Navigator.of(context).pop(); // يغلق InvoiceDetailsDialog
+                Navigator.of(context).pop();
               },
             );
 
@@ -305,8 +303,8 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
                                         _Row(
                                           "تاريخ التنصيب",
                                           _formatDate(invoice.installationDate),
-                                          "",
-                                          "",
+                                          "رقم المقياس",
+                                          invoice.waterMeterSerialNo!,
                                         ),
                                       if (getLookupCodeValue(
                                             invoice,

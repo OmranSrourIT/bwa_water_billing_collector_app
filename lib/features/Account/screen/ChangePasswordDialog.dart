@@ -1,5 +1,4 @@
 import 'package:bwa_water_billing_collector_app/core/constants/AppColors.dart';
-import 'package:bwa_water_billing_collector_app/core/widgets/HandelError.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/features/Account/provider/change_password_provider.dart';
 import 'package:flutter/material.dart';
@@ -229,7 +228,7 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
                               isError: false,
                             );
                           } catch (e) {
-                            final errorMessage = e!.toString().replaceAll(
+                            final errorMessage = e.toString().replaceAll(
                               "Exception: ",
                               "",
                             );

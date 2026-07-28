@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:ui';
-
 import 'package:bwa_water_billing_collector_app/core/Serivces/AppInfoService.dart';
 import 'package:bwa_water_billing_collector_app/core/constants/api_constants.dart';
 import 'package:bwa_water_billing_collector_app/features/AppGate/Model/AppUpdate.dart';
@@ -34,7 +33,7 @@ final appUpdateProvider = FutureProvider.autoDispose<AppUpdate>((ref) async {
     );
 
     return model;
-  } catch (e, s) {
+  } catch (e) {
    
     final cachedNeedUpdate = await storage.getNeedUpdate();
     final cachedUrl = await storage.getApkUrl() ?? "";

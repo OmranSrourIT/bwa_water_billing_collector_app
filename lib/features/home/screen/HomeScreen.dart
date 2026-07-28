@@ -14,7 +14,6 @@ import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/showEndBatchConfirmDialog.dart';
 import 'package:bwa_water_billing_collector_app/features/Account/provider/account_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/Account/screen/AccountDetailsDialog.dart';
-import 'package:bwa_water_billing_collector_app/features/Account/screen/ChangePasswordDialog.dart';
 import 'package:bwa_water_billing_collector_app/features/Payment/printer_channel.dart';
 import 'package:bwa_water_billing_collector_app/features/auth/providers/auth_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/batch/models/batch_model.dart';
@@ -752,7 +751,7 @@ class _HeaderState extends ConsumerState<_Header> {
                   ),
                   padding: const EdgeInsets.all(6),
                   child: Image.asset(
-                    'assets/images/Governerate2_logo.png',
+                    'assets/images/VerticalAsimati.png',
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -1449,7 +1448,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
       orElse: () => invoice.lookup.first,
     );
 
-    return isArabic ? status.arDesc : status.enDesc;
+    return isArabic ? status.externalArDesc : status.externalEnDesc;
   }
 
   Color getInvoiceStatusColor(InvoiceModel invoice, BuildContext context) {
@@ -2021,29 +2020,32 @@ class _InlineItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: MediaQuery.of(context).size.width * 0.28,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "$title : ",
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade700,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-
-          Expanded(
-            child: Text(
-              value,
-              maxLines: 2,
+      child: Padding(
+        padding: (title.contains("العنوان") && value.length >25) ? EdgeInsetsGeometry.only(top: 18) : EdgeInsetsGeometry.only(top: 0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "$title : ",
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+        
+            Expanded(
+              child: Text(
+                value,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2281,7 +2283,7 @@ class _ActiveBatchBarState extends ConsumerState<ActiveBatchBar> {
 
               if (confirm != true) return;
 
-              widget.onStartEndBatchLoading(); // 👈 مهم
+              widget.onStartEndBatchLoading();
             },
           ),
         ],

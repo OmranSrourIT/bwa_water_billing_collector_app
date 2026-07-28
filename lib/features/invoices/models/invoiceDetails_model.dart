@@ -42,7 +42,9 @@ class InvoiceInformationModel {
 
   final List<LookupModel> lookup;
   final String? activeCollectionPeriod;
+  final String? waterMeterSerialNo;
   final String? attachment;
+  final double? totalDebt ;
 
   InvoiceInformationModel({
     required this.invoiceNumber,
@@ -85,7 +87,9 @@ class InvoiceInformationModel {
     required this.failureReasons,
     required this.lookup,
     required this.activeCollectionPeriod,
+    this.waterMeterSerialNo,
     this.attachment,
+    this.totalDebt
   });
 
   factory InvoiceInformationModel.fromJson(Map<String, dynamic> json) {
@@ -185,7 +189,10 @@ class InvoiceInformationModel {
           
       activeCollectionPeriod: json["ActiveCollectionPeriod"] ?? "",
 
+      waterMeterSerialNo: json["WaterMeterSerialNo"] ?? "",
+
       attachment: attachment,
+     totalDebt: (json["TotalDebt"] ?? 0).toDouble(),
     );
   }
 }
@@ -258,6 +265,11 @@ class LookupModel {
 
   final String arDesc;
 
+  
+  final String externalArDesc;
+    
+  final String externalEnDesc;
+
   final String enDesc;
 
   LookupModel({
@@ -265,6 +277,8 @@ class LookupModel {
     required this.code,
     required this.arDesc,
     required this.enDesc,
+    required this.externalArDesc,
+    required this.externalEnDesc
   });
 
   factory LookupModel.fromJson(Map<String, dynamic> json) {
@@ -276,11 +290,15 @@ class LookupModel {
       arDesc: json["ArDesc"] ?? "",
 
       enDesc: json["EnDesc"] ?? "",
+      
+      externalArDesc: json["ExternalArDesc"] ?? "",
+      
+      externalEnDesc: json["ExternalEnDesc"] ?? "",
     );
   }
 
   factory LookupModel.empty() {
-    return LookupModel(lookupType: "", code: "", arDesc: "", enDesc: "");
+    return LookupModel(lookupType: "", code: "", arDesc: "", enDesc: "" ,externalArDesc :"" ,externalEnDesc:"");
   }
 }
 

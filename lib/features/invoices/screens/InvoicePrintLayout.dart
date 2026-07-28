@@ -1,15 +1,30 @@
 import 'dart:ui' as ui;
 import 'package:bwa_water_billing_collector_app/core/constants/AppConstant.dart';
+import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
+import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
+import 'package:bwa_water_billing_collector_app/features/Account/provider/account_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-class InvoicePrintLayout extends StatelessWidget {
+class InvoicePrintLayout extends ConsumerStatefulWidget {
   final InvoiceInformationModel invoice;
+  final String phone;
+ final String status;
+  const InvoicePrintLayout({
+    super.key,
+    required this.invoice,
+    required this.phone,
+    required this.status
+  });
 
-  const InvoicePrintLayout({super.key, required this.invoice});
+  @override
+  ConsumerState<InvoicePrintLayout> createState() => _InvoicePrintLayout();
+}
 
+class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
   String money(double v) => NumberFormat('#,##0.000').format(v);
 
   String formatDate(DateTime? d) =>
@@ -116,22 +131,22 @@ class InvoicePrintLayout extends StatelessWidget {
               child: Builder(
                 builder: (context) {
                   final collectionType = getLookupCodeValue(
-                    invoice,
+                    widget.invoice,
                     "CollectionType",
                     context,
                   );
 
                   final int? days = (collectionType == "EST")
-                      ? (invoice.periodToDate != null &&
-                                invoice.periodFromDate != null)
-                            ? invoice.periodToDate!
-                                  .difference(invoice.periodFromDate!)
+                      ? (widget.invoice.periodToDate != null &&
+                                widget.invoice.periodFromDate != null)
+                            ? widget.invoice.periodToDate!
+                                  .difference(widget.invoice.periodFromDate!)
                                   .inDays
                             : null
-                      : (invoice.previousReadingDateTime != null &&
-                            invoice.currentReadDateTime != null)
-                      ? invoice.currentReadDateTime!
-                            .difference(invoice.previousReadingDateTime!)
+                      : (widget.invoice.previousReadingDateTime != null &&
+                            widget.invoice.currentReadDateTime != null)
+                      ? widget.invoice.currentReadDateTime!
+                            .difference(widget.invoice.previousReadingDateTime!)
                             .inDays
                       : null;
 
@@ -142,18 +157,18 @@ class InvoicePrintLayout extends StatelessWidget {
                       const SizedBox(height: 3),
 
                       Text(
-                        "رقم الاصدارية: ${invoice.cycleCode}",
+                        "رقم الاصدارية: ${widget.invoice.cycleCode}",
                         style: valueStyle.copyWith(fontSize: 20),
                       ),
 
                       Text(
-                        "رقم الفاتورة: ${invoice.invoiceNumber}",
+                        "رقم الفاتورة: ${widget.invoice.invoiceNumber}",
                         style: valueStyle.copyWith(fontSize: 20),
                       ),
 
                       Text.rich(
                         getLookupCodeValue(
-                                  invoice,
+                                  widget.invoice,
                                   "CollectionType",
                                   context,
                                 ) ==
@@ -170,7 +185,9 @@ class InvoicePrintLayout extends StatelessWidget {
                                     ),
                                   ),
                                   TextSpan(
-                                    text: formatDate(invoice.periodFromDate),
+                                    text: formatDate(
+                                      widget.invoice.periodFromDate,
+                                    ),
                                     style: const TextStyle(
                                       fontFamily: "Cairo",
                                       fontWeight: FontWeight.bold,
@@ -188,7 +205,9 @@ class InvoicePrintLayout extends StatelessWidget {
                                     ),
                                   ),
                                   TextSpan(
-                                    text: formatDate(invoice.periodToDate),
+                                    text: formatDate(
+                                      widget.invoice.periodToDate,
+                                    ),
                                     style: const TextStyle(
                                       fontFamily: "Cairo",
                                       fontWeight: FontWeight.bold,
@@ -211,7 +230,7 @@ class InvoicePrintLayout extends StatelessWidget {
                                   ),
                                   TextSpan(
                                     text: formatDate(
-                                      invoice.previousReadingDateTime,
+                                      widget.invoice.previousReadingDateTime,
                                     ),
                                     style: const TextStyle(
                                       fontFamily: "Cairo",
@@ -231,7 +250,7 @@ class InvoicePrintLayout extends StatelessWidget {
                                   ),
                                   TextSpan(
                                     text: formatDate(
-                                      invoice.currentReadDateTime,
+                                      widget.invoice.currentReadDateTime,
                                     ),
                                     style: const TextStyle(
                                       fontFamily: "Cairo",
@@ -256,7 +275,8 @@ class InvoicePrintLayout extends StatelessWidget {
                               ),
                             ),
                             TextSpan(
-                              text: "${invoice.activeCollectionPeriod} يوم",
+                              text:
+                                  "${widget.invoice.activeCollectionPeriod} يوم",
                               style: const TextStyle(
                                 fontFamily: "Cairo",
                                 fontWeight: FontWeight.bold,
@@ -280,20 +300,31 @@ class InvoicePrintLayout extends StatelessWidget {
 
         // ================= بيانات المشترك =================
         _sectionTitle("بيانات المشترك"),
-        _rowItem("اسم المشترك :", invoice.customerName),
-        _rowItem("رقم الحساب :", invoice.accountNo),
-        _rowItem("رقم الهاتف :", invoice.customerMobileNo),
-        _rowItem("نوع الإشغال :", invoice.usageTypeName),
-        _rowItem("العنوان :", invoice.propertyAddress),
+        _rowItem("اسم المشترك :", widget.invoice.customerName),
+        _rowItem("رقم الحساب :", widget.invoice.accountNo),
+        _rowItem("رقم الهاتف :", widget.invoice.customerMobileNo),
+        _rowItem("نوع الإشغال :", widget.invoice.usageTypeName),
+        _rowItem("العنوان :", widget.invoice.propertyAddress),
 
         _blackDivider(), // سطر فاصل صلب
         // ================= معلومات الجابي =================
         _sectionTitle("معلومات الجابي"),
-        _rowItem("اسم الجابي :", invoice.collectorName),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(width: 3, color: Colors.black),
+          ),
+          child: Column(
+            children: [
+              _rowItem("اسم الجابي :", widget.invoice.collectorName),
+              const Divider(height: 1, thickness: 3, color: Colors.black),
 
-        _blackDivider(), // سطر فاصل صلب
+              _rowItem("رقم هاتف الجابي:", "${widget.phone}"),
+            ],
+          ),
+        ),
+
         // ================= بيانات الاشتراك =================
-        _sectionTitle("بيانات الاشتراك"),
+        _sectionTitle("بيانات الإشتراك والإستهلاك",),
 
         Container(
           decoration: BoxDecoration(
@@ -301,33 +332,45 @@ class InvoicePrintLayout extends StatelessWidget {
           ),
           child: Column(
             children: [
-              _rowItem("نوع الاشتراك :", invoice.invoiceTypeName),
+              _rowItem("نوع الاشتراك :", widget.invoice.invoiceTypeName),
               const Divider(height: 1, thickness: 3, color: Colors.black),
-              if (getLookupCodeValue(invoice, "CollectionType", context) ==
+              if (getLookupCodeValue(
+                    widget.invoice,
+                    "CollectionType",
+                    context,
+                  ) ==
                   "EST")
                 _rowItem(
                   "معدل الاستهلاك اليومي :",
-                  "${invoice.estimatedPotableWater.toInt().toString()} م³",
+                  "${widget.invoice.estimatedPotableWater.toInt().toString()} م³",
                 ),
               const Divider(height: 1, thickness: 3, color: Colors.black),
-              if (getLookupCodeValue(invoice, "CollectionType", context) ==
+              if (getLookupCodeValue(
+                    widget.invoice,
+                    "CollectionType",
+                    context,
+                  ) ==
                   "ACT")
                 _rowItem(
                   "القراءة السابقة :",
-                  "${invoice.previousReading.toInt().toString()} م³",
+                  "${widget.invoice.previousReading.toInt().toString()} م³",
                 ),
 
               const Divider(height: 1, thickness: 3, color: Colors.black),
-              if (getLookupCodeValue(invoice, "CollectionType", context) ==
+              if (getLookupCodeValue(
+                    widget.invoice,
+                    "CollectionType",
+                    context,
+                  ) ==
                   "ACT")
                 _rowItem(
                   "القراءة الحالية :",
-                  "${invoice.currentReading.toInt().toString()} م³",
+                  "${widget.invoice.currentReading.toInt().toString()} م³",
                 ),
               const Divider(height: 1, thickness: 3, color: Colors.black),
               _rowItem(
                 "الاستهلاك الكلي :",
-                "${invoice.consumptionQtyPotable.toInt().toString()} م³",
+                "${widget.invoice.consumptionQtyPotable.toInt().toString()} م³",
               ),
             ],
           ),
@@ -336,8 +379,8 @@ class InvoicePrintLayout extends StatelessWidget {
         // ================= بنود الرسوم والخدمات =================
         _sectionTitle("بنود الرسوم والخدمات"),
         _blackDivider(), // سطر فاصل صلب
-        if (invoice.invoiceDetails.isNotEmpty)
-          ...invoice.invoiceDetails.map((item) {
+        if (widget.invoice.invoiceDetails.isNotEmpty)
+          ...widget.invoice.invoiceDetails.map((item) {
             return _rowItemFees(item.description, money(item.amount));
           }).toList(),
 
@@ -350,11 +393,17 @@ class InvoicePrintLayout extends StatelessWidget {
             children: [
               _rowItem(
                 "مبلغ الفاتورة المستحق :",
-                "${money(invoice.totalInvoiceAmount)} د.ع",
+                "${money(widget.invoice.totalInvoiceAmount)} د.ع",
                 isTotal: true,
               ),
               const Divider(height: 1, thickness: 3, color: Colors.black),
-              _rowItem("حالة الفاتورة:", "محصلة / تم التسديد", isTotal: true),
+              _rowItem(
+                "مجموع الديون السابقة :",
+                "${money(widget.invoice!.totalDebt!)} د.ع",
+                isTotal: true,
+              ),
+              const Divider(height: 1, thickness: 3, color: Colors.black),
+              _rowItem("حالة الفاتورة :", widget.status, isTotal: true),
             ],
           ),
         ),
@@ -439,7 +488,7 @@ class InvoicePrintLayout extends StatelessWidget {
               ),
               child: QrImageView(
                 data: AppConstant.verofNumberPrintNotice(
-                  invoice.payment!.paymentRefNo.toString(),
+                  widget.invoice.payment!.paymentRefNo.toString(),
                 ),
                 size: 180,
                 backgroundColor: Colors.white,
@@ -482,6 +531,9 @@ class InvoicePrintLayout extends StatelessWidget {
               ? Text(value, style: labelStyle.copyWith(fontSize: 24))
               : Expanded(
                   child: Text(
+                    textDirection: value.contains("+964")
+                        ? ui.TextDirection.ltr
+                        : ui.TextDirection.rtl,
                     value,
                     textAlign: TextAlign.left,
                     style: valueStyle,

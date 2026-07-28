@@ -1,10 +1,12 @@
 import 'dart:ui';
+import 'package:bwa_water_billing_collector_app/core/constants/AppColors.dart';
 import 'package:bwa_water_billing_collector_app/core/constants/AppConstant.dart';
 import 'package:bwa_water_billing_collector_app/core/storage/PrinterStorage.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/request_AppPermissions.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
+import 'package:bwa_water_billing_collector_app/features/Account/provider/account_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/Payment/printer_channel.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
@@ -57,6 +59,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
     BuildContext context,
     AsyncValue<InvoiceInformationModel> invoiceAsync,
   ) {
+    final accountAsync = ref.watch(accountProvider);
     return Dialog(
       insetPadding: const EdgeInsets.all(12), // 🔥 أصغر
       backgroundColor: Colors.transparent,
@@ -108,6 +111,10 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
 
                               const SizedBox(height: 10),
 
+                              _buildTotalDebt(invoice),
+
+                              const SizedBox(height: 10),
+
                               _buildStatus(context, invoice),
 
                               const SizedBox(height: 10),
@@ -147,7 +154,30 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
 
                   invoiceAsync.when(
                     data: (invoice) {
-                      return FooterPopup(context, invoice);
+                      return accountAsync.when(
+                        loading: () => const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                        error: (error, stack) {
+                          final message = parseError(error);
+
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            AppPopupAlert.show(
+                              context,
+                              message: message,
+                              isError: true,
+                            );
+                          });
+
+                          return const SizedBox();
+                        },
+                        data: (account) {
+                          return FooterPopup(context, invoice, account.phone);
+                        },
+                      );
                     },
                     loading: () {
                       return const SizedBox();
@@ -181,6 +211,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
   Container FooterPopup(
     BuildContext context,
     InvoiceInformationModel infoDetials,
+    String phone,
   ) {
     return Container(
       padding: const EdgeInsets.all(10),
@@ -213,6 +244,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
               ),
               onPressed: () async {
                 setState(() => isPrinting = true);
+                final statusNew =  widget.getInvoiceStatusCode(infoDetials,context);
 
                 try {
                   final image = await controller.captureFromWidget(
@@ -220,13 +252,16 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                       color: Colors.white,
                       child: Directionality(
                         textDirection: ui.TextDirection.rtl,
-                        child: InvoicePrintLayout(invoice: infoDetials),
+                        child: InvoicePrintLayout(
+                          invoice: infoDetials,
+                          phone: phone,
+                          status : statusNew
+                        ),
                       ),
                     ),
-                    pixelRatio:  3,
+                    pixelRatio: 3,
                     targetSize: const Size(576, 3000),
                   );
- 
 
                   final granted = await requestBluetoothPermissions();
                   if (!granted) return;
@@ -363,7 +398,11 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
         children: [
           Row(
             children: [
-              Image.asset("assets/images/Governerate2_logo.png", width: 90, height: 90),
+              Image.asset(
+                "assets/images/Governerate2_logo.png",
+                width: 90,
+                height: 90,
+              ),
               Expanded(
                 child: Builder(
                   builder: (context) {
@@ -419,19 +458,26 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                         ),
 
                         Text(
-                           getLookupCodeValue(
-                                                  invoice,
-                                                  "CollectionType",
-                                                  context,
-                                                ) ==
-                                                "EST" ?
-                          "الفترة: من ${formatDate(invoice.periodFromDate)} - الى ${formatDate(invoice.periodToDate)}" :"من ${formatDate(invoice.previousReadingDateTime)} - الى ${formatDate(invoice.currentReadDateTime)}",
-                          style: const TextStyle(fontSize: 14,fontWeight: FontWeight.bold)),
-                        
+                          getLookupCodeValue(
+                                    invoice,
+                                    "CollectionType",
+                                    context,
+                                  ) ==
+                                  "EST"
+                              ? "الفترة: من ${formatDate(invoice.periodFromDate)} - الى ${formatDate(invoice.periodToDate)}"
+                              : "من ${formatDate(invoice.previousReadingDateTime)} - الى ${formatDate(invoice.currentReadDateTime)}",
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
 
                         Text(
                           "عدد أيام الاحتساب: ${invoice.activeCollectionPeriod} يوم",
-                          style: const TextStyle(fontSize: 14,fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     );
@@ -467,12 +513,38 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
         children: [
           const Expanded(
             child: Text(
-             "مبلغ الفاتورة المستحق :",
+              "مبلغ الفاتورة المستحق :",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
           Text(
             "${formatAmount(invoice.totalInvoiceAmount)} د.ع",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotalDebt(InvoiceInformationModel invoice) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 245, 237, 232),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.danger),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              "مجموع الديون السابقة :",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          Text(
+            "${formatAmount(invoice.totalDebt!)} د.ع",
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
           ),
         ],
@@ -548,13 +620,44 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
   //================================================
 
   Widget _buildCollectorSection(InvoiceInformationModel invoice) {
+    final accountAsync = ref.watch(accountProvider);
     return _SectionCard(
       title: "معلومات الجابي",
-      child: _InfoRow(
-        icon: Icons.person_search_outlined,
-        label: "اسم الجابي",
-        value: invoice.collectorName,
-        isLast: true,
+      child: Column(
+        children: [
+          _InfoRow(
+            icon: Icons.person_search_outlined,
+            label: "اسم الجابي",
+            value: invoice.collectorName,
+            isLast: true,
+          ),
+          SizedBox(height: 10),
+          accountAsync.when(
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(40),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (error, stack) {
+              final message = parseError(error);
+
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                AppPopupAlert.show(context, message: message, isError: true);
+              });
+
+              return const SizedBox();
+            },
+            data: (account) {
+              return _InfoRow(
+                icon: Icons.phone,
+                label: "رقم هاتف الجابي",
+                value: account.phone,
+                isLast: true,
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -564,20 +667,21 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
   //================================================
 
   Widget _buildSubscriptionSection(InvoiceInformationModel invoice) {
-     String getLookupCodeValue(
-    InvoiceInformationModel invoice,
-    String lookupType,
-    BuildContext context,
-  ) {
-    final item = invoice.lookup.firstWhere(
-      (e) => e.lookupType == lookupType,
-      orElse: () => LookupModel.empty(),
-    );
+    String getLookupCodeValue(
+      InvoiceInformationModel invoice,
+      String lookupType,
+      BuildContext context,
+    ) {
+      final item = invoice.lookup.firstWhere(
+        (e) => e.lookupType == lookupType,
+        orElse: () => LookupModel.empty(),
+      );
 
-    return item.code;
-  }
+      return item.code;
+    }
+
     return _SectionCard(
-      title: "بيانات الاشتراك",
+      title: "بيانات الإشتراك والإستهلاك",
       child: Column(
         children: [
           Row(
@@ -590,17 +694,15 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                 ),
               ),
               const SizedBox(width: 10),
-              if (getLookupCodeValue(invoice,"CollectionType",context) == "EST" )
-              Expanded(
-                child: _InfoRow(
-                  icon: Icons.show_chart_outlined,
-                  label: "معدل الاستهلاك اليومي",
-                  value: invoice.estimatedPotableWater.toInt().toString(),
+              if (getLookupCodeValue(invoice, "CollectionType", context) ==
+                  "EST")
+                Expanded(
+                  child: _InfoRow(
+                    icon: Icons.show_chart_outlined,
+                    label: "معدل الاستهلاك اليومي",
+                    value: invoice.estimatedPotableWater.toInt().toString(),
+                  ),
                 ),
-              ),
-
-               
-
             ],
           ),
 
@@ -615,42 +717,43 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                   value: invoice.consumptionQtyPotable.toInt().toString(),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _InfoRow(
-                  icon: Icons.speed_outlined,
-                  label: "رقم المقياس",
-                  value: invoice.accountNo,
-                ),
-              ),
+              if (getLookupCodeValue(invoice, "CollectionType", context) ==  "ACT")
+                ...[
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _InfoRow(
+                      icon: Icons.speed_outlined,
+                      label: "رقم المقياس",
+                      value: invoice.waterMeterSerialNo!,
+                    ),
+                  ),
+                ],
             ],
           ),
 
           const SizedBox(height: 10),
 
-          
-
           Row(
             children: [
-                if (getLookupCodeValue(invoice,"CollectionType",context) == "ACT" )
-                 Expanded(
-                child: _InfoRow(
-                  icon: Icons.show_chart_outlined,
-                  label:    "القراءة السابقة",
-                  value:   "${invoice.previousReading.toInt().toString()}",
+              if (getLookupCodeValue(invoice, "CollectionType", context) ==
+                  "ACT")
+                Expanded(
+                  child: _InfoRow(
+                    icon: Icons.show_chart_outlined,
+                    label: "القراءة السابقة",
+                    value: "${invoice.previousReading.toInt().toString()}",
+                  ),
                 ),
-              ),
-                const SizedBox(width: 10),
-             if (getLookupCodeValue(invoice,"CollectionType",context) == "ACT" )
-              Expanded(
-                child: _InfoRow(
-                  icon: Icons.show_chart_outlined,
-                  label:     "القراءة الحالية",
-                  value:   "${invoice.currentReading.toInt().toString()}",
+              const SizedBox(width: 10),
+              if (getLookupCodeValue(invoice, "CollectionType", context) ==
+                  "ACT")
+                Expanded(
+                  child: _InfoRow(
+                    icon: Icons.show_chart_outlined,
+                    label: "القراءة الحالية",
+                    value: "${invoice.currentReading.toInt().toString()}",
+                  ),
                 ),
-              ),
-            
-             
             ],
           ),
         ],
@@ -719,7 +822,9 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
               color: Colors.green.shade100,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text(widget.getInvoiceStatusCode(invoice, context) +" / تم التسديد",  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            child: Text(
+              widget.getInvoiceStatusCode(invoice, context),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -772,10 +877,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                 SizedBox(height: 4),
                 Text("info@water.mayorality.gov.iq"),
                 SizedBox(height: 10),
-                Text(
-                  "امسح الرمز للتحقق ",
-                  textAlign: TextAlign.right,
-                ),
+                Text("امسح الرمز للتحقق ", textAlign: TextAlign.right),
               ],
             ),
           ),
@@ -793,7 +895,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
       children: [
         const Text(
           "دائرة ماء بغداد",
-          style: TextStyle(fontWeight: FontWeight.bold ,fontSize: 20),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
       ],
     );
@@ -923,7 +1025,7 @@ class _InfoRow extends StatelessWidget {
                   textAlign: TextAlign.right,
                   style: TextStyle(
                     color: Colors.grey.shade600,
-                    fontSize: 12,
+                    fontSize: 15,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -932,6 +1034,7 @@ class _InfoRow extends StatelessWidget {
 
                 Text(
                   value,
+                  textDirection: ui.TextDirection.ltr,
                   textAlign: TextAlign.right,
                   style: const TextStyle(
                     fontSize: 15,

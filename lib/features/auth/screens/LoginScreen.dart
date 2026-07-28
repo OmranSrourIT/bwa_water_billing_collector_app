@@ -1,4 +1,5 @@
 import 'package:bwa_water_billing_collector_app/core/Serivces/AppInfoService.dart';
+import 'package:bwa_water_billing_collector_app/core/constants/api_constants.dart';
 import 'package:bwa_water_billing_collector_app/core/lang/app_localizations.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/responsive.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
@@ -9,7 +10,7 @@ import 'package:bwa_water_billing_collector_app/features/auth/services/auth_stat
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
- 
+
 class LoginScreen extends ConsumerStatefulWidget {
   final VoidCallback onToggleLang;
   final Locale locale;
@@ -62,7 +63,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
         _passwordController.text = await storage.getPassword() ?? "";
       }
-     
 
       if (mounted) {
         setState(() {});
@@ -86,13 +86,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           !_handledExpired) {
         _showSessionExpiredAlert();
       }
-      
+
       if (next.error != null && next.error != prev?.error) {
         Future.microtask(() {
           if (mounted) {
             AppPopupAlert.show(
               context,
-              message: next.error?.toString().replaceFirst("Exception: ", "") ??
+              message:
+                  next.error?.toString().replaceFirst("Exception: ", "") ??
                   "Unknown error",
               isError: true,
             );
@@ -126,12 +127,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // """;
   // }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
-  }
-
   void _showSessionExpiredAlert() {
     _handledExpired = true;
     AppPopupAlert.show(
@@ -143,6 +138,71 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   bool obscurePassword = true;
 
+ Widget _environmentBadge() {
+  final env = ApiConstants.environment;
+
+  // لا تظهر أي شيء في Production
+  if (env == "PROD") {
+    return const SizedBox.shrink();
+  }
+
+  final envLabel = ApiConstants.environmentLabel;
+
+  Color color;
+
+  switch (env) {
+    case "TEST":
+      color = Colors.orange;
+      break;
+
+       case "STGIRAQ":
+      color = Colors.orange;
+      break;
+
+    case "DEV":
+      color = Colors.blue;
+      break;
+
+    default:
+      color = Colors.grey;
+  }
+
+  return Container(
+    padding: const EdgeInsets.symmetric(
+      horizontal: 14,
+      vertical: 8,
+    ),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.12),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(
+        color: color.withOpacity(0.4),
+      ),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.cloud_circle_outlined,
+          size: 16,
+          color: color,
+        ),
+
+        const SizedBox(width: 6),
+
+        Text(
+          envLabel,
+          style: TextStyle(
+            color: color,
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1,
+          ),
+        ),
+      ],
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
@@ -156,7 +216,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         children: [
           Positioned(
             top: 20,
-            left: 0, 
+            left: 0,
             child: _svgBackgroundIcon(const Color(0xff1976D2)),
           ),
           Positioned(
@@ -194,6 +254,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
+                        _environmentBadge(),
+
+                        const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -373,189 +436,183 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ],
       ),
     );
-
-    
   }
 
-    Widget _svgBackgroundIcon(Color color) {
+  Widget _svgBackgroundIcon(Color color) {
     return SizedBox(
       width: 120,
       height: 120,
       child: SvgPicture.asset(
         "assets/images/waterDropIcon.svg",
-        colorFilter: ColorFilter.mode(
-          color.withOpacity(0.10),
-          BlendMode.srcIn,
-        ),
+        colorFilter: ColorFilter.mode(color.withOpacity(0.10), BlendMode.srcIn),
       ),
     );
   }
 
+  // void _showForgotPasswordDialog(BuildContext context) {
+  //   final emailController = TextEditingController();
+  //   final formKey = GlobalKey<FormState>();
 
-  void _showForgotPasswordDialog(BuildContext context) {
-    final emailController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.45),
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            bool loading = false;
-            return Dialog(
-              backgroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 70,
-                        height: 70,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [Color(0xff1976D2), Color(0xff0D47A1)],
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.lock_reset,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      const Text(
-                        "إستعادة كلمة المرور",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xff0D47A1),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        "أدخل بريدك الإلكتروني لإرسال رابط إعادة التعيين",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      TextFormField(
-                        controller: emailController,
-                        validator: (v) =>
-                            v == null || v.isEmpty ? "Email required" : null,
-                        decoration: InputDecoration(
-                          labelText: "البريد الإلكتروني",
-                          prefixIcon: const Icon(Icons.email_outlined),
-                          filled: true,
-                          fillColor: const Color(0xffF8FAFC),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pop(context),
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                side: const BorderSide(
-                                  color: Color(0xff1976D2),
-                                ),
-                              ),
-                              child: const Text("إلغاء"),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            flex: 2,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xff1976D2),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                              ),
-                              onPressed: loading
-                                  ? null
-                                  : () async {
-                                      if (!formKey.currentState!.validate())
-                                        return;
-                                      setState(() => loading = true);
-                                      try {
-                                        // logic for reset email
-                                        Navigator.pop(context);
-                                        AppPopupAlert.show(
-                                          context,
-                                          message:
-                                              "تم إرسال رابط إعادة التعيين",
-                                          isError: false,
-                                        );
-                                      } catch (e) {
-                                        AppPopupAlert.show(
-                                          context,
-                                          message: e.toString(),
-                                          isError: true,
-                                        );
-                                      }
-                                      setState(() => loading = false);
-                                    },
-                              child: loading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Text(
-                                      "إرسال",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: true,
+  //     barrierColor: Colors.black.withOpacity(0.45),
+  //     builder: (dialogContext) {
+  //       return StatefulBuilder(
+  //         builder: (context, setState) {
+  //           bool loading = false;
+  //           return Dialog(
+  //             backgroundColor: Colors.white,
+  //             elevation: 0,
+  //             shape: RoundedRectangleBorder(
+  //               borderRadius: BorderRadius.circular(22),
+  //             ),
+  //             child: Container(
+  //               padding: const EdgeInsets.all(22),
+  //               decoration: BoxDecoration(
+  //                 color: Colors.white,
+  //                 borderRadius: BorderRadius.circular(22),
+  //               ),
+  //               child: Form(
+  //                 key: formKey,
+  //                 child: Column(
+  //                   mainAxisSize: MainAxisSize.min,
+  //                   children: [
+  //                     Container(
+  //                       width: 70,
+  //                       height: 70,
+  //                       decoration: const BoxDecoration(
+  //                         shape: BoxShape.circle,
+  //                         gradient: LinearGradient(
+  //                           colors: [Color(0xff1976D2), Color(0xff0D47A1)],
+  //                         ),
+  //                       ),
+  //                       child: const Icon(
+  //                         Icons.lock_reset,
+  //                         color: Colors.white,
+  //                         size: 32,
+  //                       ),
+  //                     ),
+  //                     const SizedBox(height: 14),
+  //                     const Text(
+  //                       "إستعادة كلمة المرور",
+  //                       style: TextStyle(
+  //                         fontSize: 18,
+  //                         fontWeight: FontWeight.w800,
+  //                         color: Color(0xff0D47A1),
+  //                       ),
+  //                     ),
+  //                     const SizedBox(height: 6),
+  //                     const Text(
+  //                       "أدخل بريدك الإلكتروني لإرسال رابط إعادة التعيين",
+  //                       textAlign: TextAlign.center,
+  //                       style: TextStyle(
+  //                         fontSize: 13,
+  //                         color: Colors.grey,
+  //                         fontWeight: FontWeight.w500,
+  //                       ),
+  //                     ),
+  //                     const SizedBox(height: 18),
+  //                     TextFormField(
+  //                       controller: emailController,
+  //                       validator: (v) =>
+  //                           v == null || v.isEmpty ? "Email required" : null,
+  //                       decoration: InputDecoration(
+  //                         labelText: "البريد الإلكتروني",
+  //                         prefixIcon: const Icon(Icons.email_outlined),
+  //                         filled: true,
+  //                         fillColor: const Color(0xffF8FAFC),
+  //                         border: OutlineInputBorder(
+  //                           borderRadius: BorderRadius.circular(14),
+  //                           borderSide: BorderSide.none,
+  //                         ),
+  //                       ),
+  //                     ),
+  //                     const SizedBox(height: 22),
+  //                     Row(
+  //                       children: [
+  //                         Expanded(
+  //                           child: OutlinedButton(
+  //                             onPressed: () => Navigator.pop(context),
+  //                             style: OutlinedButton.styleFrom(
+  //                               shape: RoundedRectangleBorder(
+  //                                 borderRadius: BorderRadius.circular(14),
+  //                               ),
+  //                               side: const BorderSide(
+  //                                 color: Color(0xff1976D2),
+  //                               ),
+  //                             ),
+  //                             child: const Text("إلغاء"),
+  //                           ),
+  //                         ),
+  //                         const SizedBox(width: 10),
+  //                         Expanded(
+  //                           flex: 2,
+  //                           child: ElevatedButton(
+  //                             style: ElevatedButton.styleFrom(
+  //                               backgroundColor: const Color(0xff1976D2),
+  //                               shape: RoundedRectangleBorder(
+  //                                 borderRadius: BorderRadius.circular(14),
+  //                               ),
+  //                               padding: const EdgeInsets.symmetric(
+  //                                 vertical: 14,
+  //                               ),
+  //                             ),
+  //                             onPressed: loading
+  //                                 ? null
+  //                                 : () async {
+  //                                     if (!formKey.currentState!.validate())
+  //                                       return;
+  //                                     setState(() => loading = true);
+  //                                     try {
+  //                                       // logic for reset email
+  //                                       Navigator.pop(context);
+  //                                       AppPopupAlert.show(
+  //                                         context,
+  //                                         message:
+  //                                             "تم إرسال رابط إعادة التعيين",
+  //                                         isError: false,
+  //                                       );
+  //                                     } catch (e) {
+  //                                       AppPopupAlert.show(
+  //                                         context,
+  //                                         message: e.toString(),
+  //                                         isError: true,
+  //                                       );
+  //                                     }
+  //                                     setState(() => loading = false);
+  //                                   },
+  //                             child: loading
+  //                                 ? const SizedBox(
+  //                                     width: 20,
+  //                                     height: 20,
+  //                                     child: CircularProgressIndicator(
+  //                                       strokeWidth: 2,
+  //                                       color: Colors.white,
+  //                                     ),
+  //                                   )
+  //                                 : const Text(
+  //                                     "إرسال",
+  //                                     style: TextStyle(
+  //                                       color: Colors.white,
+  //                                       fontSize: 13,
+  //                                       fontWeight: FontWeight.bold,
+  //                                     ),
+  //                                   ),
+  //                           ),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //             ),
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
 
   Widget _logo() {
     return Container(
@@ -727,7 +784,3 @@ class LanguageArEn extends StatelessWidget {
     );
   }
 }
-
- 
-
- 

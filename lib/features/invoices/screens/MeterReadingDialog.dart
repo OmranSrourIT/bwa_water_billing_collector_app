@@ -10,6 +10,7 @@ import 'package:bwa_water_billing_collector_app/features/invoices/models/reading
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoice_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/reading_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/screens/AnimatedMeterNumber.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -85,8 +86,6 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
   //   }
   // }
 
-
-
   Future<void> saveReading(InvoiceInformationModel invoice) async {
     FocusManager.instance.primaryFocus?.unfocus();
     SystemChannels.textInput.invokeMethod('TextInput.hide');
@@ -119,7 +118,7 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
       AppPopupAlert.show(
         context,
         message:
-        "لا يمكن تدوير المقياس؛ القراءة السابقة لا تقترب من الحد الأقصى",
+            "لا يمكن تدوير المقياس؛ القراءة السابقة لا تقترب من الحد الأقصى",
         isError: true,
       );
       return;
@@ -374,10 +373,11 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
                                             invoice.previousReadingDateTime,
                                           ),
                                         ),
-                                        // _InfoRow(
-                                        //   label: "آخر جابي",
-                                        //   value: "أحمد علي",
-                                        // ),
+                                        _InfoRow(
+                                          label: "رقم المقياس",
+                                          value: invoice.waterMeterSerialNo!,
+                                          highlight: true,
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -487,7 +487,7 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
                                           AppPopupAlert.show(
                                             context,
                                             message:
-                                            "لا يمكن تدوير المقياس؛ القراءة السابقة لا تقترب من الحد الأقصى",
+                                                "لا يمكن تدوير المقياس؛ القراءة السابقة لا تقترب من الحد الأقصى",
                                             isError: true,
                                           );
                                           return;
@@ -743,8 +743,13 @@ class _SectionCard extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
+  final bool highlight;
 
-  const _InfoRow({required this.label, required this.value});
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    this.highlight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -752,9 +757,23 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Text(label, style: TextStyle(color: Colors.grey.shade600)),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const Spacer(),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          highlight
+              ? AnimatedMeterNumber(value: value)
+              : Text(
+                  value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
         ],
       ),
     );

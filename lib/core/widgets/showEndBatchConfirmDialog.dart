@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 Future<bool?> showEndBatchConfirmDialog(
   BuildContext context,
@@ -49,18 +48,18 @@ Future<bool?> showEndBatchConfirmDialog(
 
                   // 🔥 Title
                   const Text(
-                    "تأكيد إنهاء السجل",
+                  "هل أنت متأكد من إنهاء السجل رقم ↓ ",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
 
                   const SizedBox(height: 12),
 
-                  // 🧾 Message
-                  Text(
-                    "هل أنت متأكد أنك تريد إنهاء السجل رقم:",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey.shade700),
-                  ),
+                  // // 🧾 Message
+                  // Text(
+                  //   "هل أنت متأكد أنك تريد إنهاء السجل رقم:",
+                  //   textAlign: TextAlign.center,
+                  //   style: TextStyle(color: Colors.grey.shade700 ,fontSize:18 ),
+                  // ),
 
                   const SizedBox(height: 8),
 
@@ -94,7 +93,7 @@ Future<bool?> showEndBatchConfirmDialog(
                           onPressed: isLoading
                               ? null
                               : () => Navigator.pop(context, false),
-                          child: const Text("إلغاء"),
+                          child: Text("إلغاء",style: TextStyle(fontSize: 15,fontWeight: FontWeight.bold), ),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -122,7 +121,7 @@ Future<bool?> showEndBatchConfirmDialog(
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text("تأكيد"),
+                              : const Text("تأكيد",style: TextStyle(fontSize: 15,fontWeight: FontWeight.bold),),
                         ),
                       ),
                     ],

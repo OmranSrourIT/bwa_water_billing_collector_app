@@ -44,9 +44,8 @@ class BatchApiService {
       }
 
       return BatchEndResponse.fromJson(jsonData);
-    } on DioException catch (e) {
-  
-      return BatchEndResponse.networkError();
+    } on DioException catch (e) { 
+       throw Exception(handleDioError(e)); 
     } catch (e) { 
       return BatchEndResponse.error(
         "حدث خطأ أثناء معالجة البيانات",
