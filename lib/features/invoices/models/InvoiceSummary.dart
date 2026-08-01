@@ -34,11 +34,9 @@ InvoiceSummary calculateSummary(List<InvoiceModel> invoices) {
     if (status.code == "COL") {
       completed++;
       collectedAmount += amount;
-    } else if (status.code == "ISS") {
+    } else if (status.code == "ISS" || status.code == "RDY") {
       remaining++;
-    } else if (status.code == "UNC") {
-      unrechable++;
-    } else if (status.code == "UEX") {
+    } else if (status.code == "UNC" || status.code == "UEX") {
       unrechable++;
     }
   }

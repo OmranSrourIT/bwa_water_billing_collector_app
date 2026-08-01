@@ -304,7 +304,7 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
                                           "تاريخ التنصيب",
                                           _formatDate(invoice.installationDate),
                                           "رقم المقياس",
-                                          invoice.waterMeterSerialNo!,
+                                          invoice.waterMeterSerialNo ?? "-",
                                         ),
                                       if (getLookupCodeValue(
                                             invoice,

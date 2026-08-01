@@ -254,23 +254,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
-                        _environmentBadge(),
+                        // _environmentBadge(),
 
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            LanguageArEn(widget: widget),
-                            Container(
-                              padding: EdgeInsets.only(top: 8),
-                              width: 65,
-                              height: 65,
-                              child: Image.asset(
-                                "assets/images/Governerate2_logo.png",
-                              ),
-                            ),
-                          ],
-                        ),
+                        // const SizedBox(height: 8),
+                        // Row(
+                        //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        //   children: [
+                        //     LanguageArEn(widget: widget),
+                        //     Container(
+                        //       padding: EdgeInsets.only(top: 8),
+                        //       width: 65,
+                        //       height: 65,
+                        //       child: Image.asset(
+                        //         "assets/images/Governerate2_logo.png",
+                        //       ),
+                        //     ),
+                        //   ],
+                        // ),
                         const SizedBox(height: 18),
                         _logo(),
                         const SizedBox(height: 18),

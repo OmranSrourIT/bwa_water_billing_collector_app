@@ -12,12 +12,12 @@ import 'package:qr_flutter/qr_flutter.dart';
 class InvoicePrintLayout extends ConsumerStatefulWidget {
   final InvoiceInformationModel invoice;
   final String phone;
- final String status;
+  final String status;
   const InvoicePrintLayout({
     super.key,
     required this.invoice,
     required this.phone,
-    required this.status
+    required this.status,
   });
 
   @override
@@ -324,7 +324,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
         ),
 
         // ================= بيانات الاشتراك =================
-        _sectionTitle("بيانات الإشتراك والإستهلاك",),
+        _sectionTitle("بيانات الإشتراك والإستهلاك"),
 
         Container(
           decoration: BoxDecoration(
@@ -404,6 +404,18 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
               ),
               const Divider(height: 1, thickness: 3, color: Colors.black),
               _rowItem("حالة الفاتورة :", widget.status, isTotal: true),
+
+              if (widget.invoice.totalDebt != null &&
+                  widget.invoice.totalDebt! > 0) ...[
+                const SizedBox(height: 10),
+
+                Text(
+                  "تنويه : الفاتورة مسددة وتوجد ديون مستحقة على الحساب",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+
+              const SizedBox(height: 10),
             ],
           ),
         ),

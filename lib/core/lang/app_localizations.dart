@@ -76,7 +76,7 @@ class AppLocalizations {
       'subtitle': 'نظام إدارة الفواتير والتحصيل',
       'version': 'الإصدار',
       'password_forgot': 'هل نسيت كلمة السر؟',
-      'home_title': 'نظام فوترة خدمات المياه',
+      'home_title': 'نظام فوترة وجباية الماء',
       'home_subtitle': 'لوحة الجابي', 
       'account_info':'معلومات المستخدم',
       'logout': 'تسجيل الخروج', 

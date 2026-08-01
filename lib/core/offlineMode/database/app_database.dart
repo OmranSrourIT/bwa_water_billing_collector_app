@@ -22,7 +22,9 @@ class AppDatabase {
     final databasePath = await getDatabasesPath();
 
     final path = join(databasePath, "bwa_collector.db");
-  
+
+      await deleteDatabase(path);
+
     return await openDatabase(
       path,
       version: 1,
@@ -127,10 +129,11 @@ CREATE TABLE invoices(
 
          lookup_json TEXT,
          
-        activeCollectionPeriod, 
-        
-
-        synced INTEGER DEFAULT 1
+       activeCollectionPeriod TEXT,
+       waterMeterSerialNo TEXT,
+       totalDebt REAL,
+       totalCredit REAL,
+       synced INTEGER DEFAULT 1
       )
     ''');
 

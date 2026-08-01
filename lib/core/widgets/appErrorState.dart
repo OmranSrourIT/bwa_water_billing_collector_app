@@ -81,6 +81,7 @@ class AppErrorState extends StatelessWidget {
                       color: Colors.black54,
                       fontSize: 15,
                       height: 1.6,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
 

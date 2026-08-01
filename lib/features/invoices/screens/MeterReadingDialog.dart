@@ -375,7 +375,7 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
                                         ),
                                         _InfoRow(
                                           label: "رقم المقياس",
-                                          value: invoice.waterMeterSerialNo!,
+                                          value: invoice.waterMeterSerialNo??"-",
                                           highlight: true,
                                         ),
                                       ],

@@ -45,6 +45,7 @@ class InvoiceInformationModel {
   final String? waterMeterSerialNo;
   final String? attachment;
   final double? totalDebt ;
+    final double? totalCredit ;
 
   InvoiceInformationModel({
     required this.invoiceNumber,
@@ -89,7 +90,8 @@ class InvoiceInformationModel {
     required this.activeCollectionPeriod,
     this.waterMeterSerialNo,
     this.attachment,
-    this.totalDebt
+    this.totalDebt,
+    this.totalCredit
   });
 
   factory InvoiceInformationModel.fromJson(Map<String, dynamic> json) {
@@ -193,6 +195,7 @@ class InvoiceInformationModel {
 
       attachment: attachment,
      totalDebt: (json["TotalDebt"] ?? 0).toDouble(),
+     totalCredit : (json["TotalCredit"] ?? 0).toDouble(),
     );
   }
 }

@@ -404,14 +404,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             },
                             loading: () => CircularProgressIndicator(),
                             error: (error, stack) {
-                              return AppErrorState(
-                                message: parseError(
-                                  error,
-                                ).replaceAll("Exception:", ""),
-                                onRetry: () {
-                                  ref.invalidate(batchProvider);
-                                },
-                              );
+                              final message = parseError(error);
+                              if (message.contains(
+                                "type 'String' is not a subtype of type 'List<dynamic>' in type cast",
+                              )) {
+                                return AppErrorState(
+                                  message: "لا توجد سجلات مسندة اليك حاليا ",
+                                  onRetry: () {
+                                    ref.invalidate(batchProvider);
+                                  },
+                                );
+                              } else {
+                                return AppErrorState(
+                                  message: message,
+                                  onRetry: () {
+                                    ref.invalidate(batchProvider);
+                                  },
+                                );
+                              }
                             },
                           ),
                         ],
@@ -545,7 +555,7 @@ class _HeaderState extends ConsumerState<_Header> {
                     textDirection:
                         Localizations.localeOf(context).languageCode == 'ar'
                         ? ui.TextDirection.rtl
-                        :  ui.TextDirection.ltr,
+                        : ui.TextDirection.ltr,
 
                     child: Container(
                       width: 240,
@@ -1817,6 +1827,8 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                     vertical: 12,
                   ),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: _InlineItem(
@@ -2021,7 +2033,9 @@ class _InlineItem extends StatelessWidget {
     return SizedBox(
       width: MediaQuery.of(context).size.width * 0.28,
       child: Padding(
-        padding: (title.contains("العنوان") && value.length >25) ? EdgeInsetsGeometry.only(top: 18) : EdgeInsetsGeometry.only(top: 0),
+        padding: (title.contains("العنوان") && value.length > 25)
+            ? EdgeInsetsGeometry.only(top: 18)
+            : EdgeInsetsGeometry.only(top: 0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2035,13 +2049,16 @@ class _InlineItem extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-        
+
             Expanded(
               child: Text(
                 value,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],

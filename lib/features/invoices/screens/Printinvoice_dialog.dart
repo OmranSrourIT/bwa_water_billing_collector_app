@@ -113,6 +113,19 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
 
                               _buildTotalDebt(invoice),
 
+                              if (invoice.totalDebt != null &&
+                                  invoice.totalDebt! > 0) ...[
+                                const SizedBox(height: 10),
+
+                                Text(
+                                  "تنويه : الفاتورة مسددة وتوجد ديون مستحقة على الحساب",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+
                               const SizedBox(height: 10),
 
                               _buildStatus(context, invoice),
@@ -244,7 +257,10 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
               ),
               onPressed: () async {
                 setState(() => isPrinting = true);
-                final statusNew =  widget.getInvoiceStatusCode(infoDetials,context);
+                final statusNew = widget.getInvoiceStatusCode(
+                  infoDetials,
+                  context,
+                );
 
                 try {
                   final image = await controller.captureFromWidget(
@@ -255,7 +271,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                         child: InvoicePrintLayout(
                           invoice: infoDetials,
                           phone: phone,
-                          status : statusNew
+                          status: statusNew,
                         ),
                       ),
                     ),
@@ -717,17 +733,17 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                   value: invoice.consumptionQtyPotable.toInt().toString(),
                 ),
               ),
-              if (getLookupCodeValue(invoice, "CollectionType", context) ==  "ACT")
-                ...[
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _InfoRow(
-                      icon: Icons.speed_outlined,
-                      label: "رقم المقياس",
-                      value: invoice.waterMeterSerialNo!,
-                    ),
+              if (getLookupCodeValue(invoice, "CollectionType", context) ==
+                  "ACT") ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _InfoRow(
+                    icon: Icons.speed_outlined,
+                    label: "رقم المقياس",
+                    value: invoice.waterMeterSerialNo ?? "-",
                   ),
-                ],
+                ),
+              ],
             ],
           ),
 

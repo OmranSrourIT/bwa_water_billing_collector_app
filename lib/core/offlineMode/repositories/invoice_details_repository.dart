@@ -70,9 +70,7 @@ class InvoiceDetailsRepository {
     return localData;
   }
 
-  Future<void> _saveAttachments(InvoiceInformationModel details) async {
-    // صورة قراءة العداد
-
+  Future<void> _saveAttachments(InvoiceInformationModel details) async { 
     if (details.attachment != null && details.attachment!.isNotEmpty) {
       final path = await imageStorage.saveInvoiceImage(
         invoiceNo: details.invoiceNumber,

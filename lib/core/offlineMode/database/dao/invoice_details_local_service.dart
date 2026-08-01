@@ -116,6 +116,9 @@ class InvoiceDetailsLocalService {
       ),
 
       "activeCollectionPeriod": item.activeCollectionPeriod,
+      "waterMeterSerialNo": item.waterMeterSerialNo ??"",
+      "totalDebt": item.totalDebt,
+      "totalCredit": item.totalCredit,
 
       "synced": 1,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
@@ -258,6 +261,10 @@ class InvoiceDetailsLocalService {
           : null,
 
       activeCollectionPeriod: json["activeCollectionPeriod"] as String,
+      waterMeterSerialNo: json["waterMeterSerialNo"] as String,
+      totalDebt: (json["totalDebt"] as num? ?? 0).toDouble(),
+      totalCredit: (json["totalCredit"] as num? ?? 0).toDouble(),
+
       // attachment: json["attachment"] as String?,
     );
   }
