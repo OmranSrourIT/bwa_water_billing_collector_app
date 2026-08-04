@@ -5,6 +5,7 @@ import 'package:bwa_water_billing_collector_app/core/utlis/request_AppPermission
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
+import 'package:bwa_water_billing_collector_app/features/Account/provider/account_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
 import 'package:flutter/material.dart';
@@ -53,7 +54,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
 
   Dialog buildDialog(BuildContext context) {
     final invoiceAsync = ref.watch(invoiceDetailProvider(widget.invoiceNumber));
-
+   final accountAsync = ref.watch(accountProvider);
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(12),
@@ -165,7 +166,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                           _NoticeRow(
                                             "رقم الفاتورة / الإصدارية : ",
                                             invoice.invoiceNumber +
-                                                " / ${invoice.cycleCode}",
+                                                " / ${invoice.cycleTypeName}",
                                           ),
                                           _NoticeRow(
                                             "رقم الحساب : ",
@@ -188,6 +189,36 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                             "اسم الجابي : ",
                                             invoice.collectorName,
                                           ),
+
+                                          accountAsync.when(
+                                            loading: () => const Center(
+                                              child: Padding(
+                                                padding: EdgeInsets.all(40),
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              ),
+                                            ),
+                                            error: (error, stack) {
+                                              final message = parseError(error);
+
+                                              WidgetsBinding.instance
+                                                  .addPostFrameCallback((_) {
+                                                    AppPopupAlert.show(
+                                                      context,
+                                                      message: message,
+                                                      isError: true,
+                                                    );
+                                                  });
+
+                                              return const SizedBox();
+                                            },
+                                            data: (account) {
+                                              return _NoticeRow(
+                                                "رقم هاتف الجابي : ",
+                                                account.phone,
+                                              );
+                                            },
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -207,7 +238,10 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                       ),
                                       child: Column(
                                         children: [
-                                           Text("مبلغ الفاتورة المستحق",style: TextStyle(fontSize: 20),),
+                                          Text(
+                                            "مبلغ الفاتورة المستحق",
+                                            style: TextStyle(fontSize: 20),
+                                          ),
                                           const SizedBox(height: 8),
                                           Text(
                                             "${NumberFormat('#,##0.000').format(invoice.totalInvoiceAmount)} د.ع",
@@ -293,46 +327,45 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                             child: Text(
                                               "دائرة ماء بغداد",
                                               textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
                                           ),
 
                                           const SizedBox(height: 5),
 
-                                          const Divider(
-                                            thickness: 1,
-                                            color: Colors.black,
-                                          ),
-                                           const SizedBox(height: 6),
+                                          // const Divider(
+                                          //   thickness: 1,
+                                          //   color: Colors.black,
+                                          // ),
+                                          //  const SizedBox(height: 6),
 
-                                          const Center(
-                                            child: Text(
-                                              "يمكنك أيضاً دفع الفاتورة إلكترونياً من خلال زيارة الرابط التالي:",
-                                              textAlign: TextAlign.center,
-                                                 style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                            ),
-                                          ),
+                                          // const Center(
+                                          //   child: Text(
+                                          //     "يمكنك أيضاً دفع الفاتورة إلكترونياً من خلال زيارة الرابط التالي:",
+                                          //     textAlign: TextAlign.center,
+                                          //        style: TextStyle(
+                                          //     fontWeight: FontWeight.w600,
+                                          //   ),
+                                          //   ),
+                                          // ),
 
-                                          const SizedBox(height: 6),
+                                          // const SizedBox(height: 6),
 
-                                          const Center(
-                                            child: Text(
-                                              "https://bwa.asimti.iq",
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                                fontFamily: 'Cairo',
-                                                decoration:
-                                                    TextDecoration.underline,
-                                              ),
-                                            ),
-                                          ),
-
+                                          // const Center(
+                                          //   child: Text(
+                                          //     "https://bwa.asimti.iq",
+                                          //     textAlign: TextAlign.center,
+                                          //     style: TextStyle(
+                                          //       fontSize: 18,
+                                          //       fontWeight: FontWeight.bold,
+                                          //       fontFamily: 'Cairo',
+                                          //       decoration:
+                                          //           TextDecoration.underline,
+                                          //     ),
+                                          //   ),
+                                          // ),
                                           const Divider(
                                             thickness: 1,
                                             color: Colors.black,
@@ -360,7 +393,31 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
 
                     invoiceAsync.when(
                       data: (invoice) {
-                        return FooterPopup(context, invoice);
+                         return accountAsync.when(
+                        loading: () => const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                        error: (error, stack) {
+                          final message = parseError(error);
+
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            AppPopupAlert.show(
+                              context,
+                              message: message,
+                              isError: true,
+                            );
+                          });
+
+                          return const SizedBox();
+                        },
+                        data: (account) {
+                          return FooterPopup(context, invoice, account.phone);
+                        },
+                      );
+                        
                       },
                       loading: () {
                         return const SizedBox();
@@ -408,6 +465,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
   Container FooterPopup(
     BuildContext context,
     InvoiceInformationModel infoDetials,
+    String phone,
   ) {
     return Container(
       padding: const EdgeInsets.all(10),
@@ -467,8 +525,9 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                     collectorName: infoDetials.collectorName,
                     amount: infoDetials.totalInvoiceAmount,
                     today: today,
-                    cycleCode: infoDetials.cycleCode,
-                    paymentRefNo: infoDetials.payment!.paymentRefNo,
+                    cycleCode: infoDetials.cycleTypeName,
+                    paymentRefNo: infoDetials.payment!.paymentRefNo, 
+                    phone : phone
                   );
 
                   final image = await controller.captureFromWidget(
@@ -603,7 +662,9 @@ class _NoticeRow extends StatelessWidget {
               style: const TextStyle(fontFamily: 'Cairo', fontSize: 16),
             ),
           ),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(    textDirection: value.contains("+964")
+                        ? ui.TextDirection.ltr
+                        : ui.TextDirection.rtl,value, style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );

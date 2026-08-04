@@ -114,6 +114,7 @@ CREATE TABLE invoices(
 
         customer_id TEXT,
         cycle_code INTEGER,
+        cycle_type_name TEXT,
 
         region TEXT,
         installation_date TEXT,

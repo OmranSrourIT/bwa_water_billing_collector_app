@@ -157,7 +157,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
                       const SizedBox(height: 3),
 
                       Text(
-                        "رقم الاصدارية: ${widget.invoice.cycleCode}",
+                        "رقم الاصدارية: ${widget.invoice.cycleTypeName}",
                         style: valueStyle.copyWith(fontSize: 20),
                       ),
 
@@ -311,12 +311,12 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
         _sectionTitle("معلومات الجابي"),
         Container(
           decoration: BoxDecoration(
-            border: Border.all(width: 3, color: Colors.black),
+            border: Border.all(width: 1.5, color: Colors.black),
           ),
           child: Column(
             children: [
               _rowItem("اسم الجابي :", widget.invoice.collectorName),
-              const Divider(height: 1, thickness: 3, color: Colors.black),
+              const Divider(height: 1, thickness: 1.5, color: Colors.black),
 
               _rowItem("رقم هاتف الجابي:", "${widget.phone}"),
             ],
@@ -328,12 +328,12 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
 
         Container(
           decoration: BoxDecoration(
-            border: Border.all(width: 3, color: Colors.black),
+            border: Border.all(width: 1.5, color: Colors.black),
           ),
           child: Column(
             children: [
               _rowItem("نوع الاشتراك :", widget.invoice.invoiceTypeName),
-              const Divider(height: 1, thickness: 3, color: Colors.black),
+              const Divider(height: 1, thickness: 1.5, color: Colors.black),
               if (getLookupCodeValue(
                     widget.invoice,
                     "CollectionType",
@@ -344,7 +344,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
                   "معدل الاستهلاك اليومي :",
                   "${widget.invoice.estimatedPotableWater.toInt().toString()} م³",
                 ),
-              const Divider(height: 1, thickness: 3, color: Colors.black),
+              const Divider(height: 1, thickness: 1.5, color: Colors.black),
               if (getLookupCodeValue(
                     widget.invoice,
                     "CollectionType",
@@ -356,7 +356,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
                   "${widget.invoice.previousReading.toInt().toString()} م³",
                 ),
 
-              const Divider(height: 1, thickness: 3, color: Colors.black),
+              const Divider(height: 1, thickness: 1.5, color: Colors.black),
               if (getLookupCodeValue(
                     widget.invoice,
                     "CollectionType",
@@ -367,7 +367,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
                   "القراءة الحالية :",
                   "${widget.invoice.currentReading.toInt().toString()} م³",
                 ),
-              const Divider(height: 1, thickness: 3, color: Colors.black),
+              const Divider(height: 1, thickness: 1.5, color: Colors.black),
               _rowItem(
                 "الاستهلاك الكلي :",
                 "${widget.invoice.consumptionQtyPotable.toInt().toString()} م³",
@@ -387,7 +387,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
         // ================= TOTAL BOX =================
         Container(
           decoration: BoxDecoration(
-            border: Border.all(width: 3, color: Colors.black),
+            border: Border.all(width: 1.5, color: Colors.black),
           ),
           child: Column(
             children: [
@@ -396,30 +396,30 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
                 "${money(widget.invoice.totalInvoiceAmount)} د.ع",
                 isTotal: true,
               ),
-              const Divider(height: 1, thickness: 3, color: Colors.black),
+              const Divider(height: 1, thickness: 1.5, color: Colors.black),
               _rowItem(
                 "مجموع الديون السابقة :",
                 "${money(widget.invoice!.totalDebt!)} د.ع",
                 isTotal: true,
               ),
-              const Divider(height: 1, thickness: 3, color: Colors.black),
+              const Divider(height: 1, thickness: 1.5, color: Colors.black),
               _rowItem("حالة الفاتورة :", widget.status, isTotal: true),
-
-              if (widget.invoice.totalDebt != null &&
-                  widget.invoice.totalDebt! > 0) ...[
-                const SizedBox(height: 10),
-
-                Text(
-                  "تنويه : الفاتورة مسددة وتوجد ديون مستحقة على الحساب",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-
-              const SizedBox(height: 10),
             ],
           ),
         ),
 
+        if (widget.invoice.totalDebt != null &&
+            widget.invoice.totalDebt! > 0) ...[
+          const SizedBox(height: 5),
+
+          Text(
+            "الفاتورة مسددة وتوجد ديون مستحقة على الحساب",
+            style: labelStyle.copyWith(fontSize: 21),
+          ),
+          const SizedBox(height: 10),
+        const Divider(height: 1, thickness: 1.5, color: Colors.black),
+        ],
+        
         const SizedBox(height: 10),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -593,7 +593,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 8),
       child: Divider(
-        thickness: 2.5, // سماكة الخط لضمان ظهوره
+        thickness: 1.5, // سماكة الخط لضمان ظهوره
         color: Colors.black, // لون أسود صلب
         height: 2,
       ),

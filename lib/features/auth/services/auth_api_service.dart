@@ -25,7 +25,7 @@ class AuthApiService implements AuthService {
           extra: {"skipAuth": true ,"context": null}, // 👈 أهم سطر
           headers: {
             "accept": "application/json",
-            "Authorization": "Basic ${_basicAuth(username, password)}",
+            "Authorization": "Basic ${_basicAuth(username.toLowerCase(), password)}",
           },
         ),
       );

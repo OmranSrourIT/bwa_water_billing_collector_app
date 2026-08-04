@@ -60,6 +60,7 @@ class InvoiceDetailsLocalService {
       "customer_id": item.customerID,
 
       "cycle_code": item.cycleCode,
+      "cycle_type_name": item.cycleTypeName,
 
       "region": item.region,
 
@@ -192,6 +193,7 @@ class InvoiceDetailsLocalService {
       isMeterRollover: json["IsMeterRollover"] as bool? ?? false,
 
       cycleCode: json["cycle_code"] as int? ?? 0,
+      cycleTypeName: json["cycle_type_name"] as String? ?? "",
 
       region: json["region"] as String? ?? "",
 

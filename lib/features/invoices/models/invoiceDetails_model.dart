@@ -27,6 +27,7 @@ class InvoiceInformationModel {
   final String customerID;
   final bool isMeterRollover;
   final int cycleCode;
+  final String cycleTypeName;
 
   final String region;
 
@@ -75,6 +76,7 @@ class InvoiceInformationModel {
     required this.customerID,
     required this.isMeterRollover,
     required this.cycleCode,
+    required this.cycleTypeName,
     required this.region,
 
     this.installationDate,
@@ -163,7 +165,7 @@ class InvoiceInformationModel {
         isMeterRollover: json["IsMeterRollover"] as bool? ?? false,
 
       cycleCode: (json["CycleCode"] ?? 0),
-
+      cycleTypeName: json["CycleTypeName"] ?? "",
       region: json["Region"] ?? "",
 
       installationDate: json["InstallationDate"] != null

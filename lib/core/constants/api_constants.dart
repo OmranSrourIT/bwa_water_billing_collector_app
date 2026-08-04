@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = "https://bwa.asimti.iq/rest";
+  static const String baseUrl = "https://stgbwa.asimti.com/rest";
   //ProdIraq   ===> https://bwa.asimti.iq
   //Stage Iraq ===> https://stgbwa.asimti.com
   //Dev Amman ===> https://bwa.infinite-tek.com:8443

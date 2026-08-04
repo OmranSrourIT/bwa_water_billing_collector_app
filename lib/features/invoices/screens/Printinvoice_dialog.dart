@@ -463,7 +463,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          "رقم الاصدارية: ${invoice.cycleCode}",
+                          "رقم الاصدارية: ${invoice.cycleTypeName}",
                           style: const TextStyle(fontSize: 14),
                         ),
 
