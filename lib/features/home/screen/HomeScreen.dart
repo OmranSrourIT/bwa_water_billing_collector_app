@@ -2033,7 +2033,7 @@ class _InlineItem extends StatelessWidget {
     return SizedBox(
       width: MediaQuery.of(context).size.width * 0.28,
       child: Padding(
-        padding: (title.contains("العنوان") && value.length > 25)
+        padding: (title.contains("العنوان") && value.length > 20)
             ? EdgeInsetsGeometry.only(top: 18)
             : EdgeInsetsGeometry.only(top: 0),
         child: Row(

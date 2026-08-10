@@ -90,11 +90,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (next.error != null && next.error != prev?.error) {
         Future.microtask(() {
           if (mounted) {
+
+            final messageResult = next.error?.toString().replaceFirst("Exception: ", "") ??"Unknown error";    
             AppPopupAlert.show(
               context,
-              message:
-                  next.error?.toString().replaceFirst("Exception: ", "") ??
-                  "Unknown error",
+              message:messageResult.contains("Provided username-password combination is invalid.") ? "اسم المستخدم أو كلمة المرور غير صحيحة" : messageResult,
               isError: true,
             );
           }
@@ -254,7 +254,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
-                        // _environmentBadge(),
+                        _environmentBadge(),
 
                         // const SizedBox(height: 8),
                         // Row(

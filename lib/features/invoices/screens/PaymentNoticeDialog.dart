@@ -538,7 +538,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                         child: printWidget,
                       ),
                     ),
-                    pixelRatio: 3,
+                      pixelRatio: 1.0,
                     // 🔥 إضافة targetSize بارتفاع كبير جداً لمنع الـ Overflow نهائياً
                     targetSize: const Size(
                       576,
@@ -562,8 +562,9 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                   }
 
                   if (image != null) {
-                    await PrinterChannel.printImage(mac: mac, image: image);
 
+
+                    await PrinterChannel.printImage(mac: mac, image: image);
                     final result = await ref.read(
                       updateNoticePrintProvider(
                         infoDetials.invoiceNumber,
