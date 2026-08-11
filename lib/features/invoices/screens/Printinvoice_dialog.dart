@@ -276,7 +276,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                       ),
                     ),
                     pixelRatio: 1,
-                    targetSize: const Size(576, 3000),
+                    targetSize: const Size(576, 1900)
                   );
 
                   final granted = await requestBluetoothPermissions();
