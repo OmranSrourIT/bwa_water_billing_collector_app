@@ -34,17 +34,16 @@ String handleDioError(DioException e) {
 
   switch (e.type) {
     case DioExceptionType.connectionTimeout:
-      return "Connection timeout";
+      return "انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.";
 
     case DioExceptionType.receiveTimeout:
-      return "Server not responding";
-
+    return "الخادم لا يستجيب حالياً. يرجى المحاولة مرة أخرى.";
     case DioExceptionType.connectionError:
-      return "No internet connection";
+ return "لا يوجد اتصال بالإنترنت. يرجى التحقق من الاتصال والمحاولة مرة أخرى.";
 
     case DioExceptionType.badResponse:
       return "Server error (${e.response?.statusCode})";
     default:
-      return e.message ?? "Unexpected error";
+  return e.message ?? "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.";
   }
 }
