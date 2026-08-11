@@ -187,7 +187,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                           _NoticeRow("تاريخ الإشعار : ", today),
                                           _NoticeRow(
                                             "اسم الجابي : ",
-                                            invoice.collectorName,
+                                            invoice.collectorName.replaceAll('null', ''),
                                           ),
 
                                           accountAsync.when(
@@ -509,9 +509,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
 
               onPressed: () async {
                 setState(() => isPrinting = true);
-
-                // 👇 اجبر Flutter يرسم الـ loading قبل أي عمل ثقيل
-                await Future.delayed(const Duration(milliseconds: 100));
+ 
 
                 try {
                   final controller = ScreenshotController();

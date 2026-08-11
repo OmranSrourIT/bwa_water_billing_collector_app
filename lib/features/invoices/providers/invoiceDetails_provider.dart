@@ -49,3 +49,12 @@ final updateNoticePrintProvider = FutureProvider.family<String, String>((
 ) {
   return ref.read(noticePrintRepositoryProvider).updateNoticePrint(invoiceNo);
 });
+
+final ensureInvoiceDetailsProvider =
+    FutureProvider.family<InvoiceInformationModel, String>(
+  (ref, invoiceNumber) async {
+    final repository = ref.read(invoiceDetailsRepositoryProvider);
+
+    return repository.ensureInvoiceDetails(invoiceNumber);
+  },
+);

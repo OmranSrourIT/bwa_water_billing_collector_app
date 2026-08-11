@@ -1,14 +1,11 @@
 import 'dart:ui' as ui;
 import 'package:bwa_water_billing_collector_app/core/constants/AppConstant.dart';
-import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
-import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
-import 'package:bwa_water_billing_collector_app/features/Account/provider/account_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-
+ 
 class InvoicePrintLayout extends ConsumerStatefulWidget {
   final InvoiceInformationModel invoice;
   final String phone;
@@ -19,17 +16,17 @@ class InvoicePrintLayout extends ConsumerStatefulWidget {
     required this.phone,
     required this.status,
   });
-
+ 
   @override
   ConsumerState<InvoicePrintLayout> createState() => _InvoicePrintLayout();
 }
-
+ 
 class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
   String money(double v) => NumberFormat('#,##0.000').format(v);
-
+ 
   String formatDate(DateTime? d) =>
       d == null ? '-' : DateFormat('dd-MM-yyyy').format(d);
-
+ 
   // ================= STYLES =================
   TextStyle get headerStyle => const TextStyle(
     fontFamily: "Cairo",
@@ -38,56 +35,56 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
     color: Colors.black,
     height: 1.1,
   );
-
+ 
   TextStyle get subHeaderStyle => const TextStyle(
     fontFamily: "Cairo",
     fontWeight: FontWeight.w700,
     fontSize: 25,
     color: Colors.black,
   );
-
+ 
   TextStyle get sectionTitleStyle => const TextStyle(
     fontFamily: "Cairo",
     fontWeight: FontWeight.w800,
     fontSize: 22,
     color: Colors.black,
   );
-
+ 
   TextStyle get labelStyle => const TextStyle(
     fontFamily: "Cairo",
     fontWeight: FontWeight.w800,
     fontSize: 24,
     color: Colors.black,
   );
-
+ 
   TextStyle get valueStyle => const TextStyle(
     fontFamily: "Cairo",
     fontWeight: FontWeight.w600,
     fontSize: 23,
     color: Colors.black,
   );
-
+ 
   TextStyle get labelStyleFees => const TextStyle(
     fontFamily: "Cairo",
     fontWeight: FontWeight.w800,
     fontSize: 22,
     color: Colors.black,
   );
-
+ 
   TextStyle get valueStyleFees => const TextStyle(
     fontFamily: "Cairo",
     fontWeight: FontWeight.w600,
     fontSize: 19,
     color: Colors.black,
   );
-
+ 
   TextStyle get valueStyleFeesValue => const TextStyle(
     fontFamily: "Cairo",
     fontWeight: FontWeight.w600,
     fontSize: 22,
     color: Colors.black,
   );
-
+ 
   String getLookupCodeValue(
     InvoiceInformationModel invoice,
     String lookupType,
@@ -97,10 +94,10 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
       (e) => e.lookupType == lookupType,
       orElse: () => LookupModel.empty(),
     );
-
+ 
     return item.code;
   }
-
+ 
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -116,7 +113,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
       ),
     );
   }
-
+ 
   Widget _buildContent(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -129,43 +126,23 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
             Image.asset("assets/images/Governerate2_logo.png", width: 100),
             Expanded(
               child: Builder(
-                builder: (context) {
-                  final collectionType = getLookupCodeValue(
-                    widget.invoice,
-                    "CollectionType",
-                    context,
-                  );
-
-                  final int? days = (collectionType == "EST")
-                      ? (widget.invoice.periodToDate != null &&
-                                widget.invoice.periodFromDate != null)
-                            ? widget.invoice.periodToDate!
-                                  .difference(widget.invoice.periodFromDate!)
-                                  .inDays
-                            : null
-                      : (widget.invoice.previousReadingDateTime != null &&
-                            widget.invoice.currentReadDateTime != null)
-                      ? widget.invoice.currentReadDateTime!
-                            .difference(widget.invoice.previousReadingDateTime!)
-                            .inDays
-                      : null;
-
+                builder: (context) { 
                   return Column(
                     children: [
                       Text("دائرة ماء بغداد", style: headerStyle),
                       Text("فاتورة استهلاك المياه", style: subHeaderStyle),
                       const SizedBox(height: 3),
-
+ 
                       Text(
                         "رقم الاصدارية: ${widget.invoice.cycleTypeName}",
                         style: valueStyle.copyWith(fontSize: 20),
                       ),
-
+ 
                       Text(
                         "رقم الفاتورة: ${widget.invoice.invoiceNumber}",
                         style: valueStyle.copyWith(fontSize: 20),
                       ),
-
+ 
                       Text.rich(
                         getLookupCodeValue(
                                   widget.invoice,
@@ -297,7 +274,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
         ),
         const SizedBox(height: 5),
         _blackDivider(),
-
+ 
         // ================= بيانات المشترك =================
         _sectionTitle("بيانات المشترك"),
         _rowItem("اسم المشترك :", widget.invoice.customerName),
@@ -305,7 +282,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
         _rowItem("رقم الهاتف :", widget.invoice.customerMobileNo),
         _rowItem("نوع الإشغال :", widget.invoice.usageTypeName),
         _rowItem("العنوان :", widget.invoice.propertyAddress),
-
+ 
         _blackDivider(), // سطر فاصل صلب
         // ================= معلومات الجابي =================
         _sectionTitle("معلومات الجابي"),
@@ -317,15 +294,15 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
             children: [
               _rowItem("اسم الجابي :", widget.invoice.collectorName),
               const Divider(height: 1, thickness: 1.5, color: Colors.black),
-
-              _rowItem("رقم هاتف الجابي:", "${widget.phone}"),
+ 
+              _rowItem("رقم هاتف الجابي:", widget.phone),
             ],
           ),
         ),
-
+ 
         // ================= بيانات الاشتراك =================
         _sectionTitle("بيانات الإشتراك والإستهلاك"),
-
+ 
         Container(
           decoration: BoxDecoration(
             border: Border.all(width: 1.5, color: Colors.black),
@@ -355,7 +332,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
                   "القراءة السابقة :",
                   "${widget.invoice.previousReading.toInt().toString()} م³",
                 ),
-
+ 
               const Divider(height: 1, thickness: 1.5, color: Colors.black),
               if (getLookupCodeValue(
                     widget.invoice,
@@ -375,15 +352,15 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
             ],
           ),
         ),
-
+ 
         // ================= بنود الرسوم والخدمات =================
         _sectionTitle("بنود الرسوم والخدمات"),
         _blackDivider(), // سطر فاصل صلب
         if (widget.invoice.invoiceDetails.isNotEmpty)
           ...widget.invoice.invoiceDetails.map((item) {
             return _rowItemFees(item.description, money(item.amount));
-          }).toList(),
-
+          }),
+ 
         // ================= TOTAL BOX =================
         Container(
           decoration: BoxDecoration(
@@ -399,7 +376,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
               const Divider(height: 1, thickness: 1.5, color: Colors.black),
               _rowItem(
                 "مجموع الديون السابقة :",
-                "${money(widget.invoice!.totalDebt!)} د.ع",
+                "${money(widget.invoice.totalDebt ?? 0)} د.ع",
                 isTotal: true,
               ),
               const Divider(height: 1, thickness: 1.5, color: Colors.black),
@@ -407,19 +384,19 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
             ],
           ),
         ),
-
+ 
         if (widget.invoice.totalDebt != null &&
             widget.invoice.totalDebt! > 0) ...[
           const SizedBox(height: 5),
-
+ 
           Text(
             "الفاتورة مسددة وتوجد ديون مستحقة على الحساب",
             style: labelStyle.copyWith(fontSize: 21),
           ),
           const SizedBox(height: 10),
-        const Divider(height: 1, thickness: 1.5, color: Colors.black),
+          const Divider(height: 1, thickness: 1.5, color: Colors.black),
         ],
-        
+ 
         const SizedBox(height: 10),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -481,9 +458,9 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
                 ),
               ),
             ),
-
+ 
             const SizedBox(width: 15),
-
+ 
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -508,7 +485,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
             ),
           ],
         ),
-
+ 
         const SizedBox(height: 5),
         _blackDivider(), // السطر الأخير قبل الخاتمة
         const SizedBox(height: 2),
@@ -521,7 +498,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
       ],
     );
   }
-
+ 
   Widget _sectionTitle(String title) {
     return Center(
       child: Padding(
@@ -530,7 +507,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
       ),
     );
   }
-
+ 
   Widget _rowItem(String label, String value, {bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 5),
@@ -551,16 +528,16 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
                     style: valueStyle,
                   ),
                 ),
-
+ 
           const SizedBox(width: 10),
-
+ 
           // الليبل (يمين)
           Text(label, style: labelStyle),
         ],
       ),
     );
   }
-
+ 
   Widget _rowItemFees(String label, String value, {bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 5),
@@ -578,16 +555,16 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
                     style: valueStyleFeesValue, //omran
                   ),
                 ),
-
+ 
           const SizedBox(width: 10),
-
+ 
           // الليبل (يمين)
           Text(label, style: labelStyleFees),
         ],
       ),
     );
   }
-
+ 
   // ويدجت للخط الأسود الصلب والواضح للطباعة
   Widget _blackDivider() {
     return const Padding(

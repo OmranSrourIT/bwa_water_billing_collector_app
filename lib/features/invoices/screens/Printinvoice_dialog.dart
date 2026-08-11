@@ -275,7 +275,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                         ),
                       ),
                     ),
-                    pixelRatio: 3,
+                    pixelRatio: 1,
                     targetSize: const Size(576, 3000),
                   );
 

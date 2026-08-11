@@ -21,36 +21,36 @@ class InvoiceDetailsRepository {
     required this.imageStorage,
     required this.isOnline,
   });
-//later on working on this stracture 
+  //later on working on this stracture
 
-//   Future<InvoiceInformationModel> getInvoiceDeatils(String invoiceNo) async {
-//   if (isOnline) {
-//     return await _downloadAndSave(invoiceNo);
-//   }
+  //   Future<InvoiceInformationModel> getInvoiceDeatils(String invoiceNo) async {
+  //   if (isOnline) {
+  //     return await _downloadAndSave(invoiceNo);
+  //   }
 
-//   final localData = await local.getInvoiceDetails(invoiceNo);
+  //   final localData = await local.getInvoiceDetails(invoiceNo);
 
-//   if (localData == null) {
-//     throw Exception("No offline data");
-//   }
+  //   if (localData == null) {
+  //     throw Exception("No offline data");
+  //   }
 
-//   return localData;
-// }
+  //   return localData;
+  // }
 
-// Future<void> downloadInvoiceDetails(String invoiceNo) async {
-//   if (!isOnline) return;
+  // Future<void> downloadInvoiceDetails(String invoiceNo) async {
+  //   if (!isOnline) return;
 
-//   await _downloadAndSave(invoiceNo);
-// }
+  //   await _downloadAndSave(invoiceNo);
+  // }
 
-// Future<InvoiceInformationModel> _downloadAndSave(String invoiceNo) async {
-//   final result = await api.getInvoiceDeatils(invoiceNo);
+  // Future<InvoiceInformationModel> _downloadAndSave(String invoiceNo) async {
+  //   final result = await api.getInvoiceDeatils(invoiceNo);
 
-//   await _saveAttachments(result);
-//   await local.insertInvoiceDetails(result);
+  //   await _saveAttachments(result);
+  //   await local.insertInvoiceDetails(result);
 
-//   return result;
-// }
+  //   return result;
+  // }
 
   Future<InvoiceInformationModel> getInvoiceDeatils(String invoiceNo) async {
     if (isOnline) {
@@ -64,13 +64,16 @@ class InvoiceDetailsRepository {
     final localData = await local.getInvoiceDetails(invoiceNo);
 
     if (localData == null) {
-      throw Exception("No offline data");
+      throw Exception(
+        "بيانات الفاتورة غير متوفرة للاستخدام دون اتصال. "
+        "يرجى الاتصال بالإنترنت وتحميل البيانات أولاً، ثم يمكنك متابعة العمل في وضع عدم الاتصال.",
+      );
     }
 
     return localData;
   }
 
-  Future<void> _saveAttachments(InvoiceInformationModel details) async { 
+  Future<void> _saveAttachments(InvoiceInformationModel details) async {
     if (details.attachment != null && details.attachment!.isNotEmpty) {
       final path = await imageStorage.saveInvoiceImage(
         invoiceNo: details.invoiceNumber,
@@ -134,5 +137,33 @@ class InvoiceDetailsRepository {
     await _saveAttachments(result);
 
     await local.insertInvoiceDetails(result);
+  }
+
+  Future<InvoiceInformationModel> ensureInvoiceDetails(String invoiceNo) async {
+    // 1. حاول تجيب من Local أولاً
+    final localData = await local.getInvoiceDetails(invoiceNo);
+
+    if (localData != null) {
+      return localData;
+    }
+
+    // 2. غير موجود Local
+    if (!isOnline) {
+      throw Exception(
+        "بيانات الفاتورة غير متوفرة للاستخدام دون اتصال. "
+        "يرجى الاتصال بالإنترنت وتحميل البيانات أولاً، ثم يمكنك متابعة العمل في وضع عدم الاتصال.",
+      );
+    }
+
+    // 3. Online -> حمل من API
+    final result = await api.getInvoiceDeatils(invoiceNo);
+
+    // 4. احفظ الصور
+    await _saveAttachments(result);
+
+    // 5. احفظ التفاصيل
+    await local.insertInvoiceDetails(result);
+
+    return result;
   }
 }

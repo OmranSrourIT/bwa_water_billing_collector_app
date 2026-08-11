@@ -288,13 +288,21 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
       ),
 
       error: (e, _) {
-        final message = parseError(e);
+         final message = parseError(e);
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          AppPopupAlert.show(context, message: message, isError: true);
-        });
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (context.mounted) {
+      Navigator.of(context).pop(); // إغلاق الـ Dialog الحالي
 
-        return const Center(child: CircularProgressIndicator());
+      AppPopupAlert.show(
+        context,
+        message: message,
+        isError: true,
+      );
+    }
+  });
+
+  return const SizedBox.shrink();
       },
 
       data: (invoice) {

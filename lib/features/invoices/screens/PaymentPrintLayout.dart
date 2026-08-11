@@ -146,7 +146,7 @@ class _InvoicePrintLayout extends ConsumerState<PaymentPrintLayout> {
                 _row("رقم الهاتف : ", widget.customerMobileNo),
                 _row("العنوان : ", widget.address),
                 _row("تاريخ الإشعار : ", widget.today),
-                _row("اسم الجابي : ", widget.collectorName),
+                _row("اسم الجابي : ", widget.collectorName.replaceAll('null', '')),
                 _row("رقم هاتف الجابي : ", widget.phone),
 
                 const SizedBox(height: 5),

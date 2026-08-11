@@ -195,14 +195,20 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
 
                                       WidgetsBinding.instance
                                           .addPostFrameCallback((_) {
-                                            AppPopupAlert.show(
-                                              context,
-                                              message: message,
-                                              isError: true,
-                                            );
+                                            if (context.mounted) {
+                                              Navigator.of(
+                                                context,
+                                              ).pop(); // إغلاق الـ Dialog الحالي
+
+                                              AppPopupAlert.show(
+                                                context,
+                                                message: message,
+                                                isError: true,
+                                              );
+                                            }
                                           });
 
-                                      return const SizedBox();
+                                      return const SizedBox.shrink();
                                     },
                                     data: (invoice) {
                                       final invoiceStatus = getLookupValue(

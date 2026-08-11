@@ -1436,6 +1436,35 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
   bool _pressed = false;
   bool _loadingPayment = false;
 
+  Future<void> _openInvoiceAction({required Widget dialog}) async {
+    final invoiceNo = widget.invoice.invoiceNo;
+
+    try {
+      // Loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      await ref
+          .read(invoiceDetailsRepositoryProvider)
+          .ensureInvoiceDetails(invoiceNo);
+
+      if (!mounted) return;
+
+      Navigator.of(context).pop();
+
+      showDialog(context: context, builder: (_) => dialog);
+    } catch (e) {
+      if (!mounted) return;
+
+      Navigator.of(context).pop();
+
+      AppPopupAlert.show(context, message: parseError(e).toString().replaceFirst("Exception: ", ""), isError: true);
+    }
+  }
+
   String getInvoiceStatus(InvoiceModel invoice, BuildContext context) {
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
@@ -1828,7 +1857,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: _InlineItem(
@@ -1859,6 +1888,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                       ),
                     ],
                   ),
+                
                 ),
                 const Divider(height: 1),
 
@@ -1897,14 +1927,21 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                           icon: Icons.print_outlined,
                           color: AppColors.warning,
                           onBeforePressed: _selectCard,
-                          onPressed: () async {
-                            showDialog(
-                              context: context,
-                              builder: (_) => PaymentNoticeDialog(
+                            onPressed: () {
+                            _openInvoiceAction(
+                              dialog:  PaymentNoticeDialog(
                                 invoiceNumber: widget.invoice.invoiceNo,
-                              ),
+                          ),
                             );
                           },
+                          // onPressed: () async {
+                          //   showDialog(
+                          //     context: context,
+                          //     builder: (_) => PaymentNoticeDialog(
+                          //       invoiceNumber: widget.invoice.invoiceNo,
+                          //     ),
+                          //   );
+                          // },
                         ),
                       if (getInvoiceStatusCode(widget.invoice, context) ==
                           "COL")
@@ -1913,19 +1950,28 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                           icon: Icons.receipt_long,
                           color: AppColors.warning,
                           onBeforePressed: _selectCard,
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              barrierDismissible: true,
-                              builder: (_) {
-                                return PrintInvoiceDialog(
+                              onPressed: () {
+                            _openInvoiceAction(
+                              dialog:  PrintInvoiceDialog(
                                   invoiceNumber: widget.invoice.invoiceNo,
                                   getInvoiceStatusCode:
                                       getInvoiceStatusForPrint,
-                                );
-                              },
+                                ),
                             );
                           },
+                          // onPressed: () {
+                          //   showDialog(
+                          //     context: context,
+                          //     barrierDismissible: true,
+                          //     builder: (_) {
+                          //       return PrintInvoiceDialog(
+                          //         invoiceNumber: widget.invoice.invoiceNo,
+                          //         getInvoiceStatusCode:
+                          //             getInvoiceStatusForPrint,
+                          //       );
+                          //     },
+                          //   );
+                          // },
                         ),
                       if (getInvoiceStatusCode(widget.invoice, context) ==
                               "ISS" ||
@@ -1936,10 +1982,18 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                           icon: Icons.speed,
                           color: const Color(0xFF2AAAE1),
                           onBeforePressed: _selectCard,
+                          // onPressed: () {
+                          //   showDialog(
+                          //     context: context,
+                          //     builder: (_) => ReadingDialog(
+                          //       invoiceNumber: widget.invoice.invoiceNo,
+                          //       batchId: widget.batchId,
+                          //     ),
+                          //   );
+                          // },
                           onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => ReadingDialog(
+                            _openInvoiceAction(
+                              dialog: ReadingDialog(
                                 invoiceNumber: widget.invoice.invoiceNo,
                                 batchId: widget.batchId,
                               ),
@@ -2001,14 +2055,22 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                           color: AppColors.danger,
                           onBeforePressed: _selectCard,
                           onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => UnreachableDialog(
+                            _openInvoiceAction(
+                              dialog: UnreachableDialog(
                                 invoiceNumber: widget.invoice.invoiceNo,
                                 batchId: widget.batchId,
                               ),
                             );
                           },
+                          // onPressed: () {
+                          //   showDialog(
+                          //     context: context,
+                          //     builder: (_) => UnreachableDialog(
+                          //       invoiceNumber: widget.invoice.invoiceNo,
+                          //       batchId: widget.batchId,
+                          //     ),
+                          //   );
+                          // },
                         ),
                     ],
                   ),
@@ -2022,52 +2084,51 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
   }
 }
 
-class _InlineItem extends StatelessWidget {
+ class _InlineItem extends StatelessWidget {
   final String title;
   final String value;
 
-  const _InlineItem({required this.title, required this.value});
+  const _InlineItem({
+    required this.title,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width * 0.28,
-      child: Padding(
-        padding: (title.contains("العنوان") && value.length > 20)
-            ? EdgeInsetsGeometry.only(top: 18)
-            : EdgeInsetsGeometry.only(top: 0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "$title : ",
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade700,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-
-            Expanded(
-              child: Text(
-                value,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "$title :",
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w600,
+            height: 1.4,
+          ),
         ),
-      ),
+
+        const SizedBox(width: 5),
+
+        Expanded(
+          child: Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
-
 class _HeaderCell extends StatelessWidget {
   final String title;
   final String value;
