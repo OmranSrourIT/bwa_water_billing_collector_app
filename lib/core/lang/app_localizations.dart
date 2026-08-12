@@ -62,7 +62,7 @@ class AppLocalizations {
       'batch_record': 'Batch Record',
       'no_batches_found': 'No Records Found',
         'pay_invoice' : 'Pay Now',
-        'change_password':"Change Password"
+        'change_password':"Change Password","search_address": "Search by address"
     },
     'ar': {
       'username': 'اسم المستخدم',
@@ -89,6 +89,7 @@ class AppLocalizations {
       'total_invoices': 'عدد الفواتير',
       'due_date': 'الموعد النهائي', 
       'search_invoice': 'بحث برقم الحساب أو اسم المشترك',
+      "search_address": "البحث باسم العنوان",
       'subscription_type': 'نوع الاشتراك',
       'search_by_status': 'البحث بالحالة', 
       'invoice_no': 'رقم الفاتورة',

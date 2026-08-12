@@ -48,6 +48,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? selectedCollectionType;
   String? selectedInvoiceStatus;
   String? searchAccountValue;
+  String? searchAddressValue;
   bool isEndBatchLoading = false;
   bool isInitialBatchSelectionDone = false;
 
@@ -258,45 +259,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         return list;
                                       });
 
-                                  final filteredInvoices = invoicesRaw.where((
-                                    inv,
-                                  ) {
-                                    final collectionMatch =
-                                        selectedCollectionType == null ||
-                                        inv.lookup.any(
-                                          (l) =>
-                                              l.lookupType ==
-                                                  "CollectionType" &&
-                                              l.code == selectedCollectionType,
-                                        );
+                               final filteredInvoices = invoicesRaw.where((inv) {
+  final collectionMatch =
+      selectedCollectionType == null ||
+      inv.lookup.any(
+        (l) =>
+            l.lookupType == "CollectionType" &&
+            l.code == selectedCollectionType,
+      );
 
-                                    final statusMatch =
-                                        selectedInvoiceStatus == null ||
-                                        inv.lookup.any(
-                                          (l) =>
-                                              l.lookupType == "InvoiceStatus" &&
-                                              l.code == selectedInvoiceStatus,
-                                        );
+  final statusMatch =
+      selectedInvoiceStatus == null ||
+      inv.lookup.any(
+        (l) =>
+            l.lookupType == "InvoiceStatus" &&
+            l.code == selectedInvoiceStatus,
+      );
 
-                                    final searchByAccountMatch =
-                                        searchAccountValue == null ||
-                                        searchAccountValue!.isEmpty ||
-                                        inv.accountNo.toLowerCase().contains(
-                                          searchAccountValue!.toLowerCase(),
-                                        );
+  // =========================
+  // SEARCH ACCOUNT / CUSTOMER
+  // =========================
 
-                                    final searchByNameMatch =
-                                        searchAccountValue == null ||
-                                        searchAccountValue!.isEmpty ||
-                                        inv.customerName.toLowerCase().contains(
-                                          searchAccountValue!.toLowerCase(),
-                                        );
+  final searchByAccountMatch =
+      searchAccountValue == null ||
+      searchAccountValue!.isEmpty ||
+      inv.accountNo.toLowerCase().contains(
+        searchAccountValue!.toLowerCase(),
+      );
 
-                                    return collectionMatch &&
-                                        statusMatch &&
-                                        (searchByAccountMatch ||
-                                            searchByNameMatch);
-                                  }).toList();
+  final searchByNameMatch =
+      searchAccountValue == null ||
+      searchAccountValue!.isEmpty ||
+      inv.customerName.toLowerCase().contains(
+        searchAccountValue!.toLowerCase(),
+      );
+
+  // =========================
+  // SEARCH ADDRESS
+  // =========================
+
+  final searchByAddressMatch =
+      searchAddressValue == null ||
+      searchAddressValue!.isEmpty ||
+      inv.address.toLowerCase().contains(
+        searchAddressValue!.toLowerCase(),
+      );
+
+  // =========================
+  // FINAL FILTER
+  // =========================
+
+  return collectionMatch &&
+      statusMatch &&
+      (searchByAccountMatch || searchByNameMatch) &&
+      searchByAddressMatch;
+}).toList();
                                   return Column(
                                     children: [
                                       ActiveBatchBar(
@@ -344,6 +361,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         invoiceStatuses: invoiceStatuses,
                                         selectedInvoiceStatus:
                                             selectedInvoiceStatus,
+
+                                        searchAddressValue: searchAddressValue,
+                                        onAddressSearchChanged: (value) {
+                                           print("ADDRESS SEARCH: $value");
+                                          setState(() {
+                                            searchAddressValue = value;
+                                          });
+                                        },
 
                                         onSearchChanged: (value) {
                                           setState(() {
@@ -1099,6 +1124,9 @@ class _SearchSection extends StatefulWidget {
   final String? searchAccountValue;
   final Function(String) onSearchChanged;
 
+  final String? searchAddressValue;
+  final Function(String) onAddressSearchChanged;
+
   const _SearchSection({
     super.key,
     required this.collectionTypes,
@@ -1110,6 +1138,8 @@ class _SearchSection extends StatefulWidget {
     required this.onStatusChanged,
     this.searchAccountValue,
     required this.onSearchChanged,
+    this.searchAddressValue,
+    required this.onAddressSearchChanged,
   });
 
   @override
@@ -1133,52 +1163,93 @@ class _SearchSectionState extends State<_SearchSection> {
     return Column(
       children: [
         /// ================= SEARCH =================
-        Container(
-          height: isTablet ? 48 : 52,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(.03),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () {
-              FocusManager.instance.primaryFocus?.unfocus();
-            },
-            child: TextField(
-              controller: _searchController,
-              keyboardType: TextInputType.text,
-              inputFormatters: [NoArabicDigitsFormatter()],
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: isTablet ? 15 : 14),
-              onChanged: (value) {
-                widget.onSearchChanged(value);
-              },
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: tr.t('search_invoice'),
-                hintStyle: TextStyle(
-                  color: Colors.grey.shade400,
-                  fontSize: isTablet ? 15 : 13,
+        /// ================= SEARCH =================
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: isTablet ? 48 : 52,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 16 : 20,
-                  vertical: 12,
-                ),
-                suffixIcon: Icon(
-                  Icons.search_rounded,
-                  size: isTablet ? 20 : 22,
-                  color: Colors.grey.shade400,
+                child: TextField(
+                  controller: _searchController,
+                  keyboardType: TextInputType.text,
+                  inputFormatters: [NoArabicDigitsFormatter()],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: isTablet ? 15 : 14),
+                  onChanged: widget.onSearchChanged,
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: tr.t('search_invoice'),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: isTablet ? 15 : 13,
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 16 : 20,
+                      vertical: 12,
+                    ),
+                    suffixIcon: Icon(
+                      Icons.search_rounded,
+                      size: isTablet ? 20 : 22,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
+
+            const SizedBox(width: 8),
+
+            Expanded(
+              child: Container(
+                height: isTablet ? 48 : 52,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  keyboardType: TextInputType.text,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: isTablet ? 15 : 14),
+                  onChanged: widget.onAddressSearchChanged,
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: tr.t('search_address'),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: isTablet ? 15 : 13,
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 16 : 20,
+                      vertical: 12,
+                    ),
+                    suffixIcon: Icon(
+                      Icons.location_on_outlined,
+                      size: isTablet ? 20 : 22,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
 
         const SizedBox(height: 8),
@@ -1461,7 +1532,11 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
 
       Navigator.of(context).pop();
 
-      AppPopupAlert.show(context, message: parseError(e).toString().replaceFirst("Exception: ", ""), isError: true);
+      AppPopupAlert.show(
+        context,
+        message: parseError(e).toString().replaceFirst("Exception: ", ""),
+        isError: true,
+      );
     }
   }
 
@@ -1857,7 +1932,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: _InlineItem(
@@ -1888,7 +1963,6 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                       ),
                     ],
                   ),
-                
                 ),
                 const Divider(height: 1),
 
@@ -1927,11 +2001,11 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                           icon: Icons.print_outlined,
                           color: AppColors.warning,
                           onBeforePressed: _selectCard,
-                            onPressed: () {
+                          onPressed: () {
                             _openInvoiceAction(
-                              dialog:  PaymentNoticeDialog(
+                              dialog: PaymentNoticeDialog(
                                 invoiceNumber: widget.invoice.invoiceNo,
-                          ),
+                              ),
                             );
                           },
                           // onPressed: () async {
@@ -1950,13 +2024,12 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                           icon: Icons.receipt_long,
                           color: AppColors.warning,
                           onBeforePressed: _selectCard,
-                              onPressed: () {
+                          onPressed: () {
                             _openInvoiceAction(
-                              dialog:  PrintInvoiceDialog(
-                                  invoiceNumber: widget.invoice.invoiceNo,
-                                  getInvoiceStatusCode:
-                                      getInvoiceStatusForPrint,
-                                ),
+                              dialog: PrintInvoiceDialog(
+                                invoiceNumber: widget.invoice.invoiceNo,
+                                getInvoiceStatusCode: getInvoiceStatusForPrint,
+                              ),
                             );
                           },
                           // onPressed: () {
@@ -2084,14 +2157,11 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
   }
 }
 
- class _InlineItem extends StatelessWidget {
+class _InlineItem extends StatelessWidget {
   final String title;
   final String value;
 
-  const _InlineItem({
-    required this.title,
-    required this.value,
-  });
+  const _InlineItem({required this.title, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -2129,6 +2199,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
     );
   }
 }
+
 class _HeaderCell extends StatelessWidget {
   final String title;
   final String value;
