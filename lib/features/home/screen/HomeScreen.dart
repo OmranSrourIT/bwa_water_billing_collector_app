@@ -259,61 +259,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         return list;
                                       });
 
-                               final filteredInvoices = invoicesRaw.where((inv) {
-  final collectionMatch =
-      selectedCollectionType == null ||
-      inv.lookup.any(
-        (l) =>
-            l.lookupType == "CollectionType" &&
-            l.code == selectedCollectionType,
-      );
+                                  final filteredInvoices = invoicesRaw.where((
+                                    inv,
+                                  ) {
+                                    final collectionMatch =
+                                        selectedCollectionType == null ||
+                                        inv.lookup.any(
+                                          (l) =>
+                                              l.lookupType ==
+                                                  "CollectionType" &&
+                                              l.code == selectedCollectionType,
+                                        );
 
-  final statusMatch =
-      selectedInvoiceStatus == null ||
-      inv.lookup.any(
-        (l) =>
-            l.lookupType == "InvoiceStatus" &&
-            l.code == selectedInvoiceStatus,
-      );
+                                    final statusMatch =
+                                        selectedInvoiceStatus == null ||
+                                        inv.lookup.any(
+                                          (l) =>
+                                              l.lookupType == "InvoiceStatus" &&
+                                              l.code == selectedInvoiceStatus,
+                                        );
 
-  // =========================
-  // SEARCH ACCOUNT / CUSTOMER
-  // =========================
+                                    // =========================
+                                    // SEARCH ACCOUNT / CUSTOMER
+                                    // =========================
 
-  final searchByAccountMatch =
-      searchAccountValue == null ||
-      searchAccountValue!.isEmpty ||
-      inv.accountNo.toLowerCase().contains(
-        searchAccountValue!.toLowerCase(),
-      );
+                                    final searchByAccountMatch =
+                                        searchAccountValue == null ||
+                                        searchAccountValue!.isEmpty ||
+                                        inv.accountNo.toLowerCase().contains(
+                                          searchAccountValue!.toLowerCase(),
+                                        );
 
-  final searchByNameMatch =
-      searchAccountValue == null ||
-      searchAccountValue!.isEmpty ||
-      inv.customerName.toLowerCase().contains(
-        searchAccountValue!.toLowerCase(),
-      );
+                                    final searchByNameMatch =
+                                        searchAccountValue == null ||
+                                        searchAccountValue!.isEmpty ||
+                                        inv.customerName.toLowerCase().contains(
+                                          searchAccountValue!.toLowerCase(),
+                                        );
 
-  // =========================
-  // SEARCH ADDRESS
-  // =========================
+                                    // =========================
+                                    // SEARCH ADDRESS
+                                    // =========================
 
-  final searchByAddressMatch =
-      searchAddressValue == null ||
-      searchAddressValue!.isEmpty ||
-      inv.address.toLowerCase().contains(
-        searchAddressValue!.toLowerCase(),
-      );
+                                    final searchByAddressMatch =
+                                        searchAddressValue == null ||
+                                        searchAddressValue!.isEmpty ||
+                                        inv.address.toLowerCase().contains(
+                                          searchAddressValue!.toLowerCase(),
+                                        );
 
-  // =========================
-  // FINAL FILTER
-  // =========================
+                                    // =========================
+                                    // FINAL FILTER
+                                    // =========================
 
-  return collectionMatch &&
-      statusMatch &&
-      (searchByAccountMatch || searchByNameMatch) &&
-      searchByAddressMatch;
-}).toList();
+                                    return collectionMatch &&
+                                        statusMatch &&
+                                        (searchByAccountMatch ||
+                                            searchByNameMatch) &&
+                                        searchByAddressMatch;
+                                  }).toList();
                                   return Column(
                                     children: [
                                       ActiveBatchBar(
@@ -364,7 +368,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                                         searchAddressValue: searchAddressValue,
                                         onAddressSearchChanged: (value) {
-                                           print("ADDRESS SEARCH: $value");
+                                          print("ADDRESS SEARCH: $value");
                                           setState(() {
                                             searchAddressValue = value;
                                           });
@@ -1992,10 +1996,12 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                             );
                           },
                         ),
-                      if (getInvoiceStatusCode(widget.invoice, context) ==
-                              "RDY" ||
-                          getInvoiceStatusCode(widget.invoice, context) ==
-                              "UNC")
+
+                      if ((getInvoiceStatusCode(widget.invoice, context) ==
+                                  "RDY" ||
+                              getInvoiceStatusCode(widget.invoice, context) ==
+                                  "UNC") &&
+                          widget.invoice.totalAmount > 0)
                         _ActionButton(
                           title: Text(tr.t('print_notice')),
                           icon: Icons.print_outlined,

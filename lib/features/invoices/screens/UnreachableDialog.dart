@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:bwa_water_billing_collector_app/core/constants/AppColors.dart';
+import 'package:bwa_water_billing_collector_app/core/utlis/connection_provider.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/image_helper.dart';
@@ -50,6 +51,8 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
 
   @override
   Widget build(BuildContext context) {
+
+    final isOnline = ref.read(connectionProvider);
     final lookupReasons = ref.watch(
       fieldFailureLookupProvider("FieldFailureReason"),
     );
@@ -232,8 +235,8 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
 
                                           case "RDY":
                                             return item.code == "CNA" ||
-                                                item.code == "CNP" ||
-                                                item.code == "OTH";
+                                                item.code == "OTH" ||
+                                               (item.code == "CNP" && isOnline && invoice.totalInvoiceAmount > 0);
 
                                           default:
                                             return true;
