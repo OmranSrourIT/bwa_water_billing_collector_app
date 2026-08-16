@@ -2122,7 +2122,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                         ),
                       if (getInvoiceStatusCode(widget.invoice, context) ==
                               "ISS" ||
-                          getInvoiceStatusCode(widget.invoice, context) == "RDY"
+                          (getInvoiceStatusCode(widget.invoice, context) == "RDY" && widget.invoice.totalAmount > 0)
                       // getInvoiceStatusCode(widget.invoice, context) ==
                       //     "UNC" ||
                       // getInvoiceStatusCode(widget.invoice, context) ==
