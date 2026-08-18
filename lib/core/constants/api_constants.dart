@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = "https://bwa.asimti.iq/rest";
+  static const String baseUrl = "http://149.200.251.200:9090/rest";
   //ProdIraq   ===> https://bwa.asimti.iq
   //Stage Iraq ===> https://stgbwa.asimti.com
   //Dev Amman ===> https://bwa.infinite-tek.com:8443
@@ -9,7 +9,7 @@ class ApiConstants {
     if (baseUrl.contains("bwa.asimti.iq")) {
       return "PROD";
     } else if (baseUrl.contains("bwa.infinite-tek.com")) {
-      return "DEV";
+      return "DEV"; 
     } else if (baseUrl.contains("149.200.251.200")) {
       return "TEST";
     }

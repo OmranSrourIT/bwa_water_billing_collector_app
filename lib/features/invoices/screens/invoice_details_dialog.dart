@@ -67,6 +67,7 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
     final isTablet = Responsive.isTablet(context);
     final invoiceAsync = ref.watch(invoiceDetailProvider(widget.invoiceNumber));
     final isOnlineMODE = ref.watch(connectionProvider);
+    String money(double v) => NumberFormat('#,##0.000').format(v);
 
     String getInvoiceStatusIcon(InvoiceInformationModel invoice) {
       final status = invoice.lookup.firstWhere(
@@ -88,7 +89,9 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             AppPopupAlert.show(
               context,
-              message: parseError( error).toString().replaceFirst("Exception: ", ""),
+              message: parseError(
+                error,
+              ).toString().replaceFirst("Exception: ", ""),
               isError: true,
               onOk: () {
                 Navigator.of(context).pop();
@@ -351,6 +354,15 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
                                       '#,##0.000',
                                     ).format(invoice.totalInvoiceAmount),
                                   ),
+
+                                  if (invoice.totalDebt != null &&
+                                      invoice.totalDebt! > 0) ...[
+                                    const SizedBox(height: 10),
+                                    _TotalDebitCard(
+                                      amount:
+                                          "${money(invoice.totalDebt ?? 0)}",
+                                    ),
+                                  ],
 
                                   const SizedBox(height: 16),
 
@@ -1376,6 +1388,8 @@ class _TotalCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Text(
             "قيمة الفاتورة الحالية (د.ع)",
@@ -1388,6 +1402,70 @@ class _TotalCard extends StatelessWidget {
               color: Colors.white,
               fontSize: 32,
               fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TotalDebitCard extends StatelessWidget {
+  final String amount;
+
+  const _TotalDebitCard({required this.amount});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [Color(0xff7B1E1E), Color(0xffB83232)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xff7B1E1E).withOpacity(0.20),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  "إجمالي الديون السابقة (د.ع)",
+                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                ),
+
+                const SizedBox(height: 6),
+
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      amount,
+                       style: const TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],

@@ -211,224 +211,343 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               }
 
                               /// ================= SAFE INVOICES CALL =================
+
                               final invoicesAsync = ref.watch(
                                 invoicesProvider(activeBatch.batchNumber),
                               );
-                              return invoicesAsync.when(
-                                data: (invoices) {
-                                  final invoicesRaw = invoices
-                                      .cast<InvoiceModel>();
 
-                                  final summary = calculateSummary(invoicesRaw);
-
-                                  final collectionTypes = invoicesRaw
-                                      .expand<LookupModelParent>(
-                                        (inv) => inv.lookup,
-                                      )
-                                      .where(
-                                        (l) => l.lookupType == "CollectionType",
-                                      )
-                                      .fold<List<LookupModelParent>>([], (
-                                        list,
-                                        item,
-                                      ) {
-                                        if (!list.any(
-                                          (e) => e.code == item.code,
-                                        )) {
-                                          list.add(item);
-                                        }
-                                        return list;
+                              return Column(
+                                children: [
+                                  // =====================================================
+                                  // BATCH DROPDOWN
+                                  // ALWAYS VISIBLE
+                                  // =====================================================
+                                  ActiveBatchBar(
+                                    batchesDrop: batches,
+                                    selectedBatch: selectedBatch,
+                                    onBatchSelected: (batch) {
+                                      setState(() {
+                                        selectedBatch = batch;
+                                        selectedCollectionType = null;
+                                        selectedInvoiceNo = null;
+                                        selectedInvoiceStatus = null;
+                                        searchAccountValue = null;
+                                        searchAddressValue = null;
                                       });
-
-                                  final invoiceStatuses = invoicesRaw
-                                      .expand<LookupModelParent>(
-                                        (inv) => inv.lookup,
-                                      )
-                                      .where(
-                                        (l) => l.lookupType == "InvoiceStatus",
-                                      )
-                                      .fold<List<LookupModelParent>>([], (
-                                        list,
-                                        item,
-                                      ) {
-                                        if (!list.any(
-                                          (e) => e.code == item.code,
-                                        )) {
-                                          list.add(item);
-                                        }
-                                        return list;
+                                    },
+                                    onResetFilters: () {
+                                      setState(() {
+                                        selectedCollectionType = null;
+                                        selectedInvoiceNo = null;
+                                        selectedInvoiceStatus = null;
+                                        searchAccountValue = null;
+                                        searchAddressValue = null;
                                       });
+                                    },
+                                    onStartEndBatchLoading: () {
+                                      final batch = selectedBatch;
+                                      if (batch == null) return;
 
-                                  final filteredInvoices = invoicesRaw.where((
-                                    inv,
-                                  ) {
-                                    final collectionMatch =
-                                        selectedCollectionType == null ||
-                                        inv.lookup.any(
-                                          (l) =>
-                                              l.lookupType ==
-                                                  "CollectionType" &&
-                                              l.code == selectedCollectionType,
+                                      _endBatch(batch);
+                                    },
+                                  ),
+
+                                  SizedBox(height: isTablet ? 8 : 16),
+
+                                  // =====================================================
+                                  // INVOICES
+                                  // =====================================================
+                                  invoicesAsync.when(
+                                    data: (invoices) {
+                                      final invoicesRaw = invoices
+                                          .cast<InvoiceModel>();
+
+                                      // =====================================================
+                                      // NO INVOICES
+                                      // =====================================================
+
+                                      if (invoicesRaw.isEmpty) {
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 30,
+                                            horizontal: 20,
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Icon(
+                                                Icons.receipt_long_outlined,
+                                                size: 50,
+                                                color: Colors.grey.shade400,
+                                              ),
+
+                                              const SizedBox(height: 12),
+
+                                              Text(
+                                                'لا توجد فواتير لهذا السجل ',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+
+                                              const SizedBox(height: 6),
+
+                                              Text(
+                                                'يمكنك اختيار سجل آخر من القائمة',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade400,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         );
+                                      }
 
-                                    final statusMatch =
-                                        selectedInvoiceStatus == null ||
-                                        inv.lookup.any(
-                                          (l) =>
-                                              l.lookupType == "InvoiceStatus" &&
-                                              l.code == selectedInvoiceStatus,
-                                        );
+                                      // =====================================================
+                                      // SUMMARY
+                                      // =====================================================
 
-                                    // =========================
-                                    // SEARCH ACCOUNT / CUSTOMER
-                                    // =========================
+                                      final summary = calculateSummary(
+                                        invoicesRaw,
+                                      );
 
-                                    final searchByAccountMatch =
-                                        searchAccountValue == null ||
-                                        searchAccountValue!.isEmpty ||
-                                        inv.accountNo.toLowerCase().contains(
-                                          searchAccountValue!.toLowerCase(),
-                                        );
+                                      // =====================================================
+                                      // COLLECTION TYPES
+                                      // =====================================================
 
-                                    final searchByNameMatch =
-                                        searchAccountValue == null ||
-                                        searchAccountValue!.isEmpty ||
-                                        inv.customerName.toLowerCase().contains(
-                                          searchAccountValue!.toLowerCase(),
-                                        );
+                                      final collectionTypes = invoicesRaw
+                                          .expand<LookupModelParent>(
+                                            (inv) => inv.lookup,
+                                          )
+                                          .where(
+                                            (l) =>
+                                                l.lookupType ==
+                                                "CollectionType",
+                                          )
+                                          .fold<List<LookupModelParent>>([], (
+                                            list,
+                                            item,
+                                          ) {
+                                            if (!list.any(
+                                              (e) => e.code == item.code,
+                                            )) {
+                                              list.add(item);
+                                            }
 
-                                    // =========================
-                                    // SEARCH ADDRESS
-                                    // =========================
-
-                                    final searchByAddressMatch =
-                                        searchAddressValue == null ||
-                                        searchAddressValue!.isEmpty ||
-                                        inv.address.toLowerCase().contains(
-                                          searchAddressValue!.toLowerCase(),
-                                        );
-
-                                    // =========================
-                                    // FINAL FILTER
-                                    // =========================
-
-                                    return collectionMatch &&
-                                        statusMatch &&
-                                        (searchByAccountMatch ||
-                                            searchByNameMatch) &&
-                                        searchByAddressMatch;
-                                  }).toList();
-                                  return Column(
-                                    children: [
-                                      ActiveBatchBar(
-                                        batchesDrop: batches,
-                                        selectedBatch: selectedBatch,
-                                        onBatchSelected: (batch) {
-                                          setState(() {
-                                            selectedBatch = batch;
-                                            selectedCollectionType = null;
-                                            selectedInvoiceNo = null;
-                                            selectedInvoiceStatus = null;
+                                            return list;
                                           });
-                                        },
-                                        onResetFilters: () {
-                                          setState(() {
-                                            selectedCollectionType = null;
-                                            selectedInvoiceNo = null;
-                                            selectedInvoiceStatus = null;
-                                            searchAccountValue = null;
+
+                                      // =====================================================
+                                      // INVOICE STATUSES
+                                      // =====================================================
+
+                                      final invoiceStatuses = invoicesRaw
+                                          .expand<LookupModelParent>(
+                                            (inv) => inv.lookup,
+                                          )
+                                          .where(
+                                            (l) =>
+                                                l.lookupType == "InvoiceStatus",
+                                          )
+                                          .fold<List<LookupModelParent>>([], (
+                                            list,
+                                            item,
+                                          ) {
+                                            if (!list.any(
+                                              (e) => e.code == item.code,
+                                            )) {
+                                              list.add(item);
+                                            }
+
+                                            return list;
                                           });
+
+                                      // =====================================================
+                                      // FILTER INVOICES
+                                      // =====================================================
+
+                                      final filteredInvoices = invoicesRaw.where(
+                                        (inv) {
+                                          final collectionMatch =
+                                              selectedCollectionType == null ||
+                                              inv.lookup.any(
+                                                (l) =>
+                                                    l.lookupType ==
+                                                        "CollectionType" &&
+                                                    l.code ==
+                                                        selectedCollectionType,
+                                              );
+
+                                          final statusMatch =
+                                              selectedInvoiceStatus == null ||
+                                              inv.lookup.any(
+                                                (l) =>
+                                                    l.lookupType ==
+                                                        "InvoiceStatus" &&
+                                                    l.code ==
+                                                        selectedInvoiceStatus,
+                                              );
+
+                                          // =========================
+                                          // SEARCH ACCOUNT / CUSTOMER
+                                          // =========================
+
+                                          final searchByAccountMatch =
+                                              searchAccountValue == null ||
+                                              searchAccountValue!.isEmpty ||
+                                              inv.accountNo
+                                                  .toLowerCase()
+                                                  .contains(
+                                                    searchAccountValue!
+                                                        .toLowerCase(),
+                                                  );
+
+                                          final searchByNameMatch =
+                                              searchAccountValue == null ||
+                                              searchAccountValue!.isEmpty ||
+                                              inv.customerName
+                                                  .toLowerCase()
+                                                  .contains(
+                                                    searchAccountValue!
+                                                        .toLowerCase(),
+                                                  );
+
+                                          // =========================
+                                          // SEARCH ADDRESS
+                                          // =========================
+
+                                          final searchByAddressMatch =
+                                              searchAddressValue == null ||
+                                              searchAddressValue!.isEmpty ||
+                                              inv.address
+                                                  .toLowerCase()
+                                                  .contains(
+                                                    searchAddressValue!
+                                                        .toLowerCase(),
+                                                  );
+
+                                          // =========================
+                                          // FINAL FILTER
+                                          // =========================
+
+                                          return collectionMatch &&
+                                              statusMatch &&
+                                              (searchByAccountMatch ||
+                                                  searchByNameMatch) &&
+                                              searchByAddressMatch;
                                         },
-                                        onStartEndBatchLoading: () {
-                                          final batch = selectedBatch;
-                                          if (batch == null) return;
+                                      ).toList();
 
-                                          _endBatch(batch);
-                                        },
-                                      ),
+                                      // =====================================================
+                                      // DATA UI
+                                      // =====================================================
 
-                                      SizedBox(height: isTablet ? 8 : 16),
+                                      return Column(
+                                        children: [
+                                          _BatchSummary(
+                                            summary: summary,
+                                            batch: activeBatch,
+                                            invoicesCount: invoicesRaw.length,
+                                          ),
 
-                                      _BatchSummary(
-                                        summary: summary,
-                                        batch: activeBatch,
-                                        invoicesCount: invoicesRaw.length,
-                                      ),
+                                          SizedBox(height: isTablet ? 8 : 16),
 
-                                      SizedBox(height: isTablet ? 8 : 16),
+                                          _SearchSection(
+                                            collectionTypes: collectionTypes,
+                                            selectedCollectionType:
+                                                selectedCollectionType,
 
-                                      _SearchSection(
-                                        collectionTypes: collectionTypes,
-                                        selectedCollectionType:
-                                            selectedCollectionType,
+                                            invoiceStatuses: invoiceStatuses,
+                                            selectedInvoiceStatus:
+                                                selectedInvoiceStatus,
 
-                                        invoiceStatuses: invoiceStatuses,
-                                        selectedInvoiceStatus:
-                                            selectedInvoiceStatus,
+                                            searchAddressValue:
+                                                searchAddressValue,
 
-                                        searchAddressValue: searchAddressValue,
-                                        onAddressSearchChanged: (value) {
-                                          print("ADDRESS SEARCH: $value");
-                                          setState(() {
-                                            searchAddressValue = value;
+                                            onAddressSearchChanged: (value) {
+                                              setState(() {
+                                                searchAddressValue = value;
+                                              });
+                                            },
+
+                                            onSearchChanged: (value) {
+                                              setState(() {
+                                                searchAccountValue = value;
+                                              });
+                                            },
+
+                                            onCollectionChanged: (value) {
+                                              setState(() {
+                                                selectedCollectionType =
+                                                    value?.code;
+                                              });
+                                            },
+
+                                            onStatusChanged: (value) {
+                                              setState(() {
+                                                selectedInvoiceStatus =
+                                                    value?.code;
+                                              });
+                                            },
+                                          ),
+
+                                          SizedBox(height: isTablet ? 5 : 15),
+
+                                          ...filteredInvoices.map((invoice) {
+                                            final id = invoice.invoiceNo;
+
+                                            return _InvoiceCard(
+                                              invoice,
+                                              isSelected:
+                                                  selectedInvoiceNo == id,
+                                              batchId:
+                                                  selectedBatch!.batchNumber,
+                                              onSelect: () {
+                                                setState(() {
+                                                  selectedInvoiceNo = id;
+                                                });
+                                              },
+                                            );
+                                          }),
+                                        ],
+                                      );
+                                    },
+
+                                    // =====================================================
+                                    // LOADING
+                                    // =====================================================
+                                    loading: () {
+                                      return const Padding(
+                                        padding: EdgeInsets.all(30),
+                                        child: CircularProgressIndicator(),
+                                      );
+                                    },
+
+                                    // =====================================================
+                                    // REAL ERROR
+                                    // =====================================================
+                                    error: (error, stack) {
+                                      final message = parseError(error);
+
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback((_) {
+                                            if (!mounted) return;
+
+                                            AppPopupAlert.show(
+                                              context,
+                                              message: message,
+                                              isError: true,
+                                            );
                                           });
-                                        },
 
-                                        onSearchChanged: (value) {
-                                          setState(() {
-                                            searchAccountValue = value;
-                                          });
-                                        },
-
-                                        onCollectionChanged: (value) {
-                                          setState(() {
-                                            selectedCollectionType =
-                                                value?.code;
-                                          });
-                                        },
-
-                                        onStatusChanged: (value) {
-                                          setState(() {
-                                            selectedInvoiceStatus = value?.code;
-                                          });
-                                        },
-                                      ),
-
-                                      SizedBox(height: isTablet ? 5 : 15),
-
-                                      ...filteredInvoices.map((invoice) {
-                                        final id = invoice.invoiceNo;
-
-                                        return _InvoiceCard(
-                                          invoice,
-                                          isSelected: selectedInvoiceNo == id,
-                                          batchId: selectedBatch!.batchNumber,
-                                          onSelect: () {
-                                            setState(() {
-                                              selectedInvoiceNo = id;
-                                            });
-                                          },
-                                        );
-                                      }),
-                                    ],
-                                  );
-                                },
-                                loading: () => CircularProgressIndicator(),
-                                error: (error, stack) {
-                                  final message = parseError(error);
-
-                                  WidgetsBinding.instance.addPostFrameCallback((
-                                    _,
-                                  ) {
-                                    AppPopupAlert.show(
-                                      context,
-                                      message: message,
-                                      isError: true,
-                                    );
-                                  });
-
-                                  return const SizedBox();
-                                },
+                                      return const SizedBox();
+                                    },
+                                  ),
+                                ],
                               );
                             },
                             loading: () => CircularProgressIndicator(),
@@ -2122,7 +2241,9 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                         ),
                       if (getInvoiceStatusCode(widget.invoice, context) ==
                               "ISS" ||
-                          (getInvoiceStatusCode(widget.invoice, context) == "RDY" && widget.invoice.totalAmount > 0)
+                          (getInvoiceStatusCode(widget.invoice, context) ==
+                                  "RDY" &&
+                              widget.invoice.totalAmount > 0)
                       // getInvoiceStatusCode(widget.invoice, context) ==
                       //     "UNC" ||
                       // getInvoiceStatusCode(widget.invoice, context) ==

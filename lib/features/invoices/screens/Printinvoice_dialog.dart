@@ -115,15 +115,15 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
 
                               if (invoice.totalDebt != null &&
                                   invoice.totalDebt! > 0) ...[
-                                const SizedBox(height: 10),
+                                // const SizedBox(height: 10),
 
-                                Text(
-                                  "تنويه : الفاتورة مسددة وتوجد ديون مستحقة على الحساب",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                                // Text(
+                                //   "تنويه : الفاتورة مسددة وتوجد ديون مستحقة على الحساب",
+                                //   style: TextStyle(
+                                //     fontSize: 18,
+                                //     fontWeight: FontWeight.bold,
+                                //   ),
+                                // ),
                               ],
 
                               const SizedBox(height: 10),
@@ -276,7 +276,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                       ),
                     ),
                     pixelRatio: 1,
-                    targetSize: const Size(576, 1900)
+                    targetSize: const Size(576, 1900),
                   );
 
                   final granted = await requestBluetoothPermissions();
@@ -838,10 +838,21 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
               color: Colors.green.shade100,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text(
-              widget.getInvoiceStatusCode(invoice, context),
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-            ),
+            child: (invoice.totalDebt != null && invoice.totalDebt! > 0)
+                ? Text(
+                    'محصلة جزئي مع وجود ديون',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )
+                : Text(
+                    widget.getInvoiceStatusCode(invoice, context),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ],
       ),

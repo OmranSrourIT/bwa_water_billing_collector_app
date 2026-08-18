@@ -9,22 +9,29 @@ class InvoiceApiService implements InvoiceService {
 
   InvoiceApiService(this.dio);
 
-  @override
-  Future<List<InvoiceModel>> getInvoices(String batchId) async {
-    try {
-      final response = await dio.get(ApiConstants.invoices(batchId),);
+ @override
+Future<List<InvoiceModel>> getInvoices(String batchId) async {
+  try {
+    final response = await dio.get(
+      ApiConstants.invoices(batchId),
+    );
 
-      return (response.data as List)
-          .map((e) => InvoiceModel.fromJson(e))
-          .toList();
-    } catch (e) {
-      if (e is DioException) {
-        throw Exception(handleDioError(e));
+    return (response.data as List)
+        .map((e) => InvoiceModel.fromJson(e))
+        .toList();
+  } catch (e) {
+    if (e is DioException) {
+      // Batch has no invoices
+      if (e.response?.statusCode == 404) {
+        return [];
       }
 
-      throw Exception(e.toString());
+      throw Exception(handleDioError(e));
     }
+
+    throw Exception(e.toString());
   }
+}
 
   @override
   Future<InvoiceModel> getInvoiceDetails(String batchId, String invoiceNo) async {
