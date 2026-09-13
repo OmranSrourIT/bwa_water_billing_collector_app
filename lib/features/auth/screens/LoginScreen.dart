@@ -155,7 +155,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       color = Colors.orange;
       break;
 
-       case "STGIRAQ":
+       case "STAGE":
       color = Colors.orange;
       break;
 

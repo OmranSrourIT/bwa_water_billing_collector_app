@@ -6,9 +6,11 @@ import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
 import 'package:bwa_water_billing_collector_app/features/Printer%20VAN_GOLD/printer_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/models/location_request_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/reading_request_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoice_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/location_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/reading_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/screens/AnimatedMeterNumber.dart';
 import 'package:flutter/cupertino.dart';
@@ -196,11 +198,13 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
 
       isMeterRollover: resetMeter,
 
-      latitude: position.latitude.toString(),
-
-      longitude: position.longitude.toString(),
-
       base64: base64Image,
+    );
+
+    final locationRequest = LocationRequest(
+      invoiceNumber: widget.invoiceNumber,
+      latitude: position.latitude.toString(),
+      longitude: position.longitude.toString(),
     );
 
     try {
@@ -222,6 +226,13 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
 
           return;
         }
+
+        final locationResponse = await ref.read(
+          insertLocationProvider(locationRequest).future,
+        );
+
+         
+
         // 🔥 تحديث الحالة
         await ref.read(
           updateInvoiceStatusProvider((
@@ -288,21 +299,17 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
       ),
 
       error: (e, _) {
-         final message = parseError(e);
+        final message = parseError(e);
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (context.mounted) {
-      Navigator.of(context).pop(); // إغلاق الـ Dialog الحالي
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            Navigator.of(context).pop(); // إغلاق الـ Dialog الحالي
 
-      AppPopupAlert.show(
-        context,
-        message: message,
-        isError: true,
-      );
-    }
-  });
+            AppPopupAlert.show(context, message: message, isError: true);
+          }
+        });
 
-  return const SizedBox.shrink();
+        return const SizedBox.shrink();
       },
 
       data: (invoice) {
@@ -383,7 +390,8 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
                                         ),
                                         _InfoRow(
                                           label: "رقم المقياس",
-                                          value: invoice.waterMeterSerialNo??"-",
+                                          value:
+                                              invoice.waterMeterSerialNo ?? "-",
                                           highlight: true,
                                         ),
                                       ],

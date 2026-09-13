@@ -46,11 +46,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? selectedInvoiceNo;
   BatchModel? selectedBatch;
   String? selectedCollectionType;
-  String? selectedInvoiceStatus;
+  Set<String> selectedInvoiceStatuses = {};
   String? searchAccountValue;
   String? searchAddressValue;
   bool isEndBatchLoading = false;
   bool isInitialBatchSelectionDone = false;
+  bool isInvoiceStatusFilterInitialized = false;
 
   @override
   void initState() {
@@ -100,12 +101,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           selectedBatch = null;
           selectedCollectionType = null;
           selectedInvoiceNo = null;
-          selectedInvoiceStatus = null;
+          selectedInvoiceStatuses.clear();
+          isInvoiceStatusFilterInitialized = false;
           searchAccountValue = null;
         });
       }
     } catch (e) {
       final message = parseError(e);
+        AppPopupAlert.show(context, message: "ssss");
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         AppPopupAlert.show(context, message: message, isError: true);
@@ -185,7 +188,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           selectedBatch = batch;
                                           selectedCollectionType = null;
                                           selectedInvoiceNo = null;
-                                          selectedInvoiceStatus = null;
+                                          selectedInvoiceStatuses.clear();
+                                          isInvoiceStatusFilterInitialized =
+                                              false;
                                           searchAccountValue = null;
                                         });
                                       },
@@ -193,7 +198,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         setState(() {
                                           selectedCollectionType = null;
                                           selectedInvoiceNo = null;
-                                          selectedInvoiceStatus = null;
+                                          selectedInvoiceStatuses.clear();
+                                          isInvoiceStatusFilterInitialized =
+                                              false;
                                           searchAccountValue = null;
                                         });
                                       },
@@ -230,7 +237,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         selectedBatch = batch;
                                         selectedCollectionType = null;
                                         selectedInvoiceNo = null;
-                                        selectedInvoiceStatus = null;
+                                        selectedInvoiceStatuses.clear();
                                         searchAccountValue = null;
                                         searchAddressValue = null;
                                       });
@@ -239,7 +246,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       setState(() {
                                         selectedCollectionType = null;
                                         selectedInvoiceNo = null;
-                                        selectedInvoiceStatus = null;
+                                        selectedInvoiceStatuses.clear();
                                         searchAccountValue = null;
                                         searchAddressValue = null;
                                       });
@@ -255,7 +262,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   SizedBox(height: isTablet ? 8 : 16),
 
                                   // =====================================================
-                                  // INVOICES
+                                  // INVOICES Data
                                   // =====================================================
                                   invoicesAsync.when(
                                     data: (invoices) {
@@ -367,6 +374,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           });
 
                                       // =====================================================
+                                      // DEFAULT INVOICE STATUS FILTER
+                                      // All statuses selected except COL (Collected)
+                                      // =====================================================
+
+                                      if (!isInvoiceStatusFilterInitialized &&
+                                          invoiceStatuses.isNotEmpty) {
+                                        selectedInvoiceStatuses =
+                                            invoiceStatuses
+                                                .where(
+                                                  (status) =>
+                                                      status.code != 'COL',
+                                                )
+                                                .map((status) => status.code)
+                                                .toSet();
+
+                                        isInvoiceStatusFilterInitialized = true;
+                                      }
+                                      // =====================================================
                                       // FILTER INVOICES
                                       // =====================================================
 
@@ -383,13 +408,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               );
 
                                           final statusMatch =
-                                              selectedInvoiceStatus == null ||
+                                              selectedInvoiceStatuses.isEmpty ||
                                               inv.lookup.any(
                                                 (l) =>
                                                     l.lookupType ==
                                                         "InvoiceStatus" &&
-                                                    l.code ==
-                                                        selectedInvoiceStatus,
+                                                    selectedInvoiceStatuses
+                                                        .contains(l.code),
                                               );
 
                                           // =========================
@@ -460,10 +485,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             collectionTypes: collectionTypes,
                                             selectedCollectionType:
                                                 selectedCollectionType,
-
                                             invoiceStatuses: invoiceStatuses,
-                                            selectedInvoiceStatus:
-                                                selectedInvoiceStatus,
+                                            selectedInvoiceStatuses:
+                                                selectedInvoiceStatuses,
 
                                             searchAddressValue:
                                                 searchAddressValue,
@@ -487,10 +511,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               });
                                             },
 
-                                            onStatusChanged: (value) {
+                                            onStatusesChanged: (values) {
                                               setState(() {
-                                                selectedInvoiceStatus =
-                                                    value?.code;
+                                                selectedInvoiceStatuses =
+                                                    values;
                                               });
                                             },
                                           ),
@@ -502,6 +526,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                                             return _InvoiceCard(
                                               invoice,
+
                                               isSelected:
                                                   selectedInvoiceNo == id,
                                               batchId:
@@ -536,6 +561,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       WidgetsBinding.instance
                                           .addPostFrameCallback((_) {
                                             if (!mounted) return;
+                                            //  AppPopupAlert.show(context, message: "ssss1");
 
                                             AppPopupAlert.show(
                                               context,
@@ -556,6 +582,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               if (message.contains(
                                 "type 'String' is not a subtype of type 'List<dynamic>' in type cast",
                               )) {
+                                 AppPopupAlert.show(context, message: "ssss2");
                                 return AppErrorState(
                                   message: "لا توجد سجلات مسندة اليك حاليا ",
                                   onRetry: () {
@@ -563,6 +590,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   },
                                 );
                               } else {
+                                 AppPopupAlert.show(context, message: "ssss3");
                                 return AppErrorState(
                                   message: message,
                                   onRetry: () {
@@ -1241,8 +1269,8 @@ class _SearchSection extends StatefulWidget {
   final Function(LookupModelParent?) onCollectionChanged;
 
   final List<LookupModelParent> invoiceStatuses;
-  final String? selectedInvoiceStatus;
-  final Function(LookupModelParent?) onStatusChanged;
+  final Set<String> selectedInvoiceStatuses;
+  final Function(Set<String>) onStatusesChanged;
 
   final String? searchAccountValue;
   final Function(String) onSearchChanged;
@@ -1257,14 +1285,15 @@ class _SearchSection extends StatefulWidget {
     required this.onCollectionChanged,
 
     required this.invoiceStatuses,
-    required this.selectedInvoiceStatus,
-    required this.onStatusChanged,
+    required this.selectedInvoiceStatuses,
+    required this.onStatusesChanged,
+
     this.searchAccountValue,
     required this.onSearchChanged,
+
     this.searchAddressValue,
     required this.onAddressSearchChanged,
   });
-
   @override
   State<_SearchSection> createState() => _SearchSectionState();
 }
@@ -1381,11 +1410,11 @@ class _SearchSectionState extends State<_SearchSection> {
         Row(
           children: [
             Expanded(
-              child: _FilterDropdownsubscriptionType(
+              child: _InvoiceStatusChecklist(
                 title: tr.t('search_by_status'),
                 items: widget.invoiceStatuses,
-                selected: widget.selectedInvoiceStatus,
-                onChanged: widget.onStatusChanged,
+                selectedCodes: widget.selectedInvoiceStatuses,
+                onChanged: widget.onStatusesChanged,
               ),
             ),
             const SizedBox(width: 8),
@@ -1400,6 +1429,271 @@ class _SearchSectionState extends State<_SearchSection> {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _InvoiceStatusChecklist extends StatelessWidget {
+  final String title;
+  final List<LookupModelParent> items;
+  final Set<String> selectedCodes;
+  final Function(Set<String>) onChanged;
+
+  const _InvoiceStatusChecklist({
+    required this.title,
+    required this.items,
+    required this.selectedCodes,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isTablet = Responsive.isTablet(context);
+ final selectedCount = selectedCodes.length;
+
+String displayText;
+
+if (selectedCount == 0) {
+  displayText = 'لا يوجد';
+} else if (selectedCount == items.length) {
+  displayText = 'الكل';
+} else {
+  final locale = Localizations.localeOf(context).languageCode;
+
+  final selectedNames = items
+      .where((item) => selectedCodes.contains(item.code))
+      .map(
+        (item) => locale == 'ar' ? item.arDesc : item.enDesc,
+      )
+      .where((name) => name.trim().isNotEmpty)
+      .toList();
+
+  displayText = selectedNames.join('، ');
+}
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () {
+          _showChecklist(context);
+        },
+        child: Container(
+          height: isTablet ? 48 : 52,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.filter_alt_outlined,
+                size: isTablet ? 20 : 21,
+                color: Colors.grey.shade500,
+              ),
+
+              const SizedBox(width: 8),
+
+              Expanded(
+                child: Text(
+                  displayText,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: isTablet ? 14 : 13,
+                    color: selectedCount == 0
+                        ? Colors.grey.shade500
+                        : Colors.grey.shade800,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 22,
+                color: Colors.grey.shade500,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showChecklist(BuildContext context) {
+    final tempSelected = Set<String>.from(selectedCodes);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final isTablet = Responsive.isTablet(context);
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * .75,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 10),
+
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: isTablet ? 17 : 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+
+                          TextButton(
+                            onPressed: () {
+                              setModalState(() {
+                                if (tempSelected.length == items.length) {
+                                  tempSelected.clear();
+                                } else {
+                                  tempSelected
+                                    ..clear()
+                                    ..addAll(items.map((item) => item.code));
+                                }
+                              });
+                            },
+                            child: Text(
+                              tempSelected.length == items.length
+                                  ? 'إلغاء الكل'
+                                  : 'تحديد الكل',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const Divider(height: 1),
+
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) {
+                          return const Divider(
+                            height: 1,
+                            indent: 20,
+                            endIndent: 20,
+                          );
+                        },
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+
+                          final isSelected = tempSelected.contains(item.code);
+
+                          return CheckboxListTile(
+                            value: isSelected,
+                            onChanged: (value) {
+                              setModalState(() {
+                                if (value == true) {
+                                  tempSelected.add(item.code);
+                                } else {
+                                  tempSelected.remove(item.code);
+                                }
+                              });
+                            },
+                            title: Text(
+                              Localizations.localeOf(context).languageCode ==
+                                      'ar'
+                                  ? item.arDesc
+                                  : item.enDesc,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            controlAffinity: ListTileControlAffinity.leading,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                            ),
+                            activeColor: AppColors.primary,
+                          );
+                        },
+                      ),
+                    ),
+
+                    const Divider(height: 1),
+
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            onChanged(Set<String>.from(tempSelected));
+
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'تطبيق',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -1654,6 +1948,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
       if (!mounted) return;
 
       Navigator.of(context).pop();
+       AppPopupAlert.show(context, message: "ssss4");
 
       AppPopupAlert.show(
         context,
@@ -1795,6 +2090,10 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     final isOnline = ref.watch(connectionProvider);
 
+    final invoiceAsync = ref.watch(
+      invoiceDetailProvider(widget.invoice.invoiceNo),
+    );
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
 
@@ -1927,11 +2226,9 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                 ),
 
                 /// ================= AMOUNT =================
+                /// ================= AMOUNT =================
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
                   child: Row(
                     textDirection: isArabic
                         ? ui.TextDirection.ltr
@@ -1940,25 +2237,22 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                       // ================= STATUS =================
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 7,
+                          horizontal: 11,
+                          vertical: 6,
                         ),
                         decoration: BoxDecoration(
                           color: getInvoiceStatusColor(
                             widget.invoice,
                             context,
-                          ).withOpacity(0.12),
-
-                          borderRadius: BorderRadius.circular(24),
-
+                          ).withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: getInvoiceStatusColor(
                               widget.invoice,
                               context,
-                            ).withOpacity(0.35),
+                            ).withOpacity(0.25),
                           ),
                         ),
-
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -1968,78 +2262,103 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                                 widget.invoice,
                                 context,
                               ),
-                              size: 17,
+                              size: 16,
                             ),
-
-                            const SizedBox(width: 6),
-
+                            const SizedBox(width: 5),
                             Text(
                               getInvoiceStatus(widget.invoice, context),
-
                               style: TextStyle(
                                 color: getInvoiceStatusColor(
                                   widget.invoice,
                                   context,
                                 ),
-
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
                               ),
                             ),
                           ],
                         ),
                       ),
 
-                      const Spacer(),
+                      const SizedBox(width: 12),
 
-                      // ================= AMOUNT =================
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 7,
-                        ),
-
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-
-                          borderRadius: BorderRadius.circular(10),
-
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-
-                          children: [
-                            Icon(
-                              Icons.payments_outlined,
-                              size: 17,
-                              color: AppColors.primaryDark,
-                            ),
-
-                            const SizedBox(width: 5),
-
-                            Text(
-                              "${tr.t('invoice_amount')} : ",
-                              style: TextStyle(
-                                color: Colors.grey.shade700,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                      // ================= FINANCIAL SUMMARY =================
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              // ================= INVOICE AMOUNT =================
+                              Expanded(
+                                child: _AmountItem(
+                                  title: "المبلغ المستحق",
+                                  value: NumberFormat(
+                                    '#,##0.000',
+                                  ).format(widget.invoice.totalDueAmount),
+                                  color: AppColors.primaryDark,
+                                  icon: Icons.receipt_long_outlined,
+                                ),
                               ),
-                            ),
 
-                            Text(
-                              NumberFormat(
-                                '#,##0.000',
-                              ).format(widget.invoice.totalAmount),
+                              _AmountDivider(),
 
-                              style: TextStyle(
-                                color: AppColors.primaryDark,
-                                fontSize: isTablet ? 15 : 16,
-                                fontWeight: FontWeight.bold,
+                              // ================= DUE AMOUNT =================
+                              Expanded(
+                                child: _AmountItem(
+                                  title: tr.t('invoice_amount'),
+                                  value: NumberFormat(
+                                    '#,##0.000',
+                                  ).format(widget.invoice.totalAmount),
+                                  color: Colors.orange.shade700,
+                                  icon: Icons.account_balance_wallet_outlined,
+                                ),
                               ),
-                            ),
-                          ],
+
+                              _AmountDivider(),
+
+                              // ================= DEBT =================
+                              Expanded(
+                                child: invoiceAsync.when(
+                                  data: (invoiceDetails) {
+                                    return _AmountItem(
+                                      title: "قيمة الديون",
+                                      value: NumberFormat(
+                                        '#,##0.000',
+                                      ).format(invoiceDetails.totalDebt),
+                                      color: Colors.red.shade700,
+                                      icon: Icons.warning_amber_rounded,
+                                    );
+                                  },
+
+                                  loading: () {
+                                    return _AmountItem(
+                                      title: "قيمة الديون",
+                                      value: "...",
+                                      color: Colors.red.shade700,
+                                      icon: Icons.warning_amber_rounded,
+                                    );
+                                  },
+
+                                  error: (error, stack) {
+                                    return _AmountItem(
+                                      title: "قيمة الديون",
+                                      value: "—",
+                                      color: Colors.red.shade700,
+                                      icon: Icons.warning_amber_rounded,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -2064,17 +2383,80 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                         ),
                       ),
                       const SizedBox(width: 12),
-
                       Expanded(
-                        child: _InlineItem(
-                          title: tr.t('subscription_type'),
-                          value: getLookupValue(
-                            widget.invoice,
-                            "CollectionType",
-                            context,
-                          ),
+                        child: invoiceAsync.when(
+                          data: (invoiceDetails) {
+                            final subscriptionType = getLookupValue(
+                              widget.invoice,
+                              "CollectionType",
+                              context,
+                            );
+
+                            final isMeter = subscriptionType.contains("مقياس");
+
+                            return _InlineItem(
+                              title: tr.t('subscription_type'),
+                              value: subscriptionType,
+                              valueWidget: isMeter
+                                  ? FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment:
+                                          AlignmentDirectional.centerStart,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            subscriptionType,
+                                            maxLines: 1,
+                                            softWrap: false,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '(${invoiceDetails.waterMeterSerialNo ?? "-"})',
+                                            maxLines: 1,
+                                            softWrap: false,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : null,
+                            );
+                          },
+
+                          loading: () {
+                            return _InlineItem(
+                              title: tr.t('subscription_type'),
+                              value: getLookupValue(
+                                widget.invoice,
+                                "CollectionType",
+                                context,
+                              ),
+                            );
+                          },
+
+                          error: (error, stack) {
+                            return _InlineItem(
+                              title: tr.t('subscription_type'),
+                              value: getLookupValue(
+                                widget.invoice,
+                                "CollectionType",
+                                context,
+                              ),
+                            );
+                          },
                         ),
                       ),
+
                       const SizedBox(width: 12),
 
                       Expanded(
@@ -2234,7 +2616,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                                     .payment!
                                     .paymentRefNo
                                     .toString(),
-                                amount: widget.invoice.totalAmount,
+                                amount: widget.invoice.totalDueAmount,
                               ),
                             );
                           },
@@ -2284,11 +2666,88 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
   }
 }
 
+class _AmountItem extends StatelessWidget {
+  final String title;
+  final String value;
+  final Color color;
+  final IconData icon;
+
+  const _AmountItem({
+    required this.title,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color.withOpacity(0.75)),
+
+        const SizedBox(width: 7),
+
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+
+              const SizedBox(height: 1),
+
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AmountDivider extends StatelessWidget {
+  const _AmountDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 30,
+      width: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      color: Colors.grey.shade200,
+    );
+  }
+}
+
 class _InlineItem extends StatelessWidget {
   final String title;
   final String value;
+  final Widget? valueWidget;
 
-  const _InlineItem({required this.title, required this.value});
+  const _InlineItem({
+    required this.title,
+    required this.value,
+    this.valueWidget,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2311,16 +2770,19 @@ class _InlineItem extends StatelessWidget {
         const SizedBox(width: 5),
 
         Expanded(
-          child: Text(
-            value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              height: 1.4,
-            ),
-          ),
+          child:
+              valueWidget ??
+              Text(
+                value,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.visible,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  height: 1.4,
+                ),
+              ),
         ),
       ],
     );

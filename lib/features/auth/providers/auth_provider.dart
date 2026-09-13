@@ -99,6 +99,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       ref.invalidate(accountProvider);
       ref.invalidate(batchProvider);
       ref.invalidate(invoicesProvider);
+      
     } catch (e) {
       state = AuthState(
         isLoading: false,

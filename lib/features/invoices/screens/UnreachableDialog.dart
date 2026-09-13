@@ -236,7 +236,8 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
                                           case "RDY":
                                             return item.code == "CNA" ||
                                                 item.code == "OTH" ||
-                                               (item.code == "CNP" && isOnline && invoice.totalInvoiceAmount > 0);
+                                                item.code == "INS" ||
+                                               item.code == "CNP" ;
 
                                           default:
                                             return true;

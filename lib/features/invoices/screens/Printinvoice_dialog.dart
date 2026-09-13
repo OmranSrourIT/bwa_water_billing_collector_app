@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:bwa_water_billing_collector_app/core/constants/AppColors.dart';
-import 'package:bwa_water_billing_collector_app/core/constants/AppConstant.dart';
+import 'package:bwa_water_billing_collector_app/core/constants/api_constants.dart';
 import 'package:bwa_water_billing_collector_app/core/storage/PrinterStorage.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/request_AppPermissions.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
@@ -112,19 +112,8 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                               const SizedBox(height: 10),
 
                               _buildTotalDebt(invoice),
-
-                              if (invoice.totalDebt != null &&
-                                  invoice.totalDebt! > 0) ...[
-                                // const SizedBox(height: 10),
-
-                                // Text(
-                                //   "تنويه : الفاتورة مسددة وتوجد ديون مستحقة على الحساب",
-                                //   style: TextStyle(
-                                //     fontSize: 18,
-                                //     fontWeight: FontWeight.bold,
-                                //   ),
-                                // ),
-                              ],
+                              const SizedBox(height: 10),
+                              _buildTotalAmountDUE(invoice),
 
                               const SizedBox(height: 10),
 
@@ -428,20 +417,6 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                       context,
                     );
 
-                    // final int? days = (collectionType == "EST")
-                    //     ? (invoice.periodToDate != null &&
-                    //               invoice.periodFromDate != null)
-                    //           ? invoice.periodToDate!
-                    //                 .difference(invoice.periodFromDate!)
-                    //                 .inDays
-                    //           : null
-                    //     : (invoice.previousReadingDateTime != null &&
-                    //           invoice.currentReadDateTime != null)
-                    //     ? invoice.currentReadDateTime!
-                    //           .difference(invoice.previousReadingDateTime!)
-                    //           .inDays
-                    //     : null;
-
                     return Column(
                       children: [
                         const Text(
@@ -542,6 +517,32 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
     );
   }
 
+  Widget _buildTotalAmountDUE(InvoiceInformationModel invoice) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.blue.shade300),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              "المبلغ المستحق للتسديد :",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          Text(
+            "${formatAmount(invoice.totalDueAmount!)} د.ع",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTotalDebt(InvoiceInformationModel invoice) {
     return Container(
       width: double.infinity,
@@ -578,7 +579,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
               Expanded(
                 child: _InfoRow(
                   icon: Icons.person_outline,
-                  label: "اسم المشترك",
+                  label: "الاسم",
                   value: invoice.customerName,
                 ),
               ),
@@ -638,12 +639,12 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
   Widget _buildCollectorSection(InvoiceInformationModel invoice) {
     final accountAsync = ref.watch(accountProvider);
     return _SectionCard(
-      title: "معلومات الجابي",
+      title: "بيانات الجابي",
       child: Column(
         children: [
           _InfoRow(
             icon: Icons.person_search_outlined,
-            label: "اسم الجابي",
+            label: "الاسم",
             value: invoice.collectorName,
             isLast: true,
           ),
@@ -667,7 +668,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
             data: (account) {
               return _InfoRow(
                 icon: Icons.phone,
-                label: "رقم هاتف الجابي",
+                label: "رقم الهاتف",
                 value: account.phone,
                 isLast: true,
               );
@@ -716,7 +717,7 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                   child: _InfoRow(
                     icon: Icons.show_chart_outlined,
                     label: "معدل الاستهلاك اليومي",
-                    value: invoice.estimatedPotableWater.toInt().toString(),
+                    value: invoice.estimatedPotableWater.toString(),
                   ),
                 ),
             ],
@@ -776,49 +777,6 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
       ),
     );
   }
-  //================================================
-  // CHARGES
-  //================================================
-
-  // Widget _buildChargesTable() {
-  //   return _SectionCard(
-  //     title: "بنود الرسوم والخدمات",
-  //     child: Column(
-  //       children: invoice.charges.map((charge) {
-  //         return Padding(
-  //           padding: const EdgeInsets.symmetric(vertical: 8),
-  //           child: Row(
-  //             children: [
-  //               Expanded(
-  //                 child: Text(
-  //                   charge.description,
-  //                   textAlign: TextAlign.right,
-  //                   style: const TextStyle(fontSize: 16),
-  //                 ),
-  //               ),
-
-  //               Text(
-  //                 formatAmount(charge.amount),
-  //                 style: const TextStyle(
-  //                   fontWeight: FontWeight.bold,
-  //                   fontSize: 16,
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         );
-  //       }).toList(),
-  //     ),
-  //   );
-  // }
-
-  //================================================
-  // TOTAL
-  //================================================
-
-  //================================================
-  // STATUS
-  //================================================
 
   Widget _buildStatus(BuildContext contex, InvoiceInformationModel invoice) {
     return Container(
@@ -838,21 +796,10 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
               color: Colors.green.shade100,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: (invoice.totalDebt != null && invoice.totalDebt! > 0)
-                ? Text(
-                    'محصلة جزئي مع وجود ديون',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  )
-                : Text(
-                    widget.getInvoiceStatusCode(invoice, context),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+            child: Text(
+              widget.getInvoiceStatusCode(invoice, context),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -879,9 +826,11 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: QrImageView(
-              data: AppConstant.verofNumberPrintNotice(
-                invoice.payment!.paymentRefNo.toString(),
-              ),
+              data:
+                  ApiConstants.baseUrlQR +
+                  ApiConstants.verofNumberPrintNotice(
+                    invoice.payment!.paymentRefNo.toString(),
+                  ),
 
               size: 170,
               backgroundColor: Colors.white,

@@ -294,7 +294,7 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
                                                   context,
                                                 ) ==
                                                 "EST"
-                                            ? "${invoice.estimatedPotableWater.toInt().toString()}  م³"
+                                            ? "${invoice.estimatedPotableWater.toString()}  م³"
                                             : "${invoice.consumptionQtyPotable.toInt().toString()}  م³",
                                       ),
                                       if (getLookupCodeValue(
@@ -365,7 +365,13 @@ class _InvoiceDetailsDialogState extends ConsumerState<InvoiceDetailsDialog> {
                                   ],
 
                                   const SizedBox(height: 16),
+                                  _TotalDueAmountCard(
+                                    amount: NumberFormat(
+                                      '#,##0.000',
+                                    ).format(invoice.totalDueAmount),
+                                  ),
 
+                                  const SizedBox(height: 16),
                                   // ================= CHARGES =================
                                   _ChargesTable(
                                     charges: invoice.invoiceDetails,
@@ -1380,7 +1386,7 @@ class _TotalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+   padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xff1B5E20), Color(0xff43A047)],
@@ -1410,6 +1416,51 @@ class _TotalCard extends StatelessWidget {
   }
 }
 
+ class _TotalDueAmountCard extends StatelessWidget {
+  final String amount;
+
+  const _TotalDueAmountCard({required this.amount});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+       gradient: const LinearGradient(
+  colors: [
+    Color(0xff2196F3),
+    Color(0xff64B5F6),
+  ],
+),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            "المبلغ المستحق للتسديد :",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            amount,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TotalDebitCard extends StatelessWidget {
   final String amount;
 
@@ -1419,7 +1470,7 @@ class _TotalDebitCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topRight,
@@ -1446,7 +1497,10 @@ class _TotalDebitCard extends StatelessWidget {
               children: [
                 const Text(
                   "إجمالي الديون السابقة (د.ع)",
-                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
 
                 const SizedBox(height: 6),
@@ -1457,11 +1511,11 @@ class _TotalDebitCard extends StatelessWidget {
                   children: [
                     Text(
                       amount,
-                       style: const TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),

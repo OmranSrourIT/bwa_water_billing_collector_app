@@ -1,5 +1,5 @@
 import 'dart:ui';
-import 'package:bwa_water_billing_collector_app/core/constants/AppConstant.dart';
+import 'package:bwa_water_billing_collector_app/core/constants/api_constants.dart';
 import 'package:bwa_water_billing_collector_app/core/storage/PrinterStorage.dart';
 import 'package:bwa_water_billing_collector_app/core/utlis/request_AppPermissions.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.dart';
@@ -239,12 +239,12 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                       child: Column(
                                         children: [
                                           Text(
-                                            "مبلغ الفاتورة المستحق",
+                                            "المبلغ المستحق للتسديد",
                                             style: TextStyle(fontSize: 20),
                                           ),
                                           const SizedBox(height: 8),
                                           Text(
-                                            "${NumberFormat('#,##0.000').format(invoice.totalInvoiceAmount)} د.ع",
+                                            "${NumberFormat('#,##0.000').format(invoice.totalDueAmount)} د.ع",
 
                                             style: const TextStyle(
                                               fontSize: 28,
@@ -309,7 +309,8 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                             ),
                                             child: QrImageView(
                                               data:
-                                                  AppConstant.verofNumberPrintNotice(
+                                                  ApiConstants.baseUrlQR +
+                                                  ApiConstants.verofNumberPrintNotice(
                                                     invoice
                                                         .payment!
                                                         .paymentRefNo
@@ -522,6 +523,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                     address: infoDetials.propertyAddress,
                     collectorName: infoDetials.collectorName,
                     amount: infoDetials.totalInvoiceAmount,
+                    totalAmountDue: infoDetials.totalDueAmount!,
                     today: today,
                     cycleCode: infoDetials.cycleTypeName,
                     paymentRefNo: infoDetials.payment!.paymentRefNo, 

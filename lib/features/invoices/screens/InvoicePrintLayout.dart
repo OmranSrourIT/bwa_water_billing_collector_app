@@ -1,5 +1,5 @@
 import 'dart:ui' as ui;
-import 'package:bwa_water_billing_collector_app/core/constants/AppConstant.dart';
+import 'package:bwa_water_billing_collector_app/core/constants/api_constants.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,6 +61,13 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
     fontFamily: "Cairo",
     fontWeight: FontWeight.w600,
     fontSize: 23,
+    color: Colors.black,
+  );
+
+   TextStyle get valueStyleDUE => const TextStyle(
+    fontFamily: "Cairo",
+    fontWeight: FontWeight.bold,
+    fontSize: 27,
     color: Colors.black,
   );
 
@@ -277,7 +284,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
 
         // ================= بيانات المشترك =================
         _sectionTitle("بيانات المشترك"),
-        _rowItem("اسم المشترك :", widget.invoice.customerName),
+        _rowItem("الاسم :", widget.invoice.customerName),
         _rowItem("رقم الحساب :", widget.invoice.accountNo),
         _rowItem("رقم الهاتف :", widget.invoice.customerMobileNo),
         _rowItem("نوع الإشغال :", widget.invoice.usageTypeName),
@@ -285,17 +292,17 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
 
         _blackDivider(), // سطر فاصل صلب
         // ================= معلومات الجابي =================
-        _sectionTitle("معلومات الجابي"),
+        _sectionTitle("بيانات الجابي"),
         Container(
           decoration: BoxDecoration(
             border: Border.all(width: 1.5, color: Colors.black),
           ),
           child: Column(
             children: [
-              _rowItem("اسم الجابي :", widget.invoice.collectorName),
+              _rowItem("الاسم :", widget.invoice.collectorName),
               const Divider(height: 1, thickness: 1.5, color: Colors.black),
 
-              _rowItem("رقم هاتف الجابي:", widget.phone),
+              _rowItem("رقم الهاتف :", widget.phone),
             ],
           ),
         ),
@@ -319,7 +326,7 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
                   "EST")
                 _rowItem(
                   "معدل الاستهلاك اليومي :",
-                  "${widget.invoice.estimatedPotableWater.toInt().toString()} م³",
+                  "${widget.invoice.estimatedPotableWater.toString()} م³",
                 ),
               const Divider(height: 1, thickness: 1.5, color: Colors.black),
               if (getLookupCodeValue(
@@ -379,11 +386,13 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
                 "${money(widget.invoice.totalDebt ?? 0)} د.ع",
                 isTotal: true,
               ),
-              const Divider(height: 1, thickness: 1.5, color: Colors.black),
-              if (widget.invoice.totalDebt != null &&
-                  widget.invoice.totalDebt! > 0)
-                _rowItem("حالة الفاتورة :", "محصلة جزئي مع وجود ديون", isTotal: true)
-              else
+                const Divider(height: 1, thickness: 1.5, color: Colors.black),  
+              _rowItemDUE(
+                 "المبلغ المستحق للتسديد :",
+                "${money(widget.invoice.totalDueAmount ?? 0)} د.ع",
+                isTotal: true,
+              ),
+              const Divider(height: 1, thickness: 1.5, color: Colors.black),  
                 _rowItem("حالة الفاتورة :", widget.status, isTotal: true),
             ],
           ),
@@ -479,7 +488,8 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
                 ],
               ),
               child: QrImageView(
-                data: AppConstant.verofNumberPrintNotice(
+                data: ApiConstants.baseUrlQR +
+                    ApiConstants.verofNumberPrintNotice(
                   widget.invoice.payment!.paymentRefNo.toString(),
                 ),
                 size: 180,
@@ -528,6 +538,37 @@ class _InvoicePrintLayout extends ConsumerState<InvoicePrintLayout> {
                     value,
                     textAlign: TextAlign.left,
                     style: valueStyle,
+                  ),
+                ),
+
+          const SizedBox(width: 10),
+
+          // الليبل (يمين)
+          Text(label, style: labelStyle),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _rowItemDUE(String label, String value, {bool isTotal = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 5),
+      child: Row(
+        textDirection: ui.TextDirection.ltr,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // القيمة (يسار)
+          isTotal
+              ? Text(value, style: valueStyleDUE)
+              : Expanded(
+                  child: Text(
+                    textDirection: value.contains("+964")
+                        ? ui.TextDirection.ltr
+                        : ui.TextDirection.rtl,
+                    value,
+                    textAlign: TextAlign.left,
+                    style: valueStyleDUE,
                   ),
                 ),
 

@@ -35,6 +35,7 @@ class InvoiceLocalService {
         "collector_name": item.collectorName,
 
         "total_amount": item.totalAmount,
+        "total_amount_due": item.totalDueAmount,
 
         "consumption_qty_row": item.consumptionQtyRow,
 
@@ -106,6 +107,7 @@ class InvoiceLocalService {
         collectorName: json["collector_name"] as String? ?? "",
 
         totalAmount: (json["total_amount"] as num? ?? 0).toDouble(),
+        totalDueAmount: (json["total_amount_due"] as num? ?? 0).toDouble(),
 
         isNotified: json["is_notified"] == 1,
 

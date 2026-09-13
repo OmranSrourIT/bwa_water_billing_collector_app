@@ -29,7 +29,7 @@ InvoiceSummary calculateSummary(List<InvoiceModel> invoices) {
       orElse: () => LookupModelParent.empty(),
     );
 
-    final amount = inv.totalAmount;
+    final amount = inv.totalDueAmount;
 
     if (status.code == "COL") {
       completed++;

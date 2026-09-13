@@ -54,17 +54,17 @@ class ConnectionStatusDialog {
                     ),
                   ),
 
-                  const SizedBox(height: 8),
+                   
 
-                  Text(
-                    isOnline
-                        ? "النظام يعمل بشكل طبيعي"
-                        : "الرجاء الاتصال بالإنترنت",
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
+                  // Text(
+                  //   isOnline
+                  //       ? "النظام يعمل بشكل طبيعي"
+                  //       : "الرجاء الاتصال بالإنترنت",
+                  //   textAlign: TextAlign.center,
+                  //   style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  // ),
 
-                  const SizedBox(height: 20),
+                 const SizedBox(height: 20),
 
                   /// OK BUTTON
                   SizedBox(

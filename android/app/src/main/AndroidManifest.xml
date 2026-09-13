@@ -21,7 +21,7 @@
     <queries>
 
         <package android:name="com.minesec.tabadul" />
-
+        <!-- <package android:name="com.minesec.tabadul.stage" /> -->
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />

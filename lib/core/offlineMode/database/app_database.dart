@@ -55,6 +55,7 @@ CREATE TABLE invoices(
   collector_name TEXT,
 
   total_amount REAL,
+  total_amount_due REAL,
 
   consumption_qty_row REAL,
   consumption_qty_potable REAL,
@@ -134,6 +135,7 @@ CREATE TABLE invoices(
        waterMeterSerialNo TEXT,
        totalDebt REAL,
        totalCredit REAL,
+       totalAmountDue REAL,
        synced INTEGER DEFAULT 1
       )
     ''');

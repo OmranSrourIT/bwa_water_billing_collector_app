@@ -9,6 +9,7 @@ import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/image
 import 'package:bwa_water_billing_collector_app/core/offlineMode/sync/sync_engine.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/failure_reason_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/location_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/reading_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -44,6 +45,8 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
     failureReasonService: ref.read(failureReasonServiceProvider),
     imageStorage: ref.read(imageStorageProvider),
     invoiceDetailsService: ref.read(invoiceServiceDetailsProvider),
+    locationService: ref.read(locationServiceProvider),
+
   );
 });
 

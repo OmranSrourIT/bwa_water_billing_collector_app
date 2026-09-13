@@ -4,11 +4,7 @@ class ReadingRequest {
   final double currentReading;
   final String currentReadDateTime;
   final String previousReadingDateTime;
-  final bool isMeterRollover;
-
-  final String latitude;
-  final String longitude;
-
+  final bool isMeterRollover;  
   final String? base64;
 
   ReadingRequest({
@@ -17,9 +13,7 @@ class ReadingRequest {
     required this.currentReading,
     required this.currentReadDateTime,
     required this.previousReadingDateTime,
-    required this.isMeterRollover,
-    required this.latitude,
-    required this.longitude,
+    required this.isMeterRollover, 
     this.base64,
   });
 }

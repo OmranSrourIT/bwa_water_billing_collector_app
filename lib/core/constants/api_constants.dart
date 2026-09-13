@@ -1,31 +1,37 @@
 class ApiConstants {
-  static const String baseUrl = "http://149.200.251.200:9090/rest";
+  static const String baseUrl = "https://stgbwa.asimti.iq/rest";
+    static const String baseUrlQR = "https://stgbwa.asimti.iq";
+
   //ProdIraq   ===> https://bwa.asimti.iq
-  //Stage Iraq ===> https://stgbwa.asimti.com
+  //Stage Iraq ===> https://stgbwa.asimti.iq
   //Dev Amman ===> https://bwa.infinite-tek.com:8443
   //Test Amman ===> http://149.200.251.200:9090
 
-  static String get environment {
-    if (baseUrl.contains("bwa.asimti.iq")) {
-      return "PROD";
-    } else if (baseUrl.contains("bwa.infinite-tek.com")) {
-      return "DEV"; 
-    } else if (baseUrl.contains("149.200.251.200")) {
-      return "TEST";
-    }
-    else if (baseUrl.contains("stgbwa.asimti.com")) {
-      return "STGIRAQ";
-    }
-
-    return "UNKNOWN";
+   static String get environment {
+  if (baseUrl.contains("stgbwa.asimti.iq")) {
+    return "STAGE";
   }
 
+  if (baseUrl.contains("bwa.asimti.iq")) {
+    return "PROD";
+  }
+
+  if (baseUrl.contains("bwa.infinite-tek.com")) {
+    return "DEV";
+  }
+
+  if (baseUrl.contains("149.200.251.200")) {
+    return "TEST";
+  }
+
+  return "UNKNOWN";
+}
   static String get environmentLabel {
     switch (environment) {
       case "PROD":
         return "Production";
-         case "STGIRAQ":
-          return "STAG IRAQ";
+         case "STAGE":
+          return "STAGE";
       case "DEV":
         return "Development";
       case "TEST":
@@ -34,6 +40,7 @@ class ApiConstants {
         return "UNKNOWN";
     }
   }
+
 
   static const String authToken = "/auth/v1/auth/token";
   static const String batches =
@@ -72,4 +79,9 @@ class ApiConstants {
 
   static const String payment =
       "/collectormobileapi/v1/collectionbatch/Payment";
+
+      
+   static String verofNumberPrintNotice(String Number) => "/#/viewpayment/${Number}";
+   static const String insertLocation =
+    "/collectormobileapi/v1/collectionbatch/coordinates";
 }

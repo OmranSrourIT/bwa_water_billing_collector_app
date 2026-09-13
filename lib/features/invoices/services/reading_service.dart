@@ -15,9 +15,7 @@ class ReadingService {
     required double currentReading,
     required String currentReadDateTime,
     required String previousReadingDateTime,
-    required bool isMeterRollover,
-    required String latitude,
-    required String longitude,
+    required bool isMeterRollover, 
     String? base64,
   }) async {
     final response = await dio.post(
@@ -34,9 +32,7 @@ class ReadingService {
 
         "PreviousReadingDateTime": previousReadingDateTime,
 
-        "IsMeterRollover": isMeterRollover,
-
-        "Coordinates": {"Latitude": latitude, "Longitude": longitude},
+        "IsMeterRollover": isMeterRollover, 
 
         "Attachment": {"Base64": base64 ?? ""},
       },

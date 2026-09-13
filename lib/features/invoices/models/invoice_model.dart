@@ -8,6 +8,7 @@ class InvoiceModel {
   final String usageType;
   final String collectorName;
   final double totalAmount;
+  final double totalDueAmount;
   final bool isNotified;
   final bool isMeterRollover;
   final double consumptionQtyRow; 
@@ -23,6 +24,7 @@ class InvoiceModel {
     required this.address,
     required this.usageType,
     required this.totalAmount,
+    required this.totalDueAmount,
     required this.isNotified,
     required this.isMeterRollover,
         this.payment,
@@ -51,6 +53,8 @@ class InvoiceModel {
       consumptionQtyPotable: (json["ConsumptionQtyPotable"] ?? 0).toDouble(),
 
       totalAmount: (json["TotalInvoiceAmount"] ?? 0).toDouble(),
+
+      totalDueAmount: (json["TotalDueAmount"] ?? 0).toDouble(),
 
       isNotified: json["IsNotified"] ?? false,
 

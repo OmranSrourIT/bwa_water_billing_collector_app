@@ -11,9 +11,10 @@ import androidx.fragment.app.FragmentActivity
 
 class TPayManager(private val activity: FragmentActivity) {
 
-    private val TPAY_PACKAGE = "com.minesec.tabadul"
+    private val TPAY_PACKAGE_PROD = "com.minesec.tabadul"
+  //  private val TPAY_PACKAGE_STAGE = "com.minesec.tabadul.stage"
 
-    private val msaPosApi = MsaPosApi(TPAY_PACKAGE)
+    private val msaPosApi = MsaPosApi(TPAY_PACKAGE_PROD)
 
     private val transactionLauncher =
         activity.registerForActivityResult(msaPosApi.transactionContract()) { response ->

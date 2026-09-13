@@ -38,12 +38,7 @@ class ReadingRepository {
 
         previousReadingDateTime: request.previousReadingDateTime,
 
-        isMeterRollover: request.isMeterRollover,
-
-        latitude: request.latitude,
-
-        longitude: request.longitude,
-
+        isMeterRollover: request.isMeterRollover, 
         base64: request.base64,
       );
     }
@@ -78,10 +73,7 @@ class ReadingRepository {
         "currentReading": request.currentReading,
         "currentReadDateTime": request.currentReadDateTime,
         "previousReadingDateTime": request.previousReadingDateTime,
-        "isMeterRollover": request.isMeterRollover,
-        "latitude": request.latitude,
-        "longitude": request.longitude,
-
+        "isMeterRollover": request.isMeterRollover, 
         // لم يعد Base64
         "imagePath": imagePath,
       },

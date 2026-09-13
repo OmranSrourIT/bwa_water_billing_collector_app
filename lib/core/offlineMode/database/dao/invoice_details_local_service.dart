@@ -120,6 +120,7 @@ class InvoiceDetailsLocalService {
       "waterMeterSerialNo": item.waterMeterSerialNo ??"",
       "totalDebt": item.totalDebt,
       "totalCredit": item.totalCredit,
+      "totalAmountDue": item.totalDueAmount,
 
       "synced": 1,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
@@ -266,6 +267,8 @@ class InvoiceDetailsLocalService {
       waterMeterSerialNo: json["waterMeterSerialNo"] as String,
       totalDebt: (json["totalDebt"] as num? ?? 0).toDouble(),
       totalCredit: (json["totalCredit"] as num? ?? 0).toDouble(),
+      totalDueAmount: (json["totalAmountDue"] as num? ?? 0).toDouble(),
+      
 
       // attachment: json["attachment"] as String?,
     );

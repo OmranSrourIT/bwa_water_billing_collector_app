@@ -1,5 +1,6 @@
 import 'dart:ui' as ui; 
-import 'package:bwa_water_billing_collector_app/core/constants/AppConstant.dart'; 
+
+import 'package:bwa_water_billing_collector_app/core/constants/api_constants.dart'; 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -13,6 +14,7 @@ class PaymentPrintLayout extends ConsumerStatefulWidget {
   final String address;
   final String collectorName;
   final double amount;
+  final double totalAmountDue;
   final String today;
   final String cycleCode;
   final int paymentRefNo;
@@ -26,6 +28,7 @@ class PaymentPrintLayout extends ConsumerStatefulWidget {
     required this.address,
     required this.collectorName,
     required this.amount,
+    required this.totalAmountDue,
     required this.today,
     required this.cycleCode,
     required this.paymentRefNo,
@@ -171,7 +174,7 @@ class _InvoicePrintLayout extends ConsumerState<PaymentPrintLayout> {
                   child: Column(
                     children: [
                       const Text(
-                        "مبلغ الفاتورة المستحق",
+                       "المبلغ المستحق للتسديد",
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
@@ -180,7 +183,7 @@ class _InvoicePrintLayout extends ConsumerState<PaymentPrintLayout> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        "${NumberFormat('#,##0.000').format(widget.amount)} د.ع",
+                        "${NumberFormat('#,##0.000').format(widget.totalAmountDue)} د.ع",
                         style: const TextStyle(
                           fontSize: 48, // خط ضخم وواضح للمبلغ
                           fontWeight: FontWeight.bold,
@@ -230,7 +233,7 @@ class _InvoicePrintLayout extends ConsumerState<PaymentPrintLayout> {
                       ],
                     ),
                     child: QrImageView(
-                      data: AppConstant.verofNumberPrintNotice(
+                      data: ApiConstants.baseUrlQR + ApiConstants.verofNumberPrintNotice(
                         widget.paymentRefNo.toString(),
                       ),
                       size: 240,

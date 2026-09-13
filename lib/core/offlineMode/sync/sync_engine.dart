@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:bwa_water_billing_collector_app/core/storage/image_storage_service.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/models/location_request_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/invoiceDetials_service.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/services/location_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/reading_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/services/failure_reason_service.dart';
 
@@ -13,6 +15,7 @@ class SyncEngine {
   final FailureReasonService failureReasonService;
   final ImageStorageService imageStorage;
   final InvoiceDetailsService invoiceDetailsService;
+  final LocationService locationService;
 
   SyncEngine({
     required this.queue,
@@ -20,6 +23,7 @@ class SyncEngine {
     required this.failureReasonService,
     required this.imageStorage,
     required this.invoiceDetailsService,
+    required this.locationService,
   });
 
   Future<bool> sync() async {
@@ -52,6 +56,10 @@ class SyncEngine {
             success = await _syncUpdateInvoiceStatus(payload);
             break;
 
+          case "LOCATION":
+            success = await _syncLocation(payload);
+            break;
+
           case "UPDATE_NOTICE_PRINT":
             success = await _syncNoticePrint(payload);
             break;
@@ -76,6 +84,22 @@ class SyncEngine {
     return allSuccess;
   }
 
+  Future<bool> _syncLocation(Map<String, dynamic> data) async {
+  try {
+    final response = await locationService.insertLocation(
+      LocationRequest(
+        invoiceNumber: data["invoiceNumber"].toString(),
+        latitude: data["latitude"].toString(),
+        longitude: data["longitude"].toString(),
+      ),
+    );
+
+    return response.isSuccess;
+  } catch (_) {
+    return false;
+  }
+}
+
   Future<bool> _syncReading(Map<String, dynamic> data) async {
     final base64 = await imageStorage.imageToBase64(
       data["imagePath"] as String?,
@@ -93,10 +117,6 @@ class SyncEngine {
       previousReadingDateTime: data["previousReadingDateTime"],
 
       isMeterRollover: data["isMeterRollover"] ?? false,
-
-      latitude: data["latitude"],
-
-      longitude: data["longitude"],
 
       // نحول الـ Path إلى Base64 قبل الإرسال
       base64: base64,
@@ -138,17 +158,13 @@ class SyncEngine {
     }
   }
 
- Future<bool> _syncNoticePrint(
-    Map<String, dynamic> data,
-) async {
-  try {
-    await invoiceDetailsService.updateNoticePrint(
-      data["invoiceNo"],
-    );
+  Future<bool> _syncNoticePrint(Map<String, dynamic> data) async {
+    try {
+      await invoiceDetailsService.updateNoticePrint(data["invoiceNo"]);
 
-    return true;
-  } catch (_) {
-    return false;
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
-}
 }
