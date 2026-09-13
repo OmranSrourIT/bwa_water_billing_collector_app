@@ -22,10 +22,11 @@ class AuthApiService implements AuthService {
         ApiConstants.authToken,
         options: Options(
           responseType: ResponseType.plain,
-          extra: {"skipAuth": true ,"context": null}, // 👈 أهم سطر
+          extra: {"skipAuth": true},
           headers: {
             "accept": "application/json",
-            "Authorization": "Basic ${_basicAuth(username.toLowerCase(), password)}",
+            "Authorization":
+                "Basic ${_basicAuth(username.toLowerCase(), password)}",
           },
         ),
       );

@@ -79,28 +79,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     });
 
-    ref.listenManual<AuthState>(authProvider, (prev, next) {
-      if (next.tokenExpired &&
-          next.successLogin == true &&
-          auth.user == null &&
-          !_handledExpired) {
-        _showSessionExpiredAlert();
-      }
+ ref.listenManual<AuthState>(authProvider, (prev, next) {
+  if (next.tokenExpired &&
+      next.user == null &&
+      !_handledExpired) {
+    _showSessionExpiredAlert();
+  }
 
-      if (next.error != null && next.error != prev?.error) {
-        Future.microtask(() {
-          if (mounted) {
+  if (next.error != null && next.error != prev?.error) {
+    Future.microtask(() {
+      if (!mounted) return;
 
-            final messageResult = next.error?.toString().replaceFirst("Exception: ", "") ??"Unknown error";    
-            AppPopupAlert.show(
-              context,
-              message:messageResult.contains("Provided username-password combination is invalid.") ? "اسم المستخدم أو كلمة المرور غير صحيحة" : messageResult,
-              isError: true,
-            );
-          }
-        });
-      }
+      final message = next.error!
+          .toString()
+          .replaceFirst("Exception: ", "");
+
+      AppPopupAlert.show(
+        context,
+        message: message.contains(
+                "Provided username-password combination is invalid.")
+            ? "اسم المستخدم أو كلمة المرور غير صحيحة"
+            : message,
+        isError: true,
+      );
     });
+  }
+});
+
+  
   }
 
   // String _buildHtml() {
@@ -138,71 +144,63 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   bool obscurePassword = true;
 
- Widget _environmentBadge() {
-  final env = ApiConstants.environment;
+  Widget _environmentBadge() {
+    final env = ApiConstants.environment;
 
-  // لا تظهر أي شيء في Production
-  if (env == "PROD") {
-    return const SizedBox.shrink();
-  }
+    // لا تظهر أي شيء في Production
+    if (env == "PROD") {
+      return const SizedBox.shrink();
+    }
 
-  final envLabel = ApiConstants.environmentLabel;
+    final envLabel = ApiConstants.environmentLabel;
 
-  Color color;
+    Color color;
 
-  switch (env) {
-    case "TEST":
-      color = Colors.orange;
-      break;
+    switch (env) {
+      case "TEST":
+        color = Colors.orange;
+        break;
 
-       case "STAGE":
-      color = Colors.orange;
-      break;
+      case "STAGE":
+        color = Colors.orange;
+        break;
 
-    case "DEV":
-      color = Colors.blue;
-      break;
+      case "DEV":
+        color = Colors.blue;
+        break;
 
-    default:
-      color = Colors.grey;
-  }
+      default:
+        color = Colors.grey;
+    }
 
-  return Container(
-    padding: const EdgeInsets.symmetric(
-      horizontal: 14,
-      vertical: 8,
-    ),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.12),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(
-        color: color.withOpacity(0.4),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.4)),
       ),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.cloud_circle_outlined,
-          size: 16,
-          color: color,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.cloud_circle_outlined, size: 16, color: color),
 
-        const SizedBox(width: 6),
+          const SizedBox(width: 6),
 
-        Text(
-          envLabel,
-          style: TextStyle(
-            color: color,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1,
+          Text(
+            envLabel,
+            style: TextStyle(
+              color: color,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1,
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);

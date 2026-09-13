@@ -231,8 +231,6 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
           insertLocationProvider(locationRequest).future,
         );
 
-         
-
         // 🔥 تحديث الحالة
         await ref.read(
           updateInvoiceStatusProvider((
@@ -298,18 +296,16 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
         ),
       ),
 
-      error: (e, _) {
-        final message = parseError(e);
+      error: (error, stack) {
+        debugPrint('[READING DETAIL ERROR] $error');
+        debugPrint('[READING DETAIL STACK] $stack');
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) {
-            Navigator.of(context).pop(); // إغلاق الـ Dialog الحالي
-
-            AppPopupAlert.show(context, message: message, isError: true);
-          }
-        });
-
-        return const SizedBox.shrink();
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(parseError(error), textAlign: TextAlign.center),
+          ),
+        );
       },
 
       data: (invoice) {

@@ -4,7 +4,10 @@ import 'package:bwa_water_billing_collector_app/features/auth/models/auth_model.
 import 'package:bwa_water_billing_collector_app/features/auth/services/ForgotPasswordApiService.dart';
 import 'package:bwa_water_billing_collector_app/features/auth/services/forgot_password_service.dart';
 import 'package:bwa_water_billing_collector_app/features/batch/providers/batch_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/field_failure_lookup_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoice_provider.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:bwa_water_billing_collector_app/core/network/dio_client.dart';
@@ -17,19 +20,25 @@ final tokenStorageProvider = Provider<TokenStorage>((ref) {
   return TokenStorage();
 });
 
-final dioProvider = Provider((ref) {
-  final tokenStorage = ref.watch(tokenStorageProvider); // استخدم watch
+final dioClientProvider = Provider<DioClient>((ref) {
+  final tokenStorage = ref.watch(tokenStorageProvider);
+
   return DioClient.create(tokenStorage, ref);
 });
 
+final dioProvider = Provider<Dio>((ref) {
+  return ref.watch(dioClientProvider).dio;
+});
+
 final authServiceProvider = Provider<AuthService>((ref) {
-  final dio = ref.read(dioProvider);
-  final tokenStorage = ref.read(tokenStorageProvider);
+  final dio = ref.watch(dioProvider);
+  final tokenStorage = ref.watch(tokenStorageProvider);
+
   return AuthApiService(dio, tokenStorage);
 });
 
 final forgotPasswordProvider = Provider<ForgotPasswordService>((ref) {
-  final dio = ref.read(dioProvider);
+  final dio = ref.watch(dioProvider);
   return ForgotPasswordApiService(dio);
 });
 
@@ -44,13 +53,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final AuthService service;
   final TokenStorage tokenStorage;
   final Ref ref;
+  bool _isExpiringToken = false;
 
   AuthNotifier(this.service, this.tokenStorage, this.ref)
     : super(const AuthState()) {
     checkToken();
-    
   }
-  
 
   Future<void> checkToken() async {
     final token = await tokenStorage.getToken();
@@ -72,17 +80,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String password,
     required bool rememberMe,
   }) async {
-    state = state.copyWith(isLoading: true, error: null, successLogin: false);
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      successLogin: false,
+      tokenExpired: false,
+    );
 
     try {
       final user = await service.login(username: username, password: password);
 
+      final newToken = await tokenStorage.getToken();
+
+      if (newToken == null || newToken.trim().isEmpty) {
+        throw Exception('لم يتم حفظ التوكن الجديد');
+      }
+
+      print('[LOGIN SUCCESS] newTokenHash: ${newToken.hashCode}');
+
       state = AuthState(
         isLoading: false,
-        user: user,
+        user: AuthUser(token: newToken),
         error: null,
-        successLogin: true, // 👈 IMPORTANT
+        successLogin: true,
         initialized: true,
+        tokenExpired: false,
       );
 
       if (rememberMe) {
@@ -91,14 +113,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
         await tokenStorage.savePassword(password);
       } else {
         await tokenStorage.clearRememberMe();
+        await tokenStorage.saveUsername('');
+        await tokenStorage.savePassword('');
       }
-      // 🔥 أهم خطوة: عمل invalidate للـ dio لكي يحصل على التوكن الجديد
-      ref.invalidate(dioProvider);
 
-      // بعدها عمل invalidate للبيانات الأخرى
+      /*
+     * التخلص من نتائج الطلبات القديمة.
+     */
+     ref.invalidate(fieldFailureLookupProvider);
+    ref.invalidate(invoiceDetailProvider);
       ref.invalidate(accountProvider);
       ref.invalidate(batchProvider);
       ref.invalidate(invoicesProvider);
+ 
       
     } catch (e) {
       state = AuthState(
@@ -106,6 +133,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         user: null,
         error: e.toString(),
         successLogin: false,
+        initialized: true,
+        tokenExpired: false,
       );
     }
   }
@@ -129,18 +158,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
       tokenExpired: false,
       error: null,
     );
-    ref.invalidate(dioProvider);
+    
   }
 
-  Future<void> tokenExpired() async {
-    await tokenStorage.clearToken();
+ Future<void> tokenExpired({
+  required String failedToken,
+}) async {
+  final currentToken = await tokenStorage.getToken();
 
-    state = const AuthState(
-      initialized: true,
-      user: null,
-      successLogin: false,
-      tokenExpired: true,
-    );
-    ref.invalidate(dioProvider);
+  if (currentToken != failedToken) {
+    return;
   }
+
+  await tokenStorage.clearToken();
+
+  ref.invalidate(batchProvider);
+  ref.invalidate(accountProvider);
+  ref.invalidate(invoicesProvider);
+
+  state = const AuthState(
+    initialized: true,
+    user: null,
+    successLogin: false,
+    tokenExpired: true,
+    error: null,
+  );
+}
+
 }

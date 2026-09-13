@@ -9,22 +9,36 @@ import 'package:bwa_water_billing_collector_app/features/invoices/services/invoi
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final invoiceServiceProvider = Provider<InvoiceService>((ref) {
-  return InvoiceApiService(ref.read(dioProvider));
+  final dio = ref.watch(dioProvider);
+
+  return InvoiceApiService(dio);
 });
 
 final invoiceRepositoryProvider = Provider<InvoiceRepository>((ref) {
+  final api = ref.watch(invoiceServiceProvider);
+  final local = ref.watch(invoiceLocalServiceProvider);
+  final detailsRepository = ref.watch(invoiceDetailsRepositoryProvider);
+  final isOnline = ref.watch(connectionProvider);
+
   return InvoiceRepository(
-    api: ref.read(invoiceServiceProvider),
-    local: ref.read(invoiceLocalServiceProvider),
-    detailsRepository: ref.read(invoiceDetailsRepositoryProvider),
-    isOnline: ref.watch(connectionProvider),
+    api: api,
+    local: local,
+    detailsRepository: detailsRepository,
+    isOnline: isOnline,
   );
 });
 
-final invoicesProvider = FutureProvider.family<List<InvoiceModel>, String>((
-  ref,
-  batchId,
-) async {
-  final repository = ref.watch(invoiceRepositoryProvider);
-  return repository.getInvoices(batchId);
-});
+final invoicesProvider =
+    FutureProvider.autoDispose.family<List<InvoiceModel>, String>(
+  (ref, batchId) async {
+    final repository = ref.watch(invoiceRepositoryProvider);
+
+    ref.onDispose(() {
+      print('[INVOICES PROVIDER DISPOSED] batchId=$batchId');
+    });
+
+    print('[INVOICES REQUEST] batchId=$batchId');
+
+    return repository.getInvoices(batchId);
+  },
+);

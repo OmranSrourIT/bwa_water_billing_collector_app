@@ -7,7 +7,7 @@ import '../services/change_password_service.dart';
 
 final changePasswordServiceProvider =
     Provider<ChangePasswordService>((ref) {
-  final dio = ref.read(dioProvider); 
+  final dio = ref.watch(dioProvider); 
   return ChangePasswordApiService(dio);
 });
 

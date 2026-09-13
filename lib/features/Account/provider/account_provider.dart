@@ -8,7 +8,7 @@ import 'package:bwa_water_billing_collector_app/features/auth/providers/auth_pro
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final accountServiceProvider = Provider<AccountService>((ref) {
-  final dio = ref.read(dioProvider);
+  final dio = ref.watch(dioProvider);
 
   return AccountApiService(dio);
 });

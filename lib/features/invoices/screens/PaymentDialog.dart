@@ -22,13 +22,14 @@ class PaymentDialog extends ConsumerStatefulWidget {
   final String paymentReference;
   final double amount;
   final String batchId;
-
+  final VoidCallback? onPaymentFinished;
   const PaymentDialog({
     super.key,
     required this.Invoicenumber,
     required this.paymentReference,
     required this.amount,
     required this.batchId,
+    this.onPaymentFinished,
   });
 
   @override
@@ -143,13 +144,9 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
               data: data,
               Invoicenumber: widget.Invoicenumber,
               onClose: () {
-                // عند الضغط على إغلاق في شاشة النجاح، نعود للشاشة الرئيسية
-                // هذا سيسكر كل الشاشات المفتوحة (مثل شاشة تفاصيل الفاتورة)
-                // ويعود لشاشة الدفعة (Batch) المحدثة
-                Navigator.popUntil(
-                  context,
-                  (route) => route.isFirst || route.settings.name == '/home',
-                );
+                if (widget.onPaymentFinished != null) {
+                  widget.onPaymentFinished!();
+                }
               },
             ),
           );

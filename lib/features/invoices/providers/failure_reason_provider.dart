@@ -9,7 +9,7 @@ import 'package:bwa_water_billing_collector_app/features/invoices/services/failu
 import '../../auth/providers/auth_provider.dart';
 
 final failureReasonServiceProvider = Provider((ref) {
-  final dio = ref.read(dioProvider);
+  final dio = ref.watch(dioProvider);
 
   return FailureReasonService(dio: dio);
 });

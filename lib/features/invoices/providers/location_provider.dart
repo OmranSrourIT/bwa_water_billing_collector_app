@@ -11,7 +11,7 @@ import 'package:bwa_water_billing_collector_app/features/invoices/services/locat
  
 
 final locationServiceProvider = Provider<LocationService>((ref) {
-  final dio = ref.read(dioProvider);
+  final dio = ref.watch(dioProvider);
 
   return LocationService(
     dio: dio,

@@ -11,11 +11,11 @@ import '../../../features/auth/providers/auth_provider.dart';
 
 final initialSyncProvider = Provider<InitialSyncRepository>((ref) {
   return InitialSyncRepository(
-    batchApi: BatchApiService(ref.read(dioProvider)),
-    invoiceApi: InvoiceApiService(ref.read(dioProvider)),
-    detailsApi: InvoiceDetailsService(ref.read(dioProvider)),
-    lookupApi: FieldFailureLookupService(ref.read(dioProvider)),
-    accountApi: AccountApiService(ref.read(dioProvider)),
+    batchApi: BatchApiService(ref.watch(dioProvider)),
+    invoiceApi: InvoiceApiService(ref.watch(dioProvider)),
+    detailsApi: InvoiceDetailsService(ref.watch(dioProvider)),
+    lookupApi: FieldFailureLookupService(ref.watch(dioProvider)),
+    accountApi: AccountApiService(ref.watch(dioProvider)),
     batchLocal: ref.read(batchLocalServiceProvider),
     invoiceLocal: ref.read(invoiceLocalServiceProvider),
     detailsLocal: ref.read(invoiceDetailsLocalServiceProvider),

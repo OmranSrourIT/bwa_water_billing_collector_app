@@ -9,7 +9,7 @@ import '../../auth/providers/auth_provider.dart';
 
 
 final fieldFailureLookupServiceProvider = Provider((ref) {
-  final dio = ref.read(dioProvider);
+  final dio = ref.watch(dioProvider);
 
   return FieldFailureLookupService(dio);
 });

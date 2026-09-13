@@ -247,7 +247,7 @@ class PaymentResultDialog extends StatelessWidget {
                             onPressed: () {
                               Navigator.pop(context);
 
-                              if (onClose != null) {
+                              if (success && onClose != null) {
                                 onClose!();
                               }
                             },

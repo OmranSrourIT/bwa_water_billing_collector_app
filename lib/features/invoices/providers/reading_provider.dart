@@ -13,7 +13,7 @@ import '../models/reading_request_model.dart';
 import '../services/reading_service.dart';
 
 final readingServiceProvider = Provider((ref) {
-  final dio = ref.read(dioProvider);
+  final dio = ref.watch(dioProvider);
 
   return ReadingService(dio: dio);
 });

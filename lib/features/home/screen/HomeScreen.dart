@@ -15,6 +15,7 @@ import 'package:bwa_water_billing_collector_app/core/widgets/showEndBatchConfirm
 import 'package:bwa_water_billing_collector_app/features/Account/provider/account_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/Account/screen/AccountDetailsDialog.dart';
 import 'package:bwa_water_billing_collector_app/features/Payment/printer_channel.dart';
+import 'package:bwa_water_billing_collector_app/features/Payment/utils/PaymentResultDialog.dart';
 import 'package:bwa_water_billing_collector_app/features/auth/providers/auth_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/batch/models/batch_model.dart';
 import 'package:bwa_water_billing_collector_app/features/batch/providers/batch_provider.dart';
@@ -29,6 +30,7 @@ import 'package:bwa_water_billing_collector_app/features/invoices/screens/Paymen
 import 'package:bwa_water_billing_collector_app/features/invoices/screens/Printinvoice_dialog.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/screens/UnreachableDialog.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/screens/invoice_details_dialog.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -107,9 +109,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         });
       }
     } catch (e) {
-      final message = parseError(e);
-        AppPopupAlert.show(context, message: "ssss");
-
+      final message = parseError(e); 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         AppPopupAlert.show(context, message: message, isError: true);
       });
@@ -140,15 +140,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     color: AppColors.primary,
                     onRefresh: () async {
                       if (selectedBatch != null) {
-                        ref.refresh(
-                          invoicesProvider(selectedBatch!.batchNumber),
+                        await ref.refresh(
+                          invoicesProvider(selectedBatch!.batchNumber).future,
                         );
 
-                        ref.refresh(
-                          invoiceDetailProvider(selectedInvoiceNo!).future,
-                        );
+                        if (selectedInvoiceNo != null) {
+                          await ref.refresh(
+                            invoiceDetailProvider(selectedInvoiceNo!).future,
+                          );
+                        }
                       } else {
-                        ref.refresh(batchProvider);
+                        await ref.refresh(batchProvider.future);
                       }
                     },
                     child: SingleChildScrollView(
@@ -556,21 +558,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     // REAL ERROR
                                     // =====================================================
                                     error: (error, stack) {
-                                      final message = parseError(error);
+                                      debugPrint('[INVOICES ERROR] $error');
+                                      debugPrint('[INVOICES STACK] $stack');
 
-                                      WidgetsBinding.instance
-                                          .addPostFrameCallback((_) {
-                                            if (!mounted) return;
-                                            //  AppPopupAlert.show(context, message: "ssss1");
+                                      final isUnauthorized =
+                                          error is DioException &&
+                                          (error.response?.statusCode == 401 ||
+                                              error.response?.statusCode ==
+                                                  403);
 
-                                            AppPopupAlert.show(
-                                              context,
-                                              message: message,
-                                              isError: true,
+                                      if (isUnauthorized) {
+                                        return AppErrorState(
+                                          message:
+                                              'انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى',
+                                          onRetry: () {
+                                            ref.invalidate(
+                                              invoicesProvider(
+                                                activeBatch.batchNumber,
+                                              ),
                                             );
-                                          });
+                                          },
+                                        );
+                                      }
 
-                                      return const SizedBox();
+                                      return AppErrorState(
+                                        message: parseError(error),
+                                        onRetry: () {
+                                          ref.invalidate(
+                                            invoicesProvider(
+                                              activeBatch.batchNumber,
+                                            ),
+                                          );
+                                        },
+                                      );
                                     },
                                   ),
                                 ],
@@ -581,8 +601,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               final message = parseError(error);
                               if (message.contains(
                                 "type 'String' is not a subtype of type 'List<dynamic>' in type cast",
-                              )) {
-                                 AppPopupAlert.show(context, message: "ssss2");
+                              )) { 
                                 return AppErrorState(
                                   message: "لا توجد سجلات مسندة اليك حاليا ",
                                   onRetry: () {
@@ -590,7 +609,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   },
                                 );
                               } else {
-                                 AppPopupAlert.show(context, message: "ssss3");
+                                 
                                 return AppErrorState(
                                   message: message,
                                   onRetry: () {
@@ -1449,27 +1468,25 @@ class _InvoiceStatusChecklist extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isTablet = Responsive.isTablet(context);
- final selectedCount = selectedCodes.length;
+    final selectedCount = selectedCodes.length;
 
-String displayText;
+    String displayText;
 
-if (selectedCount == 0) {
-  displayText = 'لا يوجد';
-} else if (selectedCount == items.length) {
-  displayText = 'الكل';
-} else {
-  final locale = Localizations.localeOf(context).languageCode;
+    if (selectedCount == 0) {
+      displayText = 'لا يوجد';
+    } else if (selectedCount == items.length) {
+      displayText = 'الكل';
+    } else {
+      final locale = Localizations.localeOf(context).languageCode;
 
-  final selectedNames = items
-      .where((item) => selectedCodes.contains(item.code))
-      .map(
-        (item) => locale == 'ar' ? item.arDesc : item.enDesc,
-      )
-      .where((name) => name.trim().isNotEmpty)
-      .toList();
+      final selectedNames = items
+          .where((item) => selectedCodes.contains(item.code))
+          .map((item) => locale == 'ar' ? item.arDesc : item.enDesc)
+          .where((name) => name.trim().isNotEmpty)
+          .toList();
 
-  displayText = selectedNames.join('، ');
-}
+      displayText = selectedNames.join('، ');
+    }
 
     return Material(
       color: Colors.transparent,
@@ -1947,9 +1964,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
     } catch (e) {
       if (!mounted) return;
 
-      Navigator.of(context).pop();
-       AppPopupAlert.show(context, message: "ssss4");
-
+      Navigator.of(context).pop(); 
       AppPopupAlert.show(
         context,
         message: parseError(e).toString().replaceFirst("Exception: ", ""),
@@ -2421,6 +2436,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                                             maxLines: 1,
                                             softWrap: false,
                                             style: const TextStyle(
+                                              color: Colors.green,
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,
                                               height: 1.4,
@@ -2571,13 +2587,28 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                           //     ),
                           //   );
                           // },
-                          onPressed: () {
-                            _openInvoiceAction(
-                              dialog: ReadingDialog(
-                                invoiceNumber: widget.invoice.invoiceNo,
-                                batchId: widget.batchId,
-                              ),
-                            );
+                          onPressed: () async {
+                            try {
+                              await showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (_) => ReadingDialog(
+                                  invoiceNumber: widget.invoice.invoiceNo,
+                                  batchId: widget.batchId,
+                                ),
+                              );
+                            } catch (e, stack) {
+                              debugPrint('[OPEN READING DIALOG ERROR] $e');
+                              debugPrint('[OPEN READING DIALOG STACK] $stack');
+
+                              if (!context.mounted) return;
+
+                              AppPopupAlert.show(
+                                context,
+                                message: parseError(e),
+                                isError: true,
+                              );
+                            }
                           },
                         ),
                       if ((getInvoiceStatusCode(widget.invoice, context) ==
@@ -2604,7 +2635,7 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                           icon: Icons.payments_outlined,
                           color: Colors.green,
                           onBeforePressed: _selectCard,
-                          onPressed: () async {
+                          onPressed: () {
                             showDialog(
                               context: context,
                               barrierDismissible: false,
@@ -2617,10 +2648,65 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                                     .paymentRefNo
                                     .toString(),
                                 amount: widget.invoice.totalDueAmount,
+
+                                onPaymentFinished: () {
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
+                                    if (!context.mounted) return;
+
+                                    _openInvoiceAction(
+                                      dialog: PrintInvoiceDialog(
+                                        invoiceNumber: widget.invoice.invoiceNo,
+                                        getInvoiceStatusCode:
+                                            getInvoiceStatusForPrint,
+                                      ),
+                                    );
+                                  });
+                                },
                               ),
                             );
                           },
+
+                          //                           onPressed: () {
+                          //   // true = نجاح، false = فشل
+                          //   const bool isFakePaymentSuccess = true;
+
+                          //   showDialog(
+                          //     context: context,
+                          //     barrierDismissible: false,
+                          //     builder: (_) => PaymentResultDialog(
+                          //       success: isFakePaymentSuccess,
+                          //       Invoicenumber: widget.invoice.invoiceNo,
+                          //       data: {
+                          //         "totalAmount": widget.invoice.totalDueAmount,
+                          //         "paymentMethod": "Test Card",
+                          //         "rspMsg": isFakePaymentSuccess
+                          //             ? "Approved"
+                          //             : "Error -1",
+                          //       },
+
+                          //       // مهم جداً:
+                          //       // عند الفشل تكون null، لذلك لن تفتح شاشة الفاتورة
+                          //       onClose: isFakePaymentSuccess
+                          //           ? () {
+                          //               WidgetsBinding.instance.addPostFrameCallback((_) {
+                          //                 if (!context.mounted) return;
+
+                          //                 _openInvoiceAction(
+                          //                   dialog: PrintInvoiceDialog(
+                          //                     invoiceNumber: widget.invoice.invoiceNo,
+                          //                     getInvoiceStatusCode: getInvoiceStatusForPrint,
+                          //                   ),
+                          //                 );
+                          //               });
+                          //             }
+                          //           : null,
+                          //     ),
+                          //   );
+                          // },
                         ),
+
                       if (getInvoiceStatusCode(widget.invoice, context) ==
                               "ISS" ||
                           (getInvoiceStatusCode(widget.invoice, context) ==
