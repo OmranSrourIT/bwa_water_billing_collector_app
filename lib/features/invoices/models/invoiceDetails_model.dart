@@ -45,9 +45,10 @@ class InvoiceInformationModel {
   final String? activeCollectionPeriod;
   final String? waterMeterSerialNo;
   final String? attachment;
-  final double? totalDebt ;
-  final double? totalCredit ;
-final double? totalDueAmount;
+  final double? totalDebt;
+  final double? totalCredit;
+  final double? totalDueAmount;
+
   InvoiceInformationModel({
     required this.invoiceNumber,
     this.periodFromDate,
@@ -94,7 +95,7 @@ final double? totalDueAmount;
     this.attachment,
     this.totalDebt,
     this.totalCredit,
-    this.totalDueAmount
+    this.totalDueAmount,
   });
 
   factory InvoiceInformationModel.fromJson(Map<String, dynamic> json) {
@@ -162,8 +163,8 @@ final double? totalDueAmount;
       consumptionQtyRow: (json["ConsumptionQtyRow"] ?? 0).toDouble(),
 
       customerID: json["CustomerID"]?.toString() ?? "",
-        
-        isMeterRollover: json["IsMeterRollover"] as bool? ?? false,
+
+      isMeterRollover: json["IsMeterRollover"] as bool? ?? false,
 
       cycleCode: (json["CycleCode"] ?? 0),
       cycleTypeName: json["CycleTypeName"] ?? "",
@@ -191,15 +192,14 @@ final double? totalDueAmount;
           .map((e) => LookupModel.fromJson(e))
           .toList(),
 
-          
       activeCollectionPeriod: json["ActiveCollectionPeriod"] ?? "",
 
       waterMeterSerialNo: json["WaterMeterSerialNo"] ?? "",
 
       attachment: attachment,
-     totalDebt: (json["TotalDebt"] ?? 0).toDouble(),
-     totalCredit : (json["TotalCredit"] ?? 0).toDouble(),
-     totalDueAmount : (json["TotalDueAmount"] ?? 0).toDouble(),
+      totalDebt: (json["TotalDebt"] ?? 0).toDouble(),
+      totalCredit: (json["TotalCredit"] ?? 0).toDouble(),
+      totalDueAmount: (json["TotalDueAmount"] ?? 0).toDouble(),
     );
   }
 }
@@ -272,9 +272,8 @@ class LookupModel {
 
   final String arDesc;
 
-  
   final String externalArDesc;
-    
+
   final String externalEnDesc;
 
   final String enDesc;
@@ -285,7 +284,7 @@ class LookupModel {
     required this.arDesc,
     required this.enDesc,
     required this.externalArDesc,
-    required this.externalEnDesc
+    required this.externalEnDesc,
   });
 
   factory LookupModel.fromJson(Map<String, dynamic> json) {
@@ -297,31 +296,75 @@ class LookupModel {
       arDesc: json["ArDesc"] ?? "",
 
       enDesc: json["EnDesc"] ?? "",
-      
+
       externalArDesc: json["ExternalArDesc"] ?? "",
-      
+
       externalEnDesc: json["ExternalEnDesc"] ?? "",
     );
   }
 
   factory LookupModel.empty() {
-    return LookupModel(lookupType: "", code: "", arDesc: "", enDesc: "" ,externalArDesc :"" ,externalEnDesc:"");
+    return LookupModel(
+      lookupType: "",
+      code: "",
+      arDesc: "",
+      enDesc: "",
+      externalArDesc: "",
+      externalEnDesc: "",
+    );
   }
 }
 
 class PaymentModel {
   final int paymentRefNo;
+  final double amount;
   final DateTime? paymentDate;
+  final bool isSentToPos;
+  final String posId;
 
-  PaymentModel({required this.paymentRefNo, this.paymentDate});
+  PaymentModel({
+    required this.paymentRefNo,
+    required this.amount,
+    this.paymentDate,
+    required this.isSentToPos,
+    required this.posId,
+  });
 
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
     return PaymentModel(
-      paymentRefNo: json["PaymentRefNo"] ?? 0,
-
+      paymentRefNo: _parseInt(json["PaymentRefNo"]),
+      amount: _parseDouble(json["Amount"]),
       paymentDate: json["PaymentDate"] != null
-          ? DateTime.tryParse(json["PaymentDate"])
+          ? DateTime.tryParse(json["PaymentDate"].toString())
           : null,
+      isSentToPos: _parseBool(json["IsSentToPOS"]),
+      posId: json["POSId"]?.toString() ?? "",
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value is int) return value;
+
+    return int.tryParse(value?.toString() ?? "") ?? 0;
+  }
+
+  static double _parseDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+
+    return double.tryParse(value?.toString() ?? "") ?? 0.0;
+  }
+
+  static bool _parseBool(dynamic value) {
+    if (value is bool) return value;
+
+    if (value is String) {
+      return value.toLowerCase() == "true";
+    }
+
+    if (value is num) {
+      return value != 0;
+    }
+
+    return false;
   }
 }

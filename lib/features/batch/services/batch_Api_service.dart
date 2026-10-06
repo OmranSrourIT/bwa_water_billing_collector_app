@@ -13,8 +13,56 @@ class BatchApiService {
     try {
       final response = await dio.get(ApiConstants.batches);
 
-      final data = response.data as List;
-      return data.map((e) => BatchModel.fromJson(e)).toList();
+      dynamic data = response.data;
+
+      // إذا كانت الاستجابة نصًا
+      if (data is String) {
+        final text = data.trim();
+
+        // استجابة فارغة تعني لا توجد سجلات
+        if (text.isEmpty) {
+          return [];
+        }
+
+        // محاولة تحويل النص إلى JSON
+        try {
+          data = jsonDecode(text);
+        } catch (_) {
+          // النص العادي من الـ API يعني عدم وجود سجلات
+          return [];
+        }
+      }
+
+      // إذا كانت الاستجابة قائمة
+      if (data is List) {
+        return data
+            .whereType<Map<String, dynamic>>()
+            .map((item) => BatchModel.fromJson(item))
+            .toList();
+      }
+
+      // إذا كان الـ API يرجع Object يحتوي على قائمة
+      if (data is Map<String, dynamic>) {
+        final listData =
+            data["Data"] ??
+            data["data"] ??
+            data["Batches"] ??
+            data["batches"] ??
+            data["Result"];
+
+        if (listData is List) {
+          return listData
+              .whereType<Map<String, dynamic>>()
+              .map((item) => BatchModel.fromJson(item))
+              .toList();
+        }
+
+        // Object بدون قائمة يعني لا توجد سجلات
+        return [];
+      }
+
+      // أي تنسيق غير متوقع نعتبره بدون سجلات
+      return [];
     } on DioException catch (e) {
       throw Exception(handleDioError(e));
     }
@@ -44,9 +92,9 @@ class BatchApiService {
       }
 
       return BatchEndResponse.fromJson(jsonData);
-    } on DioException catch (e) { 
-       throw Exception(handleDioError(e)); 
-    } catch (e) { 
+    } on DioException catch (e) {
+      throw Exception(handleDioError(e));
+    } catch (e) {
       return BatchEndResponse.error(
         "حدث خطأ أثناء معالجة البيانات",
         "Error processing data",

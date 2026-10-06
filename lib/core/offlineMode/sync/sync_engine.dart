@@ -118,6 +118,9 @@ class SyncEngine {
 
       isMeterRollover: data["isMeterRollover"] ?? false,
 
+      isReadingUpdated: data["isReadingUpdated"] ?? false,
+
+
       // نحول الـ Path إلى Base64 قبل الإرسال
       base64: base64,
     );

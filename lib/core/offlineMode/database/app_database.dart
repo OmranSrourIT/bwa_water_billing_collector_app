@@ -23,7 +23,7 @@ class AppDatabase {
 
     final path = join(databasePath, "bwa_collector.db");
 
-      await deleteDatabase(path);
+    await deleteDatabase(path);
 
     return await openDatabase(
       path,
@@ -122,8 +122,16 @@ CREATE TABLE invoices(
 
         collection_period_description TEXT,
 
-        payment_ref_no INTEGER,
-        payment_date TEXT,
+       payment_ref_no INTEGER,
+
+payment_amount REAL,
+
+payment_date TEXT,
+
+is_sent_to_pos INTEGER NOT NULL DEFAULT 0,
+
+pos_id TEXT,
+
 
          invoice_details_json TEXT,
 

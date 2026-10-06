@@ -6,8 +6,12 @@ import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.d
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
 import 'package:bwa_water_billing_collector_app/features/Account/provider/account_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/Printer%20VAN_GOLD/printer_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/models/location_request_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoice_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/location_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -19,8 +23,13 @@ import 'dart:ui' as ui;
 
 class PaymentNoticeDialog extends ConsumerStatefulWidget {
   final String invoiceNumber;
+  final String batchId;
 
-  PaymentNoticeDialog({super.key, required this.invoiceNumber});
+  PaymentNoticeDialog({
+    super.key,
+    required this.invoiceNumber,
+    required this.batchId,
+  });
 
   @override
   ConsumerState<PaymentNoticeDialog> createState() =>
@@ -54,7 +63,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
 
   Dialog buildDialog(BuildContext context) {
     final invoiceAsync = ref.watch(invoiceDetailProvider(widget.invoiceNumber));
-   final accountAsync = ref.watch(accountProvider);
+    final accountAsync = ref.watch(accountProvider);
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(12),
@@ -187,7 +196,10 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                                           _NoticeRow("تاريخ الإشعار : ", today),
                                           _NoticeRow(
                                             "اسم الجابي : ",
-                                            invoice.collectorName.replaceAll('null', ''),
+                                            invoice.collectorName.replaceAll(
+                                              'null',
+                                              '',
+                                            ),
                                           ),
 
                                           accountAsync.when(
@@ -394,31 +406,30 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
 
                     invoiceAsync.when(
                       data: (invoice) {
-                         return accountAsync.when(
-                        loading: () => const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(40),
-                            child: CircularProgressIndicator(),
+                        return accountAsync.when(
+                          loading: () => const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(40),
+                              child: CircularProgressIndicator(),
+                            ),
                           ),
-                        ),
-                        error: (error, stack) {
-                          final message = parseError(error);
+                          error: (error, stack) {
+                            final message = parseError(error);
 
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            AppPopupAlert.show(
-                              context,
-                              message: message,
-                              isError: true,
-                            );
-                          });
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              AppPopupAlert.show(
+                                context,
+                                message: message,
+                                isError: true,
+                              );
+                            });
 
-                          return const SizedBox();
-                        },
-                        data: (account) {
-                          return FooterPopup(context, invoice, account.phone);
-                        },
-                      );
-                        
+                            return const SizedBox();
+                          },
+                          data: (account) {
+                            return FooterPopup(context, invoice, account.phone);
+                          },
+                        );
                       },
                       loading: () {
                         return const SizedBox();
@@ -510,10 +521,44 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
 
               onPressed: () async {
                 setState(() => isPrinting = true);
- 
 
                 try {
                   final controller = ScreenshotController();
+
+                  final invoices = await ref.refresh(
+                    invoicesProvider(widget.batchId).future,
+                  );
+
+                  final invoiceFromList = invoices.firstWhere(
+                    (item) => item.invoiceNo == infoDetials.invoiceNumber,
+                  );
+
+                  final hasCoordinates =
+                      invoiceFromList.coordinates?.isValid ?? false;
+
+                  if (!hasCoordinates) {
+                    final position = await getLocation();
+
+                    if (position == null) {
+                      throw Exception("تعذر تحديد الموقع");
+                    }
+
+                    final locationRequest = LocationRequest(
+                      invoiceNumber: infoDetials.invoiceNumber,
+                      latitude: position.latitude.toString(),
+                      longitude: position.longitude.toString(),
+                    );
+
+                    final locationResponse = await ref.read(
+                      insertLocationProvider(locationRequest).future,
+                    );
+
+                    if (!locationResponse.isSuccess) {
+                      throw Exception(
+                        locationResponse.errorMessage ?? "تعذر حفظ الموقع",
+                      );
+                    }
+                  }
 
                   final printWidget = PaymentPrintLayout(
                     invoiceNo: infoDetials.invoiceNumber,
@@ -526,8 +571,8 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                     totalAmountDue: infoDetials.totalDueAmount!,
                     today: today,
                     cycleCode: infoDetials.cycleTypeName,
-                    paymentRefNo: infoDetials.payment!.paymentRefNo, 
-                    phone : phone
+                    paymentRefNo: infoDetials.payment!.paymentRefNo,
+                    phone: phone,
                   );
 
                   final image = await controller.captureFromWidget(
@@ -538,7 +583,7 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                         child: printWidget,
                       ),
                     ),
-                      pixelRatio: 1.0,
+                    pixelRatio: 1.0,
                     // 🔥 إضافة targetSize بارتفاع كبير جداً لمنع الـ Overflow نهائياً
                     targetSize: const Size(
                       576,
@@ -562,8 +607,6 @@ class _PaymentNoticeDialogState extends ConsumerState<PaymentNoticeDialog> {
                   }
 
                   if (image != null) {
-
-
                     await PrinterChannel.printImage(mac: mac, image: image);
                     final result = await ref.read(
                       updateNoticePrintProvider(
@@ -663,9 +706,13 @@ class _NoticeRow extends StatelessWidget {
               style: const TextStyle(fontFamily: 'Cairo', fontSize: 16),
             ),
           ),
-          Text(    textDirection: value.contains("+964")
-                        ? ui.TextDirection.ltr
-                        : ui.TextDirection.rtl,value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            textDirection: value.contains("+964")
+                ? ui.TextDirection.ltr
+                : ui.TextDirection.rtl,
+            value,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );

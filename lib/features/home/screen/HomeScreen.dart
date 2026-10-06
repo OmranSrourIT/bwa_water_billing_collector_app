@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bwa_water_billing_collector_app/core/constants/AppColors.dart';
 import 'package:bwa_water_billing_collector_app/core/lang/app_localizations.dart';
 import 'package:bwa_water_billing_collector_app/core/offlineMode/providers/offline_database_sync_provider.dart';
@@ -49,24 +51,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   BatchModel? selectedBatch;
   String? selectedCollectionType;
   Set<String> selectedInvoiceStatuses = {};
+  String? _lastInvoiceStatusKey;
+  Map<String, String> _lastInvoiceStatusesByInvoice = {};
+
   String? searchAccountValue;
   String? searchAddressValue;
+
   bool isEndBatchLoading = false;
   bool isInitialBatchSelectionDone = false;
   bool isInvoiceStatusFilterInitialized = false;
 
+  Timer? _searchDebounce;
+
+  final ScrollController _scrollController = ScrollController();
+  bool _showScrollToTopButton = false;
+
+  void _handleScroll() {
+    final shouldShow =
+        _scrollController.hasClients && _scrollController.offset > 300;
+
+    if (shouldShow != _showScrollToTopButton && mounted) {
+      setState(() {
+        _showScrollToTopButton = shouldShow;
+      });
+    }
+  }
+
+  void _scrollToTop() {
+    if (!_scrollController.hasClients) return;
+
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
-
+    _scrollController.addListener(_handleScroll);
     initPrinter();
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> initPrinter() async {
     await requestAppPermissions();
-    final printers = await PrinterChannel.getPairedPrinters();
-    if (!mounted) return;
 
+    final printers = await PrinterChannel.getPairedPrinters();
+
+    if (!mounted) return;
     if (printers.isEmpty) return;
 
     final savedMac = await PrinterStorage.getMac();
@@ -78,18 +120,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return;
       }
     }
+
     await PrinterStorage.saveMac(printers.first["mac"]);
   }
 
-  void _endBatch(BatchModel batch) async {
+  void _selectAllInvoiceStatusesExceptCollected(
+    List<LookupModelParent> invoiceStatuses,
+  ) {
+    final newSelectedStatuses = invoiceStatuses
+        .where((status) => status.code != 'COL')
+        .map((status) => status.code)
+        .toSet();
+
+    if (!mounted) return;
+
+    setState(() {
+      selectedInvoiceStatuses = newSelectedStatuses;
+      isInvoiceStatusFilterInitialized = true;
+    });
+  }
+
+  void _addCollectedInvoiceStatus(List<LookupModelParent> invoiceStatuses) {
+    final collectedStatus = invoiceStatuses
+        .where((status) => status.code == 'COL')
+        .map((status) => status.code)
+        .toSet();
+
+    if (!mounted || collectedStatus.isEmpty) return;
+
+    setState(() {
+      selectedInvoiceStatuses = {
+        ...selectedInvoiceStatuses,
+        ...collectedStatus,
+      };
+    });
+  }
+
+  Future<void> _endBatch(BatchModel batch) async {
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
-    setState(() => isEndBatchLoading = true);
+    if (!mounted) return;
+
+    setState(() {
+      isEndBatchLoading = true;
+    });
 
     try {
       final response = await ref.read(
         endBatchProvider(batch.batchNumber).future,
       );
+
+      if (!mounted) return;
 
       AppPopupAlert.show(
         context,
@@ -99,6 +180,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
       if (response.isSuccess) {
         ref.invalidate(batchProvider);
+
         setState(() {
           selectedBatch = null;
           selectedCollectionType = null;
@@ -106,16 +188,466 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           selectedInvoiceStatuses.clear();
           isInvoiceStatusFilterInitialized = false;
           searchAccountValue = null;
+          searchAddressValue = null;
         });
       }
     } catch (e) {
-      final message = parseError(e); 
+      if (!mounted) return;
+
+      final message = parseError(e);
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
         AppPopupAlert.show(context, message: message, isError: true);
       });
     } finally {
-      if (mounted) setState(() => isEndBatchLoading = false);
+      if (!mounted) return;
+
+      setState(() {
+        isEndBatchLoading = false;
+      });
     }
+  }
+
+  void _selectBatch(BatchModel? batch) {
+    if (!mounted) return;
+
+    setState(() {
+      selectedBatch = batch;
+      selectedCollectionType = null;
+      selectedInvoiceNo = null;
+      selectedInvoiceStatuses.clear();
+      isInvoiceStatusFilterInitialized = false;
+
+      _lastInvoiceStatusKey = null;
+      _lastInvoiceStatusesByInvoice.clear();
+
+      searchAccountValue = null;
+      searchAddressValue = null;
+    });
+  }
+
+  void _resetFilters() {
+    if (!mounted) return;
+
+    setState(() {
+      selectedCollectionType = null;
+      selectedInvoiceNo = null;
+      selectedInvoiceStatuses.clear();
+      isInvoiceStatusFilterInitialized = false;
+
+      _lastInvoiceStatusKey = null;
+      _lastInvoiceStatusesByInvoice.clear();
+
+      searchAccountValue = null;
+      searchAddressValue = null;
+    });
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+
+    _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+
+      setState(() {
+        searchAccountValue = value;
+      });
+    });
+  }
+
+  void _onAddressSearchChanged(String value) {
+    _searchDebounce?.cancel();
+
+    _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+
+      setState(() {
+        searchAddressValue = value;
+      });
+    });
+  }
+
+  List<LookupModelParent> _getCollectionTypes(List<InvoiceModel> invoices) {
+    return invoices
+        .expand<LookupModelParent>((invoice) => invoice.lookup)
+        .where((item) => item.lookupType == 'CollectionType')
+        .fold<List<LookupModelParent>>([], (list, item) {
+          if (!list.any((existing) => existing.code == item.code)) {
+            list.add(item);
+          }
+
+          return list;
+        });
+  }
+
+  List<LookupModelParent> _getInvoiceStatuses(List<InvoiceModel> invoices) {
+    return invoices
+        .expand<LookupModelParent>((invoice) => invoice.lookup)
+        .where((item) => item.lookupType == 'InvoiceStatus')
+        .fold<List<LookupModelParent>>([], (list, item) {
+          if (!list.any((existing) => existing.code == item.code)) {
+            list.add(item);
+          }
+
+          return list;
+        });
+  }
+
+  List<InvoiceModel> _filterInvoices(List<InvoiceModel> invoices) {
+    final accountSearch = searchAccountValue?.trim().toLowerCase() ?? '';
+
+    final addressSearch = searchAddressValue?.trim().toLowerCase() ?? '';
+
+    return invoices
+        .where((invoice) {
+          final collectionMatch =
+              selectedCollectionType == null ||
+              invoice.lookup.any(
+                (lookup) =>
+                    lookup.lookupType == 'CollectionType' &&
+                    lookup.code == selectedCollectionType,
+              );
+
+          final statusMatch =
+              selectedInvoiceStatuses.isEmpty ||
+              invoice.lookup.any(
+                (lookup) =>
+                    lookup.lookupType == 'InvoiceStatus' &&
+                    selectedInvoiceStatuses.contains(lookup.code),
+              );
+
+          final accountMatch =
+              accountSearch.isEmpty ||
+              invoice.accountNo.toLowerCase().contains(accountSearch) ||
+              invoice.customerName.toLowerCase().contains(accountSearch);
+
+          final addressMatch =
+              addressSearch.isEmpty ||
+              invoice.address.toLowerCase().contains(addressSearch);
+
+          return collectionMatch && statusMatch && accountMatch && addressMatch;
+        })
+        .toList(growable: false);
+  }
+
+  Widget _buildActiveBatchBar(List<BatchModel> batches) {
+    return ActiveBatchBar(
+      batchesDrop: batches,
+      selectedBatch: selectedBatch,
+      onBatchSelected: _selectBatch,
+      onResetFilters: _resetFilters,
+      onStartEndBatchLoading: () {
+        final batch = selectedBatch;
+
+        if (batch != null) {
+          _endBatch(batch);
+        }
+      },
+    );
+  }
+
+  Widget _buildEmptyInvoicesView() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+      child: Column(
+        children: [
+          Icon(
+            Icons.receipt_long_outlined,
+            size: 50,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'لا توجد فواتير لهذا السجل',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'يمكنك اختيار سجل آخر من القائمة',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchSection(
+    List<LookupModelParent> collectionTypes,
+    List<LookupModelParent> invoiceStatuses,
+  ) {
+    return _SearchSection(
+      collectionTypes: collectionTypes,
+      selectedCollectionType: selectedCollectionType,
+      invoiceStatuses: invoiceStatuses,
+      selectedInvoiceStatuses: selectedInvoiceStatuses,
+      searchAccountValue: searchAccountValue,
+      searchAddressValue: searchAddressValue,
+      onAddressSearchChanged: _onAddressSearchChanged,
+      onSearchChanged: _onSearchChanged,
+      onCollectionChanged: (value) {
+        if (!mounted) return;
+
+        setState(() {
+          selectedCollectionType = value?.code;
+        });
+      },
+      onStatusesChanged: (values) {
+        if (!mounted) return;
+
+        setState(() {
+          selectedInvoiceStatuses = values;
+        });
+      },
+    );
+  }
+
+  List<Widget> _buildBatchSlivers(List<BatchModel> batches, bool isTablet) {
+    if (batches.isEmpty) {
+      return [const SliverToBoxAdapter(child: SizedBox())];
+    }
+
+    if (!isInitialBatchSelectionDone) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || isInitialBatchSelectionDone) return;
+
+        setState(() {
+          selectedBatch = batches.last;
+          isInitialBatchSelectionDone = true;
+        });
+      });
+    }
+
+    final activeBatch = selectedBatch;
+
+    if (activeBatch == null) {
+      return [
+        SliverPadding(
+          padding: EdgeInsets.all(isTablet ? 12 : 20),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              _buildActiveBatchBar(batches),
+              const SizedBox(height: 20),
+              const MessageSelectedBacth(),
+            ]),
+          ),
+        ),
+      ];
+    }
+
+    final invoicesAsync = ref.watch(invoicesProvider(activeBatch.batchNumber));
+
+    return invoicesAsync.when(
+      loading: () {
+        return [
+          SliverPadding(
+            padding: EdgeInsets.all(isTablet ? 12 : 20),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildActiveBatchBar(batches),
+                SizedBox(height: isTablet ? 8 : 16),
+                const Padding(
+                  padding: EdgeInsets.all(30),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ]),
+            ),
+          ),
+        ];
+      },
+      error: (error, stack) {
+        final isUnauthorized =
+            error is DioException &&
+            (error.response?.statusCode == 401 ||
+                error.response?.statusCode == 403);
+
+        return [
+          SliverPadding(
+            padding: EdgeInsets.all(isTablet ? 12 : 20),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildActiveBatchBar(batches),
+                SizedBox(height: isTablet ? 8 : 16),
+                AppErrorState(
+                  message: isUnauthorized
+                      ? 'انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى'
+                      : parseError(error),
+                  onRetry: () {
+                    ref.invalidate(invoicesProvider(activeBatch.batchNumber));
+                  },
+                ),
+              ]),
+            ),
+          ),
+        ];
+      },
+      data: (invoices) {
+        final invoicesRaw = invoices.cast<InvoiceModel>();
+
+        if (invoicesRaw.isEmpty) {
+          return [
+            SliverPadding(
+              padding: EdgeInsets.all(isTablet ? 12 : 20),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildActiveBatchBar(batches),
+                  SizedBox(height: isTablet ? 8 : 16),
+                  _buildEmptyInvoicesView(),
+                ]),
+              ),
+            ),
+          ];
+        }
+
+        final summary = calculateSummary(invoicesRaw);
+
+        final collectionTypes = _getCollectionTypes(invoicesRaw);
+
+        final invoiceStatuses = _getInvoiceStatuses(invoicesRaw);
+
+        final currentInvoiceStatuses = <String, String>{};
+
+        for (final invoice in invoicesRaw) {
+          final status = invoice.lookup.firstWhere(
+            (lookup) => lookup.lookupType == 'InvoiceStatus',
+            orElse: () => LookupModelParent.empty(),
+          );
+
+          currentInvoiceStatuses[invoice.invoiceNo] = status.code;
+        }
+
+        final invoiceStatusKey =
+            currentInvoiceStatuses.entries
+                .map((entry) => '${entry.key}:${entry.value}')
+                .toList()
+              ..sort();
+
+        final currentStatusKey = invoiceStatusKey.join('|');
+
+        if (_lastInvoiceStatusKey != currentStatusKey &&
+            invoiceStatuses.isNotEmpty) {
+          final isFirstInitialization = _lastInvoiceStatusKey == null;
+
+          final previousInvoiceStatuses = Map<String, String>.from(
+            _lastInvoiceStatusesByInvoice,
+          );
+
+          final changedStatusCodes = <String>{};
+
+          if (!isFirstInitialization) {
+            currentInvoiceStatuses.forEach((invoiceNo, newStatus) {
+              final oldStatus = previousInvoiceStatuses[invoiceNo];
+
+              if (oldStatus != null && oldStatus != newStatus) {
+                changedStatusCodes.add(newStatus);
+              }
+            });
+          }
+
+          _lastInvoiceStatusKey = currentStatusKey;
+          _lastInvoiceStatusesByInvoice = currentInvoiceStatuses;
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+
+            if (isFirstInitialization) {
+              // أول تحميل:
+              // كل الحالات ما عدا COL
+              _selectAllInvoiceStatusesExceptCollected(invoiceStatuses);
+              return;
+            }
+
+            if (changedStatusCodes.isEmpty) return;
+
+            // بعد أي إجراء على فاتورة:
+            // تفعيل الحالة الجديدة فقط
+            setState(() {
+              selectedInvoiceStatuses = {
+                ...selectedInvoiceStatuses,
+                ...changedStatusCodes,
+              };
+            });
+          });
+        }
+
+        final filteredInvoices = _filterInvoices(invoicesRaw);
+
+        return [
+          SliverPadding(
+            padding: EdgeInsets.only(
+              left: isTablet ? 12 : 20,
+              right: isTablet ? 12 : 20,
+              top: isTablet ? 12 : 20,
+            ),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildActiveBatchBar(batches),
+                SizedBox(height: isTablet ? 8 : 16),
+                _BatchSummary(
+                  summary: summary,
+                  batch: activeBatch,
+                  invoicesCount: invoicesRaw.length,
+                ),
+                SizedBox(height: isTablet ? 8 : 16),
+              ]),
+            ),
+          ),
+
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _StickyFiltersDelegate(
+              minHeight: isTablet ? 120 : 130,
+              maxHeight: isTablet ? 120 : 130,
+              child: Container(
+                color: AppColors.background,
+                padding: EdgeInsets.only(
+                  left: isTablet ? 12 : 20,
+                  right: isTablet ? 12 : 20,
+                  bottom: isTablet ? 12 : 20,
+                ),
+                child: _buildSearchSection(collectionTypes, invoiceStatuses),
+              ),
+            ),
+          ),
+
+          SliverPadding(
+            padding: EdgeInsets.only(
+              left: isTablet ? 12 : 20,
+              right: isTablet ? 12 : 20,
+              bottom: isTablet ? 12 : 20,
+            ),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final invoice = filteredInvoices[index];
+
+                return RepaintBoundary(
+                  key: ValueKey(invoice.invoiceNo),
+                  child: _InvoiceCard(
+                    invoice,
+                    isSelected: selectedInvoiceNo == invoice.invoiceNo,
+                    batchId: activeBatch.batchNumber,
+                    onSelect: () {
+                      if (!mounted) return;
+
+                      setState(() {
+                        selectedInvoiceNo = invoice.invoiceNo;
+                      });
+                    },
+                  ),
+                );
+              }, childCount: filteredInvoices.length),
+            ),
+          ),
+        ];
+      },
+    );
   }
 
   @override
@@ -127,6 +659,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (syncState.loading) {
       return InitialSyncLoadingScreen(message: syncState.message);
     }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -134,14 +667,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Column(
               children: [
-                _Header(),
+                const _Header(),
                 Expanded(
                   child: RefreshIndicator(
                     color: AppColors.primary,
                     onRefresh: () async {
-                      if (selectedBatch != null) {
+                      final batch = selectedBatch;
+
+                      if (batch != null) {
                         await ref.refresh(
-                          invoicesProvider(selectedBatch!.batchNumber).future,
+                          invoicesProvider(batch.batchNumber).future,
                         );
 
                         if (selectedInvoiceNo != null) {
@@ -153,479 +688,102 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         await ref.refresh(batchProvider.future);
                       }
                     },
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.all(isTablet ? 12 : 20),
-                      child: Column(
-                        children: [
-                          /// ================= INVOICES LIST =================
-                          batchAsync.when(
-                            data: (batches) {
-                              if (batches.isEmpty) {
-                                return const SizedBox();
-                              }
-
-                              if (!isInitialBatchSelectionDone &&
-                                  batches.isNotEmpty) {
-                                WidgetsBinding.instance.addPostFrameCallback((
-                                  _,
-                                ) {
-                                  if (!mounted) return;
-
-                                  setState(() {
-                                    selectedBatch = batches.last;
-                                    isInitialBatchSelectionDone = true;
-                                  });
-                                });
-                              }
-
-                              final activeBatch = selectedBatch;
-                              if (activeBatch == null) {
-                                return Column(
-                                  children: [
-                                    ActiveBatchBar(
-                                      batchesDrop: batches,
-                                      selectedBatch: selectedBatch,
-                                      onBatchSelected: (batch) {
-                                        setState(() {
-                                          selectedBatch = batch;
-                                          selectedCollectionType = null;
-                                          selectedInvoiceNo = null;
-                                          selectedInvoiceStatuses.clear();
-                                          isInvoiceStatusFilterInitialized =
-                                              false;
-                                          searchAccountValue = null;
-                                        });
-                                      },
-                                      onResetFilters: () {
-                                        setState(() {
-                                          selectedCollectionType = null;
-                                          selectedInvoiceNo = null;
-                                          selectedInvoiceStatuses.clear();
-                                          isInvoiceStatusFilterInitialized =
-                                              false;
-                                          searchAccountValue = null;
-                                        });
-                                      },
-                                      onStartEndBatchLoading: () {
-                                        final batch = selectedBatch;
-                                        if (batch == null) return;
-
-                                        _endBatch(batch);
-                                      },
+                    child: CustomScrollView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      slivers: batchAsync.when(
+                        data: (batches) {
+                          if (batches.isEmpty) {
+                            return [
+                              SliverFillRemaining(
+                                hasScrollBody: false,
+                                child: Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
                                     ),
-                                    const SizedBox(height: 20),
-                                    MessageSelectedBacth(),
-                                  ],
-                                );
-                              }
-
-                              /// ================= SAFE INVOICES CALL =================
-
-                              final invoicesAsync = ref.watch(
-                                invoicesProvider(activeBatch.batchNumber),
-                              );
-
-                              return Column(
-                                children: [
-                                  // =====================================================
-                                  // BATCH DROPDOWN
-                                  // ALWAYS VISIBLE
-                                  // =====================================================
-                                  ActiveBatchBar(
-                                    batchesDrop: batches,
-                                    selectedBatch: selectedBatch,
-                                    onBatchSelected: (batch) {
-                                      setState(() {
-                                        selectedBatch = batch;
-                                        selectedCollectionType = null;
-                                        selectedInvoiceNo = null;
-                                        selectedInvoiceStatuses.clear();
-                                        searchAccountValue = null;
-                                        searchAddressValue = null;
-                                      });
-                                    },
-                                    onResetFilters: () {
-                                      setState(() {
-                                        selectedCollectionType = null;
-                                        selectedInvoiceNo = null;
-                                        selectedInvoiceStatuses.clear();
-                                        searchAccountValue = null;
-                                        searchAddressValue = null;
-                                      });
-                                    },
-                                    onStartEndBatchLoading: () {
-                                      final batch = selectedBatch;
-                                      if (batch == null) return;
-
-                                      _endBatch(batch);
-                                    },
-                                  ),
-
-                                  SizedBox(height: isTablet ? 8 : 16),
-
-                                  // =====================================================
-                                  // INVOICES Data
-                                  // =====================================================
-                                  invoicesAsync.when(
-                                    data: (invoices) {
-                                      final invoicesRaw = invoices
-                                          .cast<InvoiceModel>();
-
-                                      // =====================================================
-                                      // NO INVOICES
-                                      // =====================================================
-
-                                      if (invoicesRaw.isEmpty) {
-                                        return Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 30,
-                                            horizontal: 20,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.assignment_outlined,
+                                          size: 64,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        const Text(
+                                          "لا توجد سجلات مسندة حاليًا",
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
                                           ),
-                                          child: Column(
-                                            children: [
-                                              Icon(
-                                                Icons.receipt_long_outlined,
-                                                size: 50,
-                                                color: Colors.grey.shade400,
-                                              ),
-
-                                              const SizedBox(height: 12),
-
-                                              Text(
-                                                'لا توجد فواتير لهذا السجل ',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                  color: Colors.grey.shade600,
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-
-                                              const SizedBox(height: 6),
-
-                                              Text(
-                                                'يمكنك اختيار سجل آخر من القائمة',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                  color: Colors.grey.shade400,
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                            ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          "لم يتم إسناد أي سجلات لك في الوقت الحالي.",
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey.shade600,
                                           ),
-                                        );
-                                      }
-
-                                      // =====================================================
-                                      // SUMMARY
-                                      // =====================================================
-
-                                      final summary = calculateSummary(
-                                        invoicesRaw,
-                                      );
-
-                                      // =====================================================
-                                      // COLLECTION TYPES
-                                      // =====================================================
-
-                                      final collectionTypes = invoicesRaw
-                                          .expand<LookupModelParent>(
-                                            (inv) => inv.lookup,
-                                          )
-                                          .where(
-                                            (l) =>
-                                                l.lookupType ==
-                                                "CollectionType",
-                                          )
-                                          .fold<List<LookupModelParent>>([], (
-                                            list,
-                                            item,
-                                          ) {
-                                            if (!list.any(
-                                              (e) => e.code == item.code,
-                                            )) {
-                                              list.add(item);
-                                            }
-
-                                            return list;
-                                          });
-
-                                      // =====================================================
-                                      // INVOICE STATUSES
-                                      // =====================================================
-
-                                      final invoiceStatuses = invoicesRaw
-                                          .expand<LookupModelParent>(
-                                            (inv) => inv.lookup,
-                                          )
-                                          .where(
-                                            (l) =>
-                                                l.lookupType == "InvoiceStatus",
-                                          )
-                                          .fold<List<LookupModelParent>>([], (
-                                            list,
-                                            item,
-                                          ) {
-                                            if (!list.any(
-                                              (e) => e.code == item.code,
-                                            )) {
-                                              list.add(item);
-                                            }
-
-                                            return list;
-                                          });
-
-                                      // =====================================================
-                                      // DEFAULT INVOICE STATUS FILTER
-                                      // All statuses selected except COL (Collected)
-                                      // =====================================================
-
-                                      if (!isInvoiceStatusFilterInitialized &&
-                                          invoiceStatuses.isNotEmpty) {
-                                        selectedInvoiceStatuses =
-                                            invoiceStatuses
-                                                .where(
-                                                  (status) =>
-                                                      status.code != 'COL',
-                                                )
-                                                .map((status) => status.code)
-                                                .toSet();
-
-                                        isInvoiceStatusFilterInitialized = true;
-                                      }
-                                      // =====================================================
-                                      // FILTER INVOICES
-                                      // =====================================================
-
-                                      final filteredInvoices = invoicesRaw.where(
-                                        (inv) {
-                                          final collectionMatch =
-                                              selectedCollectionType == null ||
-                                              inv.lookup.any(
-                                                (l) =>
-                                                    l.lookupType ==
-                                                        "CollectionType" &&
-                                                    l.code ==
-                                                        selectedCollectionType,
-                                              );
-
-                                          final statusMatch =
-                                              selectedInvoiceStatuses.isEmpty ||
-                                              inv.lookup.any(
-                                                (l) =>
-                                                    l.lookupType ==
-                                                        "InvoiceStatus" &&
-                                                    selectedInvoiceStatuses
-                                                        .contains(l.code),
-                                              );
-
-                                          // =========================
-                                          // SEARCH ACCOUNT / CUSTOMER
-                                          // =========================
-
-                                          final searchByAccountMatch =
-                                              searchAccountValue == null ||
-                                              searchAccountValue!.isEmpty ||
-                                              inv.accountNo
-                                                  .toLowerCase()
-                                                  .contains(
-                                                    searchAccountValue!
-                                                        .toLowerCase(),
-                                                  );
-
-                                          final searchByNameMatch =
-                                              searchAccountValue == null ||
-                                              searchAccountValue!.isEmpty ||
-                                              inv.customerName
-                                                  .toLowerCase()
-                                                  .contains(
-                                                    searchAccountValue!
-                                                        .toLowerCase(),
-                                                  );
-
-                                          // =========================
-                                          // SEARCH ADDRESS
-                                          // =========================
-
-                                          final searchByAddressMatch =
-                                              searchAddressValue == null ||
-                                              searchAddressValue!.isEmpty ||
-                                              inv.address
-                                                  .toLowerCase()
-                                                  .contains(
-                                                    searchAddressValue!
-                                                        .toLowerCase(),
-                                                  );
-
-                                          // =========================
-                                          // FINAL FILTER
-                                          // =========================
-
-                                          return collectionMatch &&
-                                              statusMatch &&
-                                              (searchByAccountMatch ||
-                                                  searchByNameMatch) &&
-                                              searchByAddressMatch;
-                                        },
-                                      ).toList();
-
-                                      // =====================================================
-                                      // DATA UI
-                                      // =====================================================
-
-                                      return Column(
-                                        children: [
-                                          _BatchSummary(
-                                            summary: summary,
-                                            batch: activeBatch,
-                                            invoicesCount: invoicesRaw.length,
-                                          ),
-
-                                          SizedBox(height: isTablet ? 8 : 16),
-
-                                          _SearchSection(
-                                            collectionTypes: collectionTypes,
-                                            selectedCollectionType:
-                                                selectedCollectionType,
-                                            invoiceStatuses: invoiceStatuses,
-                                            selectedInvoiceStatuses:
-                                                selectedInvoiceStatuses,
-
-                                            searchAddressValue:
-                                                searchAddressValue,
-
-                                            onAddressSearchChanged: (value) {
-                                              setState(() {
-                                                searchAddressValue = value;
-                                              });
-                                            },
-
-                                            onSearchChanged: (value) {
-                                              setState(() {
-                                                searchAccountValue = value;
-                                              });
-                                            },
-
-                                            onCollectionChanged: (value) {
-                                              setState(() {
-                                                selectedCollectionType =
-                                                    value?.code;
-                                              });
-                                            },
-
-                                            onStatusesChanged: (values) {
-                                              setState(() {
-                                                selectedInvoiceStatuses =
-                                                    values;
-                                              });
-                                            },
-                                          ),
-
-                                          SizedBox(height: isTablet ? 5 : 15),
-
-                                          ...filteredInvoices.map((invoice) {
-                                            final id = invoice.invoiceNo;
-
-                                            return _InvoiceCard(
-                                              invoice,
-
-                                              isSelected:
-                                                  selectedInvoiceNo == id,
-                                              batchId:
-                                                  selectedBatch!.batchNumber,
-                                              onSelect: () {
-                                                setState(() {
-                                                  selectedInvoiceNo = id;
-                                                });
-                                              },
-                                            );
-                                          }),
-                                        ],
-                                      );
-                                    },
-
-                                    // =====================================================
-                                    // LOADING
-                                    // =====================================================
-                                    loading: () {
-                                      return const Padding(
-                                        padding: EdgeInsets.all(30),
-                                        child: CircularProgressIndicator(),
-                                      );
-                                    },
-
-                                    // =====================================================
-                                    // REAL ERROR
-                                    // =====================================================
-                                    error: (error, stack) {
-                                      debugPrint('[INVOICES ERROR] $error');
-                                      debugPrint('[INVOICES STACK] $stack');
-
-                                      final isUnauthorized =
-                                          error is DioException &&
-                                          (error.response?.statusCode == 401 ||
-                                              error.response?.statusCode ==
-                                                  403);
-
-                                      if (isUnauthorized) {
-                                        return AppErrorState(
-                                          message:
-                                              'انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى',
-                                          onRetry: () {
-                                            ref.invalidate(
-                                              invoicesProvider(
-                                                activeBatch.batchNumber,
-                                              ),
-                                            );
+                                        ),
+                                        const SizedBox(height: 20),
+                                        OutlinedButton.icon(
+                                          onPressed: () {
+                                            ref.invalidate(batchProvider);
                                           },
-                                        );
-                                      }
-
-                                      return AppErrorState(
-                                        message: parseError(error),
-                                        onRetry: () {
-                                          ref.invalidate(
-                                            invoicesProvider(
-                                              activeBatch.batchNumber,
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
+                                          icon: const Icon(Icons.refresh),
+                                          label: const Text("إعادة المحاولة"),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ],
-                              );
-                            },
-                            loading: () => CircularProgressIndicator(),
-                            error: (error, stack) {
-                              final message = parseError(error);
-                              if (message.contains(
-                                "type 'String' is not a subtype of type 'List<dynamic>' in type cast",
-                              )) { 
-                                return AppErrorState(
-                                  message: "لا توجد سجلات مسندة اليك حاليا ",
-                                  onRetry: () {
-                                    ref.invalidate(batchProvider);
-                                  },
-                                );
-                              } else {
-                                 
-                                return AppErrorState(
-                                  message: message,
-                                  onRetry: () {
-                                    ref.invalidate(batchProvider);
-                                  },
-                                );
-                              }
-                            },
-                          ),
-                        ],
+                                ),
+                              ),
+                            ];
+                          }
+
+                          return _buildBatchSlivers(batches, isTablet);
+                        },
+                        loading: () {
+                          return [
+                            SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ];
+                        },
+                        error: (error, stack) {
+                          final message = parseError(error);
+
+                          return [
+                            SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: AppErrorState(
+                                message: message,
+                                onRetry: () {
+                                  ref.invalidate(batchProvider);
+                                },
+                              ),
+                            ),
+                          ];
+                        },
                       ),
                     ),
                   ),
                 ),
               ],
             ),
+
             if (batchAsync.isLoading ||
                 (selectedBatch != null &&
                     ref
@@ -634,10 +792,88 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const BwaLoadingOverlay(isLoading: true),
 
             if (isEndBatchLoading) const BwaLoadingOverlay(isLoading: true),
+
+            Positioned(
+              right: 16,
+              bottom: 30,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                transitionBuilder: (child, animation) {
+                  final offsetAnimation =
+                      Tween<Offset>(
+                        begin: const Offset(1, 0), // يبدأ من اليمين
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOut,
+                        ),
+                      );
+
+                  return SlideTransition(
+                    position: offsetAnimation,
+                    child: child,
+                  );
+                },
+                child: _showScrollToTopButton
+                    ? FloatingActionButton(
+                        key: const ValueKey('scroll-to-top'),
+                        heroTag: 'scroll-to-top',
+                        onPressed: _scrollToTop,
+                        tooltip: 'العودة إلى الأعلى',
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 4,
+                        child: const Icon(
+                          Icons.keyboard_arrow_up_rounded,
+                          size: 30,
+                        ),
+                      )
+                    : const SizedBox(key: ValueKey('scroll-to-top-hidden')),
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+}
+
+class _StickyFiltersDelegate extends SliverPersistentHeaderDelegate {
+  final double minHeight;
+  final double maxHeight;
+  final Widget child;
+
+  const _StickyFiltersDelegate({
+    required this.minHeight,
+    required this.maxHeight,
+    required this.child,
+  });
+
+  @override
+  double get minExtent => minHeight;
+
+  @override
+  double get maxExtent => maxHeight;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Material(
+      color: AppColors.background,
+      elevation: overlapsContent ? 2 : 0,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _StickyFiltersDelegate oldDelegate) {
+    return oldDelegate.minHeight != minHeight ||
+        oldDelegate.maxHeight != maxHeight ||
+        oldDelegate.child != child;
   }
 }
 
@@ -1473,7 +1709,7 @@ class _InvoiceStatusChecklist extends StatelessWidget {
     String displayText;
 
     if (selectedCount == 0) {
-      displayText = 'لا يوجد';
+      displayText = 'لم يتم تحديد حالة الفاتورة';
     } else if (selectedCount == items.length) {
       displayText = 'الكل';
     } else {
@@ -1941,11 +2177,37 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
   bool _pressed = false;
   bool _loadingPayment = false;
 
-  Future<void> _openInvoiceAction({required Widget dialog}) async {
-    final invoiceNo = widget.invoice.invoiceNo;
+  OverlayEntry? _paymentTransitionOverlay;
 
+  void _showPaymentTransitionLoading(BuildContext context) {
+    if (_paymentTransitionOverlay != null) return;
+
+    final overlay = Overlay.of(context, rootOverlay: true);
+
+    _paymentTransitionOverlay = OverlayEntry(
+      builder: (_) =>
+          const Positioned.fill(child: BwaLoadingOverlay(isLoading: true)),
+    );
+
+    overlay.insert(_paymentTransitionOverlay!);
+  }
+
+  void _hidePaymentTransitionLoading() {
+    _paymentTransitionOverlay?.remove();
+    _paymentTransitionOverlay = null;
+  }
+
+  @override
+  void dispose() {
+    _hidePaymentTransitionLoading();
+    super.dispose();
+  }
+
+  Future<void> _openInvoiceAction({
+    required String invoiceNo,
+    required Widget Function(BuildContext context) dialogBuilder,
+  }) async {
     try {
-      // Loading
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -1960,16 +2222,64 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
 
       Navigator.of(context).pop();
 
-      showDialog(context: context, builder: (_) => dialog);
+      showDialog(
+        context: context,
+        builder: (dialogContext) => dialogBuilder(dialogContext),
+      );
     } catch (e) {
       if (!mounted) return;
 
-      Navigator.of(context).pop(); 
+      Navigator.of(context).pop();
+
       AppPopupAlert.show(
         context,
-        message: parseError(e).toString().replaceFirst("Exception: ", ""),
+        message: parseError(e).toString().replaceFirst('Exception: ', ''),
         isError: true,
       );
+    }
+  }
+
+  Future<void> _openPrintInvoice({
+    required String invoiceNo,
+    required String batchId,
+    required BuildContext dialogContext,
+  }) async {
+    _showPaymentTransitionLoading(context);
+
+    try {
+      await ref
+          .read(invoiceDetailsRepositoryProvider)
+          .ensureInvoiceDetails(invoiceNo);
+
+      if (!mounted) return;
+
+      // انتهى الانتظار، أغلق الـLoading أولًا
+      _hidePaymentTransitionLoading();
+
+      // بعدها افتح نافذة الطباعة
+      await showDialog(
+        context: dialogContext,
+        useRootNavigator: true,
+        barrierDismissible: false,
+        builder: (_) => PrintInvoiceDialog(
+          invoiceNumber: invoiceNo,
+          batchId: batchId,
+          getInvoiceStatusCode: getInvoiceStatusForPrint,
+        ),
+      );
+    } catch (e) {
+      _hidePaymentTransitionLoading();
+
+      if (!mounted) return;
+
+      AppPopupAlert.show(
+        context,
+        message: parseError(e).toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+    } finally {
+      // حماية إضافية حتى لا يبقى معلقًا في أي حالة
+      _hidePaymentTransitionLoading();
     }
   }
 
@@ -2104,6 +2414,13 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
     final tr = AppLocalizations.of(context);
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     final isOnline = ref.watch(connectionProvider);
+
+    final invoiceStatus = getInvoiceStatusCode(widget.invoice, context);
+    final isEditingReading = invoiceStatus == "RDY" || invoiceStatus == "UNC";
+
+    final isEstimatedSubscription = widget.invoice.lookup.any(
+      (item) => item.lookupType == "CollectionType" && item.code == "EST",
+    );
 
     final invoiceAsync = ref.watch(
       invoiceDetailProvider(widget.invoice.invoiceNo),
@@ -2490,257 +2807,311 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                 /// ================= ACTIONS =================
                 Padding(
                   padding: const EdgeInsets.all(8),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.end,
-                    children: [
-                      if (getInvoiceStatusCode(widget.invoice, context) !=
-                              "UEX" &&
-                          getInvoiceStatusCode(widget.invoice, context) !=
-                              "ISS")
-                        _ActionButton(
-                          title: Text(tr.t('view')),
-                          icon: Icons.visibility_outlined,
-                          color: Colors.grey.shade500,
-                          onBeforePressed: _selectCard,
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => InvoiceDetailsDialog(
-                                invoiceNumber: widget.invoice.invoiceNo,
-                              ),
-                            );
-                          },
-                        ),
-
-                      if ((getInvoiceStatusCode(widget.invoice, context) ==
-                                  "RDY" ||
-                              getInvoiceStatusCode(widget.invoice, context) ==
-                                  "UNC") &&
-                          widget.invoice.totalAmount > 0)
-                        _ActionButton(
-                          title: Text(tr.t('print_notice')),
-                          icon: Icons.print_outlined,
-                          color: AppColors.warning,
-                          onBeforePressed: _selectCard,
-                          onPressed: () {
-                            _openInvoiceAction(
-                              dialog: PaymentNoticeDialog(
-                                invoiceNumber: widget.invoice.invoiceNo,
-                              ),
-                            );
-                          },
-                          // onPressed: () async {
-                          //   showDialog(
-                          //     context: context,
-                          //     builder: (_) => PaymentNoticeDialog(
-                          //       invoiceNumber: widget.invoice.invoiceNo,
-                          //     ),
-                          //   );
-                          // },
-                        ),
-                      if (getInvoiceStatusCode(widget.invoice, context) ==
-                          "COL")
-                        _ActionButton(
-                          title: Text(tr.t('print_invoice')),
-                          icon: Icons.receipt_long,
-                          color: AppColors.warning,
-                          onBeforePressed: _selectCard,
-                          onPressed: () {
-                            _openInvoiceAction(
-                              dialog: PrintInvoiceDialog(
-                                invoiceNumber: widget.invoice.invoiceNo,
-                                getInvoiceStatusCode: getInvoiceStatusForPrint,
-                              ),
-                            );
-                          },
-                          // onPressed: () {
-                          //   showDialog(
-                          //     context: context,
-                          //     barrierDismissible: true,
-                          //     builder: (_) {
-                          //       return PrintInvoiceDialog(
-                          //         invoiceNumber: widget.invoice.invoiceNo,
-                          //         getInvoiceStatusCode:
-                          //             getInvoiceStatusForPrint,
-                          //       );
-                          //     },
-                          //   );
-                          // },
-                        ),
-                      if (getInvoiceStatusCode(widget.invoice, context) ==
-                              "ISS" ||
-                          getInvoiceStatusCode(widget.invoice, context) ==
-                              "UEX")
-                        _ActionButton(
-                          title: Text(tr.t('enter_reading')),
-                          icon: Icons.speed,
-                          color: const Color(0xFF2AAAE1),
-                          onBeforePressed: _selectCard,
-                          // onPressed: () {
-                          //   showDialog(
-                          //     context: context,
-                          //     builder: (_) => ReadingDialog(
-                          //       invoiceNumber: widget.invoice.invoiceNo,
-                          //       batchId: widget.batchId,
-                          //     ),
-                          //   );
-                          // },
-                          onPressed: () async {
-                            try {
-                              await showDialog(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    reverse: true,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (getInvoiceStatusCode(widget.invoice, context) !=
+                                "UEX" &&
+                            getInvoiceStatusCode(widget.invoice, context) !=
+                                "ISS")
+                          _ActionButton(
+                            title: Text(tr.t('view')),
+                            icon: Icons.visibility_outlined,
+                            color: Colors.grey.shade500,
+                            onBeforePressed: _selectCard,
+                            onPressed: () {
+                              showDialog(
                                 context: context,
-                                barrierDismissible: false,
-                                builder: (_) => ReadingDialog(
+                                builder: (_) => InvoiceDetailsDialog(
                                   invoiceNumber: widget.invoice.invoiceNo,
+                                ),
+                              );
+                            },
+                          ),
+
+                        if ((getInvoiceStatusCode(widget.invoice, context) ==
+                                    "RDY" ||
+                                getInvoiceStatusCode(widget.invoice, context) ==
+                                    "UNC") &&
+                            widget.invoice.totalAmount > 0)
+                          _ActionButton(
+                            title: Text(tr.t('print_notice')),
+                            icon: Icons.print_outlined,
+                            color: AppColors.warning,
+                            onBeforePressed: _selectCard,
+                            onPressed: () {
+                              final invoiceNo = widget.invoice.invoiceNo;
+                              final batchId = widget.batchId;
+
+                              _openInvoiceAction(
+                                invoiceNo: invoiceNo,
+                                dialogBuilder: (_) => PaymentNoticeDialog(
+                                  invoiceNumber: invoiceNo,
+                                  batchId: batchId,
+                                ),
+                              );
+                            },
+                          ),
+                        if (getInvoiceStatusCode(widget.invoice, context) ==
+                            "COL")
+                          _ActionButton(
+                            title: Text(tr.t('print_invoice')),
+                            icon: Icons.receipt_long,
+                            color: AppColors.warning,
+                            onBeforePressed: _selectCard,
+                            onPressed: () {
+                              final invoiceNo = widget.invoice.invoiceNo;
+                              final batchId = widget.batchId;
+
+                              _openInvoiceAction(
+                                invoiceNo: invoiceNo,
+                                dialogBuilder: (context) => PrintInvoiceDialog(
+                                  invoiceNumber: invoiceNo,
+                                  batchId: batchId,
+                                  getInvoiceStatusCode:
+                                      getInvoiceStatusForPrint,
+                                ),
+                              );
+                            },
+                          ),
+
+                        if (!isEstimatedSubscription &&
+                            (invoiceStatus == "ISS" ||
+                                invoiceStatus == "UEX" ||
+                                invoiceStatus == "RDY" ||
+                                invoiceStatus == "UNC"))
+                          _ActionButton(
+                            title: Text(
+                              isEditingReading
+                                  ? 'تعديل القراءة'
+                                  : tr.t('enter_reading'),
+                            ),
+                            icon: isEditingReading ? Icons.edit : Icons.speed,
+                            color: const Color(0xFF2AAAE1),
+                            onBeforePressed: _selectCard,
+                            onPressed: () async {
+                              try {
+                                await showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (_) => ReadingDialog(
+                                    invoiceNumber: widget.invoice.invoiceNo,
+                                    batchId: widget.batchId,
+                                    isEditing: isEditingReading,
+                                  ),
+                                );
+                              } catch (e, stack) {
+                                debugPrint('[OPEN READING DIALOG ERROR] $e');
+                                debugPrint(
+                                  '[OPEN READING DIALOG STACK] $stack',
+                                );
+
+                                if (!context.mounted) return;
+
+                                AppPopupAlert.show(
+                                  context,
+                                  message: parseError(e),
+                                  isError: true,
+                                );
+                              }
+                            },
+                          ),
+
+                        if ((getInvoiceStatusCode(widget.invoice, context) ==
+                                    "RDY" ||
+                                getInvoiceStatusCode(widget.invoice, context) ==
+                                    "UNC") &&
+                            isOnline)
+                          _ActionButton(
+                            title: _loadingPayment
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    tr.t('pay_invoice'),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                            icon: Icons.payments_outlined,
+                            color: Colors.green,
+                            onBeforePressed: _selectCard,
+
+                            onPressed: () {
+                              final invoiceNo = widget.invoice.invoiceNo;
+                              final batchId = widget.batchId;
+
+                              final paymentReference =
+                                  widget.invoice.payment?.paymentRefNo
+                                      .toString() ??
+                                  '';
+ 
+
+                              final amount = widget.invoice.totalDueAmount;
+
+                              // نأخذ Navigator ثابتًا قبل أن تختفي بطاقة الفاتورة بسبب الفلتر
+                              final rootNavigator = Navigator.of(
+                                context,
+                                rootNavigator: true,
+                              );
+
+                              showDialog(
+                                context: rootNavigator.context,
+                                useRootNavigator: true,
+                                barrierDismissible: false,
+                                builder: (_) => PaymentDialog(
+                                  Invoicenumber: invoiceNo,
+                                  batchId: batchId,
+                                  paymentReference: paymentReference,
+                                  amount: amount,
+                                  onPaymentFinished:
+                                      (
+                                        bool success,
+                                        Map<String, dynamic> data,
+                                        String invoiceStatus,
+                                      ) {
+                                        WidgetsBinding.instance.addPostFrameCallback((
+                                          _,
+                                        ) {
+                                          if (!rootNavigator.mounted) {
+                                            _hidePaymentTransitionLoading();
+                                            return;
+                                          }
+
+                                          showDialog(
+                                            context: rootNavigator.context,
+                                            useRootNavigator: true,
+                                            barrierDismissible: false,
+                                            builder: (_) => PaymentResultDialog(
+                                              success: success,
+                                              data: data,
+                                              Invoicenumber: invoiceNo,
+                                              invoiceStatus: success
+                                                  ? "COL"
+                                                  : invoiceStatus,
+                                              onClose: success
+                                                  ? () {
+                                                      WidgetsBinding.instance
+                                                          .addPostFrameCallback((
+                                                            _,
+                                                          ) {
+                                                            if (!rootNavigator
+                                                                .mounted)
+                                                              return;
+
+                                                            // يظهر فقط بعد نجاح الدفع وإغلاق شاشة النتيجة
+                                                            _showPaymentTransitionLoading(
+                                                              context,
+                                                            );
+
+                                                            _openPrintInvoice(
+                                                              invoiceNo:
+                                                                  invoiceNo,
+                                                              batchId: batchId,
+                                                              dialogContext:
+                                                                  rootNavigator
+                                                                      .context,
+                                                            );
+                                                          });
+                                                    }
+                                                  : null,
+                                            ),
+                                          );
+                                        });
+                                      },
+                                ),
+                              );
+                            },
+
+                            /**BUTTON FOR TESTING PAYEMTN */
+                            // onPressed: () {
+                            //   const bool isFakePaymentSuccess = true;
+
+                            //   final batchId = widget.batchId;
+                            //   final paidInvoiceNo = widget.invoice.invoiceNo;
+                            //   final paidAmount = widget.invoice.totalDueAmount;
+
+                            //   debugPrint('Payment invoice: $paidInvoiceNo');
+
+                            //   showDialog(
+                            //     context: context,
+                            //     barrierDismissible: false,
+                            //     builder: (_) => PaymentResultDialog(
+                            //       success: isFakePaymentSuccess,
+                            //       Invoicenumber: paidInvoiceNo,
+                            //       invoiceStatus: 'COL',
+                            //       data: {
+                            //         "totalAmount": paidAmount,
+                            //         "paymentMethod": "Test Card",
+                            //         "rspMsg": isFakePaymentSuccess
+                            //             ? "Approved"
+                            //             : "Error -1",
+                            //       },
+                            //       onClose: isFakePaymentSuccess
+                            //           ? () {
+                            //               // لا تضع Navigator.pop هنا
+                            //               // PaymentResultDialog يغلق نفسه داخليًا
+
+                            //               WidgetsBinding.instance
+                            //                   .addPostFrameCallback((_) {
+                            //                     if (!context.mounted) return;
+
+                            //                     _openInvoiceAction(
+                            //                       invoiceNo: paidInvoiceNo,
+                            //                       dialogBuilder: (_) =>
+                            //                           PrintInvoiceDialog(
+                            //                             invoiceNumber:
+                            //                                 paidInvoiceNo,
+                            //                             batchId: batchId,
+                            //                             getInvoiceStatusCode:
+                            //                                 getInvoiceStatusForPrint,
+                            //                           ),
+                            //                     );
+                            //                   });
+                            //             }
+                            //           : null,
+                            //     ),
+                            //   );
+                            // },
+                          ),
+
+                        if (getInvoiceStatusCode(widget.invoice, context) ==
+                                "ISS" ||
+                            (getInvoiceStatusCode(widget.invoice, context) ==
+                                    "RDY" &&
+                                widget.invoice.totalAmount > 0)
+                        // getInvoiceStatusCode(widget.invoice, context) ==
+                        //     "UNC" ||
+                        // getInvoiceStatusCode(widget.invoice, context) ==
+                        //     "UEX"
+                        )
+                          _ActionButton(
+                            title: Text(tr.t('unreachable')),
+                            icon: Icons.report_problem_outlined,
+                            color: AppColors.danger,
+                            onBeforePressed: _selectCard,
+                            onPressed: () {
+                              final invoiceNo = widget.invoice.invoiceNo;
+
+                              _openInvoiceAction(
+                                invoiceNo: invoiceNo,
+                                dialogBuilder: (_) => UnreachableDialog(
+                                  invoiceNumber: invoiceNo,
                                   batchId: widget.batchId,
                                 ),
                               );
-                            } catch (e, stack) {
-                              debugPrint('[OPEN READING DIALOG ERROR] $e');
-                              debugPrint('[OPEN READING DIALOG STACK] $stack');
-
-                              if (!context.mounted) return;
-
-                              AppPopupAlert.show(
-                                context,
-                                message: parseError(e),
-                                isError: true,
-                              );
-                            }
-                          },
-                        ),
-                      if ((getInvoiceStatusCode(widget.invoice, context) ==
-                                  "RDY" ||
-                              getInvoiceStatusCode(widget.invoice, context) ==
-                                  "UNC") &&
-                          isOnline)
-                        _ActionButton(
-                          title: _loadingPayment
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text(
-                                  tr.t('pay_invoice'),
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                          icon: Icons.payments_outlined,
-                          color: Colors.green,
-                          onBeforePressed: _selectCard,
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (_) => PaymentDialog(
-                                Invoicenumber: widget.invoice.invoiceNo,
-                                batchId: widget.batchId,
-                                paymentReference: widget
-                                    .invoice
-                                    .payment!
-                                    .paymentRefNo
-                                    .toString(),
-                                amount: widget.invoice.totalDueAmount,
-
-                                onPaymentFinished: () {
-                                  WidgetsBinding.instance.addPostFrameCallback((
-                                    _,
-                                  ) {
-                                    if (!context.mounted) return;
-
-                                    _openInvoiceAction(
-                                      dialog: PrintInvoiceDialog(
-                                        invoiceNumber: widget.invoice.invoiceNo,
-                                        getInvoiceStatusCode:
-                                            getInvoiceStatusForPrint,
-                                      ),
-                                    );
-                                  });
-                                },
-                              ),
-                            );
-                          },
-
-                          //                           onPressed: () {
-                          //   // true = نجاح، false = فشل
-                          //   const bool isFakePaymentSuccess = true;
-
-                          //   showDialog(
-                          //     context: context,
-                          //     barrierDismissible: false,
-                          //     builder: (_) => PaymentResultDialog(
-                          //       success: isFakePaymentSuccess,
-                          //       Invoicenumber: widget.invoice.invoiceNo,
-                          //       data: {
-                          //         "totalAmount": widget.invoice.totalDueAmount,
-                          //         "paymentMethod": "Test Card",
-                          //         "rspMsg": isFakePaymentSuccess
-                          //             ? "Approved"
-                          //             : "Error -1",
-                          //       },
-
-                          //       // مهم جداً:
-                          //       // عند الفشل تكون null، لذلك لن تفتح شاشة الفاتورة
-                          //       onClose: isFakePaymentSuccess
-                          //           ? () {
-                          //               WidgetsBinding.instance.addPostFrameCallback((_) {
-                          //                 if (!context.mounted) return;
-
-                          //                 _openInvoiceAction(
-                          //                   dialog: PrintInvoiceDialog(
-                          //                     invoiceNumber: widget.invoice.invoiceNo,
-                          //                     getInvoiceStatusCode: getInvoiceStatusForPrint,
-                          //                   ),
-                          //                 );
-                          //               });
-                          //             }
-                          //           : null,
-                          //     ),
-                          //   );
-                          // },
-                        ),
-
-                      if (getInvoiceStatusCode(widget.invoice, context) ==
-                              "ISS" ||
-                          (getInvoiceStatusCode(widget.invoice, context) ==
-                                  "RDY" &&
-                              widget.invoice.totalAmount > 0)
-                      // getInvoiceStatusCode(widget.invoice, context) ==
-                      //     "UNC" ||
-                      // getInvoiceStatusCode(widget.invoice, context) ==
-                      //     "UEX"
-                      )
-                        _ActionButton(
-                          title: Text(tr.t('unreachable')),
-                          icon: Icons.report_problem_outlined,
-                          color: AppColors.danger,
-                          onBeforePressed: _selectCard,
-                          onPressed: () {
-                            _openInvoiceAction(
-                              dialog: UnreachableDialog(
-                                invoiceNumber: widget.invoice.invoiceNo,
-                                batchId: widget.batchId,
-                              ),
-                            );
-                          },
-                          // onPressed: () {
-                          //   showDialog(
-                          //     context: context,
-                          //     builder: (_) => UnreachableDialog(
-                          //       invoiceNumber: widget.invoice.invoiceNo,
-                          //       batchId: widget.batchId,
-                          //     ),
-                          //   );
-                          // },
-                        ),
-                    ],
+                            },
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -2928,26 +3299,29 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 42,
-      child: ElevatedButton(
-        onPressed: () {
-          onBeforePressed?.call(); // ⭐ يحدد الكارد
-          onPressed?.call(); // ينفذ العملية
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: SizedBox(
+        height: 42,
+        child: ElevatedButton(
+          onPressed: () {
+            onBeforePressed?.call(); // ⭐ يحدد الكارد
+            onPressed?.call(); // ينفذ العملية
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [Icon(icon, size: 20), const SizedBox(width: 8), title],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [Icon(icon, size: 18), const SizedBox(width: 5), title],
+          ),
         ),
       ),
     );

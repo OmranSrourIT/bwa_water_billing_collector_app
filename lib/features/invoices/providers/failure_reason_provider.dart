@@ -21,17 +21,14 @@ final failureReasonRepositoryProvider = Provider<FailureReasonRepository>((
     api: ref.read(failureReasonServiceProvider),
     queue: ref.read(syncQueueLocalServiceProvider),
     detailsLocal: ref.read(invoiceDetailsLocalServiceProvider),
-    attachmentLocal: ref.read(invoiceAttachmentLocalServiceProvider), 
+    attachmentLocal: ref.read(invoiceAttachmentLocalServiceProvider),
     imageStorage: ref.read(imageStorageProvider),
     isOnline: ref.watch(connectionProvider),
   );
 });
 
-final failureReasonProvider =
-    FutureProvider.family<FailureReasonResponse, FailureReasonRequest>((
-      ref,
-      request,
-    ) async {
+final failureReasonProvider = FutureProvider.autoDispose
+    .family<FailureReasonResponse, FailureReasonRequest>((ref, request) async {
       final repository = ref.watch(failureReasonRepositoryProvider);
 
       return repository.sendFailureReason(request);

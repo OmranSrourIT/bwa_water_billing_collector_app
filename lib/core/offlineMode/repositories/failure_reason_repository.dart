@@ -29,13 +29,23 @@ class FailureReasonRepository {
     FailureReasonRequest request,
   ) async {
     if (isOnline) {
-      return await api.sendFailureReason(
+      final response = await api.sendFailureReason(
         invoiceNo: request.invoiceNo,
         failureReasonCode: request.code,
         failureNotes: request.notes,
         failureReason: request.failureReason,
         base64Image: request.base64,
       );
+
+      // تحديث السبب محليًا أيضًا عند وجود الإنترنت
+      await detailsLocal.updateFailureReason(
+        invoiceNo: request.invoiceNo,
+        code: request.code,
+        notes: request.notes,
+        attachment: null,
+      );
+
+      return response;
     }
 
     String? imagePath;

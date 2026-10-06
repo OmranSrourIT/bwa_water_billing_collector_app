@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/ReadingResponse.dart';
 import 'package:dio/dio.dart';
 import 'package:bwa_water_billing_collector_app/core/constants/api_constants.dart';
+import 'package:flutter/material.dart';
 
 class ReadingService {
   final Dio dio;
@@ -15,9 +16,24 @@ class ReadingService {
     required double currentReading,
     required String currentReadDateTime,
     required String previousReadingDateTime,
-    required bool isMeterRollover, 
+    required bool isMeterRollover,
+    required bool isReadingUpdated,
     String? base64,
   }) async {
+
+    debugPrint(
+  '[INSERT READING API] '
+  'invoiceNumber=$invoiceNumber, '
+  'isReadingUpdated=$isReadingUpdated',
+
+);
+
+  debugPrint(
+  '[INSERT READING API] '
+  'invoiceNumber=$invoiceNumber, ' 
+   'isMeterRollover=$isMeterRollover',
+);
+
     final response = await dio.post(
       ApiConstants.insertReading,
 
@@ -32,7 +48,8 @@ class ReadingService {
 
         "PreviousReadingDateTime": previousReadingDateTime,
 
-        "IsMeterRollover": isMeterRollover, 
+        "IsMeterRollover": isMeterRollover,
+        "IsReadingUpdated": isReadingUpdated,
 
         "Attachment": {"Base64": base64 ?? ""},
       },

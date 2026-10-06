@@ -22,21 +22,27 @@ class UpdateInvoiceStatusRepository {
     required String invoiceNo,
     required String status,
   }) async {
+    String result;
+
     if (isOnline) {
-      return await api.updateInvoiceStatus(
+      // أولًا نرسل التحديث إلى السيرفر
+      result = await api.updateInvoiceStatus(
         invoiceNumber: invoiceNo,
         status: status,
       );
-      
+    } else {
+      // إذا لا يوجد إنترنت، نضيف العملية إلى قائمة المزامنة
+      await queue.addQueue(
+        type: "UPDATE_INVOICE_STATUS",
+        referenceNo: invoiceNo,
+        payload: {"invoiceNo": invoiceNo, "status": status},
+      );
+
+      result = "PENDING";
     }
 
-    /// Offline
-    await queue.addQueue(
-      type: "UPDATE_INVOICE_STATUS",
-      referenceNo: invoiceNo,
-      payload: {"invoiceNo": invoiceNo, "status": status},
-    );
-
+    // مهم جدًا:
+    // تحديث الكاش المحلي في الحالتين Online و Offline
     await detailsLocal.updateInvoiceStatus(
       invoiceNo: invoiceNo,
       status: status,
@@ -46,6 +52,7 @@ class UpdateInvoiceStatusRepository {
       invoiceNo: invoiceNo,
       status: status,
     );
-    return "PENDING";
+
+    return result;
   }
 }

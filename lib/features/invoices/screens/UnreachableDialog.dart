@@ -5,12 +5,15 @@ import 'package:bwa_water_billing_collector_app/core/widgets/BwaLoadingOverlay.d
 import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/image_helper.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
+import 'package:bwa_water_billing_collector_app/features/Printer%20VAN_GOLD/printer_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/FailureReasonRequestModel.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/models/location_request_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/failure_reason_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/field_failure_lookup_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoice_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/location_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/reading_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,7 +54,6 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
 
   @override
   Widget build(BuildContext context) {
-
     final isOnline = ref.read(connectionProvider);
     final lookupReasons = ref.watch(
       fieldFailureLookupProvider("FieldFailureReason"),
@@ -231,13 +233,14 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
                                                 item.code == "NTM" ||
                                                 item.code == "DAM" ||
                                                 item.code == "MST" ||
+                                                item.code == "RPE" ||
                                                 item.code == "OTH";
 
                                           case "RDY":
                                             return item.code == "CNA" ||
                                                 item.code == "OTH" ||
                                                 item.code == "INS" ||
-                                               item.code == "CNP" ;
+                                                item.code == "CNP";
 
                                           default:
                                             return true;
@@ -530,7 +533,7 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
                                         });
 
                                         try {
-                                          final invoice = await ref.read(
+                                          final invoice = await ref.refresh(
                                             invoiceDetailProvider(
                                               widget.invoiceNumber.toString(),
                                             ).future,
@@ -542,23 +545,69 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
                                             context,
                                           );
 
+                                          final invoices = await ref.refresh(
+                                            invoicesProvider(
+                                              widget.batchId.toString(),
+                                            ).future,
+                                          );
+
+                                          final invoiceFromList = invoices
+                                              .firstWhere(
+                                                (item) =>
+                                                    item.invoiceNo ==
+                                                    widget.invoiceNumber,
+                                              );
+
+                                          final hasCoordinates =
+                                              invoiceFromList
+                                                  .coordinates
+                                                  ?.isValid ??
+                                              false;
+
+                                          LocationRequest? locationRequest;
+
+                                          if (!hasCoordinates) {
+                                            final position =
+                                                await getLocation();
+
+                                            if (position == null) {
+                                              throw Exception(
+                                                "تعذر تحديد الموقع",
+                                              );
+                                            }
+
+                                            locationRequest = LocationRequest(
+                                              invoiceNumber:
+                                                  widget.invoiceNumber,
+                                              latitude: position.latitude
+                                                  .toString(),
+                                              longitude: position.longitude
+                                                  .toString(),
+                                            );
+                                          }
+
                                           // 🔥 تحويل الحالة إلى status جديد
                                           String newStatus;
 
                                           if (currentStatus == "ISS") {
-                                            newStatus =
-                                                "UEX"; // تعذر القراءة أو التنفيذ
+                                            newStatus = "UEX";
                                           } else if (currentStatus == "RDY") {
-                                            newStatus = "UNC"; // تعذر التحصيل
+                                            newStatus = "UNC";
+                                          } else if (currentStatus == "UNC") {
+                                            // إذا كانت الفاتورة أصلًا تعذر تحصيل،
+                                            // نبقيها على نفس الحالة عند إعادة تسجيل التعذر
+                                            newStatus = "UNC";
+                                          } else if (currentStatus == "UEX") {
+                                            // إذا كانت أصلًا تعذر تنفيذ،
+                                            // نبقيها على نفس الحالة
+                                            newStatus = "UEX";
                                           } else {
                                             throw Exception(
-                                              "حالة الفاتورة غير قابلة للتعذر",
+                                              "حالة الفاتورة غير قابلة للتعذر: $currentStatus",
                                             );
                                           }
 
-                                          // 🔄 حفظ سبب التعذر (زي كودك الحالي)
-                                          final result = await ref.read(
-                                            failureReasonProvider(
+                                          final failureRequest =
                                               FailureReasonRequest(
                                                 invoiceNo: widget.invoiceNumber,
                                                 code: selectedReasonCode!,
@@ -566,30 +615,54 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
                                                     selectedReasonCode!,
                                                 notes: notesController.text,
                                                 base64: base64Image,
-                                              ),
+                                              );
+
+                                          final result = await ref.refresh(
+                                            failureReasonProvider(
+                                              failureRequest,
                                             ).future,
                                           );
 
-                                          // 🔥 تحديث الحالة
-                                          await ref.read(
-                                            updateInvoiceStatusProvider((
-                                              invoiceNo: widget.invoiceNumber
-                                                  .toString(),
-                                              status: newStatus,
-                                            )).future,
+                                          if (locationRequest != null) {
+                                            await ref.read(
+                                              insertLocationProvider(
+                                                locationRequest!,
+                                              ).future,
+                                            );
+                                          }
+
+                                          // 🔥 تحديث الحالة - إجبار تنفيذ API في كل مرة
+                                          final statusRequest = (
+                                            invoiceNo: widget.invoiceNumber
+                                                .toString(),
+                                            status: newStatus,
                                           );
 
-                                          // إعادة تحميل الفواتير
-                                          ref.invalidate(
+                                          final statusResult = await ref
+                                              .refresh(
+                                                updateInvoiceStatusProvider(
+                                                  statusRequest,
+                                                ).future,
+                                              );
+
+                                          debugPrint(
+                                            '[UNREACHABLE STATUS] '
+                                            'invoice=${statusRequest.invoiceNo}, '
+                                            'status=${statusRequest.status}, '
+                                            'result=$statusResult',
+                                          );
+
+                                          // تحديث بيانات الفاتورة بعد انتهاء طلب الحالة
+                                          await ref.refresh(
                                             invoicesProvider(
                                               widget.batchId.toString(),
-                                            ),
+                                            ).future,
                                           );
 
-                                          ref.invalidate(
+                                          await ref.refresh(
                                             invoiceDetailProvider(
                                               widget.invoiceNumber.toString(),
-                                            ),
+                                            ).future,
                                           );
 
                                           AppPopupAlert.show(

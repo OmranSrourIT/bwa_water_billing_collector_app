@@ -1,37 +1,38 @@
 class ApiConstants {
   static const String baseUrl = "https://stgbwa.asimti.iq/rest";
-    static const String baseUrlQR = "https://stgbwa.asimti.iq";
+  static const String baseUrlQR = "https://stgbwa.asimti.iq";
 
   //ProdIraq   ===> https://bwa.asimti.iq
   //Stage Iraq ===> https://stgbwa.asimti.iq
   //Dev Amman ===> https://bwa.infinite-tek.com:8443
   //Test Amman ===> http://149.200.251.200:9090
 
-   static String get environment {
-  if (baseUrl.contains("stgbwa.asimti.iq")) {
-    return "STAGE";
+  static String get environment {
+    if (baseUrl.contains("stgbwa.asimti.iq")) {
+      return "STAGE";
+    }
+
+    if (baseUrl.contains("bwa.asimti.iq")) {
+      return "PROD";
+    }
+
+    if (baseUrl.contains("bwa.infinite-tek.com")) {
+      return "DEV";
+    }
+
+    if (baseUrl.contains("149.200.251.200")) {
+      return "TEST";
+    }
+
+    return "UNKNOWN";
   }
 
-  if (baseUrl.contains("bwa.asimti.iq")) {
-    return "PROD";
-  }
-
-  if (baseUrl.contains("bwa.infinite-tek.com")) {
-    return "DEV";
-  }
-
-  if (baseUrl.contains("149.200.251.200")) {
-    return "TEST";
-  }
-
-  return "UNKNOWN";
-}
   static String get environmentLabel {
     switch (environment) {
       case "PROD":
         return "Production";
-         case "STAGE":
-          return "STAGE";
+      case "STAGE":
+        return "STAGE";
       case "DEV":
         return "Development";
       case "TEST":
@@ -40,7 +41,6 @@ class ApiConstants {
         return "UNKNOWN";
     }
   }
-
 
   static const String authToken = "/auth/v1/auth/token";
   static const String batches =
@@ -80,8 +80,19 @@ class ApiConstants {
   static const String payment =
       "/collectormobileapi/v1/collectionbatch/Payment";
 
-      
-   static String verofNumberPrintNotice(String Number) => "/#/viewpayment/${Number}";
-   static const String insertLocation =
-    "/collectormobileapi/v1/collectionbatch/coordinates";
+  static String verofNumberPrintNotice(String Number) =>
+      "/#/viewpayment/${Number}";
+  static const String insertLocation =
+      "/collectormobileapi/v1/collectionbatch/coordinates";
+
+        static const String updatePosId =
+      "/collectormobileapi/v1/collectionbatch/UpdatePOSId";
+
+  static const String updateSendToPosFalse =
+      "/collectormobileapi/v1/collectionbatch/UpdateSendToPOSToFalse";
+
+  static const String checkPaymentStatus =
+      "/collectormobileapi/v1/collectionbatch/CheckPaymentStatus";
+
+ 
 }

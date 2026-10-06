@@ -13,6 +13,7 @@ import 'package:bwa_water_billing_collector_app/features/invoices/providers/invo
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/location_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/reading_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/screens/AnimatedMeterNumber.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,11 +24,13 @@ import 'package:image_picker/image_picker.dart';
 class ReadingDialog extends ConsumerStatefulWidget {
   final String invoiceNumber;
   final String batchId;
+  final bool isEditing;
 
   const ReadingDialog({
     super.key,
     required this.invoiceNumber,
     required this.batchId,
+    this.isEditing = false,
   });
 
   @override
@@ -46,7 +49,67 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
 
   String? base64Image = "";
   bool isLoading = false;
+
+  String? oldImageUrl;
+  bool oldReadingLoaded = false;
+  bool oldReadingLoadingStarted = false;
+
   final FocusNode currentReadingFocusNode = FocusNode();
+
+  Future<void> loadOldReadingData(InvoiceInformationModel invoice) async {
+    if (!widget.isEditing || oldReadingLoaded) return;
+
+    oldReadingLoaded = true;
+
+    currentReadingController.text = invoice.currentReading.toInt().toString();
+
+    readingDate = invoice.currentReadDateTime ?? DateTime.now();
+
+    resetMeter = invoice.isMeterRollover;
+
+    final attachment = invoice.attachment;
+
+    if (attachment == null || attachment.trim().isEmpty) {
+      return;
+    }
+
+    final imageValue = attachment.trim();
+
+    try {
+      // إذا كانت الصورة Base64
+      if (!imageValue.startsWith('http://') &&
+          !imageValue.startsWith('https://')) {
+        String base64Value = imageValue;
+
+        // إزالة prefix إذا كانت الصورة بهذا الشكل:
+        // data:image/jpeg;base64,xxxxxxxx
+        if (base64Value.contains(',')) {
+          base64Value = base64Value.split(',').last;
+        }
+
+        final bytes = base64Decode(base64Value);
+
+        final file = File(
+          '${Directory.systemTemp.path}/reading_${widget.invoiceNumber}.jpg',
+        );
+
+        await file.writeAsBytes(bytes);
+
+        imageFile = file;
+        base64Image = base64Encode(bytes);
+      } else {
+        // إذا كانت الصورة رابطًا
+        oldImageUrl = imageValue;
+      }
+    } catch (e, stack) {
+      debugPrint('[LOAD OLD READING IMAGE ERROR] $e');
+      debugPrint('[LOAD OLD READING IMAGE STACK] $stack');
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   Future<void> pickImage() async {
     try {
@@ -65,6 +128,7 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
         setState(() {
           imageFile = file;
           base64Image = base64Encode(bytes);
+          oldImageUrl = null;
         });
       }
     } catch (e) {
@@ -161,13 +225,25 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
       return;
     }
 
-    final position = await getLocation();
+    final invoices = await ref.read(invoicesProvider(widget.batchId).future);
 
-    if (position == null) {
-      final message = "تعذر تحديد الموقع";
-      AppPopupAlert.show(context, message: message, isError: true);
+    final invoiceFromList = invoices.firstWhere(
+      (item) => item.invoiceNo == widget.invoiceNumber,
+    );
 
-      return;
+    final hasCoordinates = invoiceFromList.coordinates?.isValid ?? false;
+
+    Position? position;
+
+    if (!hasCoordinates) {
+      position = await getLocation();
+
+      if (position == null) {
+        const message = "تعذر تحديد الموقع";
+        AppPopupAlert.show(context, message: message, isError: true);
+
+        return;
+      }
     }
 
     final previousDate = DateUtils.dateOnly(invoice.previousReadingDateTime!);
@@ -184,6 +260,13 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
       return;
     }
 
+    final isReadingUpdated = widget.isEditing;
+
+    debugPrint(
+      '[READING] isEditing=${widget.isEditing}, '
+      'isReadingUpdated=$isReadingUpdated',
+    );
+
     final request = ReadingRequest(
       invoiceNumber: widget.invoiceNumber,
 
@@ -198,14 +281,18 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
 
       isMeterRollover: resetMeter,
 
+      isReadingUpdated: isReadingUpdated,
+
       base64: base64Image,
     );
 
-    final locationRequest = LocationRequest(
-      invoiceNumber: widget.invoiceNumber,
-      latitude: position.latitude.toString(),
-      longitude: position.longitude.toString(),
-    );
+    final locationRequest = position == null
+        ? null
+        : LocationRequest(
+            invoiceNumber: widget.invoiceNumber,
+            latitude: position.latitude.toString(),
+            longitude: position.longitude.toString(),
+          );
 
     try {
       final response = await ref.read(insertReadingProvider(request).future);
@@ -227,9 +314,9 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
           return;
         }
 
-        final locationResponse = await ref.read(
-          insertLocationProvider(locationRequest).future,
-        );
+        if (locationRequest != null) {
+          await ref.read(insertLocationProvider(locationRequest).future);
+        }
 
         // 🔥 تحديث الحالة
         await ref.read(
@@ -259,8 +346,45 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
         }
       }
     } catch (e) {
-      final message = parseError(e);
-      AppPopupAlert.show(context, message: message, isError: true);
+      String message = "حدث خطأ أثناء حفظ القراءة";
+
+      if (e is DioException) {
+        final data = e.response?.data;
+
+        try {
+          if (data is String) {
+            final decoded = jsonDecode(data);
+
+            if (decoded is List && decoded.isNotEmpty) {
+              final firstError = decoded.first;
+
+              if (firstError is Map<String, dynamic>) {
+                message =
+                    firstError['AR_message']?.toString() ??
+                    firstError['EN_message']?.toString() ??
+                    message;
+              }
+            }
+          } else if (data is List && data.isNotEmpty) {
+            final firstError = data.first;
+
+            if (firstError is Map<String, dynamic>) {
+              message =
+                  firstError['AR_message']?.toString() ??
+                  firstError['EN_message']?.toString() ??
+                  message;
+            }
+          }
+        } catch (_) {
+          // إذا فشل parsing، نستخدم الرسالة الافتراضية
+        }
+      } else {
+        message = parseError(e);
+      }
+
+      if (context.mounted) {
+        AppPopupAlert.show(context, message: message, isError: true);
+      }
     }
   }
 
@@ -309,6 +433,15 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
       },
 
       data: (invoice) {
+        if (widget.isEditing && !oldReadingLoadingStarted) {
+          oldReadingLoadingStarted = true;
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              loadOldReadingData(invoice);
+            }
+          });
+        }
         return Stack(
           children: [
             Dialog(
@@ -350,14 +483,17 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
                                   ),
                                 ),
                                 const Spacer(),
-                                const Text(
-                                  "إدخال القراءة الحالية",
-                                  style: TextStyle(
+                                Text(
+                                  widget.isEditing
+                                      ? "تعديل القراءة الحالية"
+                                      : "إدخال القراءة الحالية",
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
+
                                 const Spacer(),
                               ],
                             ),
@@ -397,7 +533,9 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
                                   const SizedBox(height: 16),
 
                                   _SectionCard(
-                                    title: "إدخال القراءة الحالية",
+                                    title: widget.isEditing
+                                        ? "تعديل القراءة الحالية"
+                                        : "إدخال القراءة الحالية",
                                     child: Column(
                                       children: [
                                         Container(
@@ -531,8 +669,32 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
                                               child: ClipRRect(
                                                 borderRadius:
                                                     BorderRadius.circular(20),
-                                                child: imageFile == null
-                                                    ? SizedBox(
+                                                child: imageFile != null
+                                                    ? Image.file(
+                                                        imageFile!,
+                                                        fit: BoxFit.fitWidth,
+                                                      )
+                                                    : oldImageUrl != null
+                                                    ? Image.network(
+                                                        oldImageUrl!,
+                                                        fit: BoxFit.fitWidth,
+                                                        errorBuilder:
+                                                            (
+                                                              context,
+                                                              error,
+                                                              stackTrace,
+                                                            ) {
+                                                              return const SizedBox(
+                                                                height: 350,
+                                                                child: Center(
+                                                                  child: Text(
+                                                                    "تعذر تحميل صورة القراءة السابقة",
+                                                                  ),
+                                                                ),
+                                                              );
+                                                            },
+                                                      )
+                                                    : SizedBox(
                                                         height: 350,
                                                         child: Column(
                                                           mainAxisAlignment:
@@ -554,10 +716,6 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
                                                             ),
                                                           ],
                                                         ),
-                                                      )
-                                                    : Image.file(
-                                                        imageFile!,
-                                                        fit: BoxFit.fitWidth,
                                                       ),
                                               ),
                                             ),
@@ -592,8 +750,11 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
                                                       onPressed: () {
                                                         setState(() {
                                                           imageFile = null;
+                                                          base64Image = "";
+                                                          oldImageUrl = null;
                                                         });
                                                       },
+
                                                       child: const Icon(
                                                         Icons.close,
                                                       ),
@@ -684,8 +845,17 @@ class _ReadingDialogState extends ConsumerState<ReadingDialog> {
                                         }
                                       }
                                     },
-                                    icon: const Icon(Icons.save),
-                                    label: const Text("حفظ القراءة"),
+                                    icon: Icon(
+                                      widget.isEditing
+                                          ? Icons.edit
+                                          : Icons.save,
+                                    ),
+                                    label: Text(
+                                      widget.isEditing
+                                          ? "تعديل القراءة"
+                                          : "حفظ القراءة",
+                                    ),
+
                                     style: ElevatedButton.styleFrom(
                                       foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(

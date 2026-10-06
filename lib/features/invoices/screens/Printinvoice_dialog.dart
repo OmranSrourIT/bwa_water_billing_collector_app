@@ -8,8 +8,12 @@ import 'package:bwa_water_billing_collector_app/core/widgets/app_alert.dart';
 import 'package:bwa_water_billing_collector_app/core/widgets/parseError.dart';
 import 'package:bwa_water_billing_collector_app/features/Account/provider/account_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/Payment/printer_channel.dart';
+import 'package:bwa_water_billing_collector_app/features/Printer%20VAN_GOLD/printer_service.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoiceDetails_model.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/models/location_request_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoice_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/providers/location_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/screens/InvoicePrintLayout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,12 +24,15 @@ import 'dart:ui' as ui;
 
 class PrintInvoiceDialog extends ConsumerStatefulWidget {
   final String invoiceNumber;
+  final String batchId;
+
   final String Function(InvoiceInformationModel invoice, BuildContext context)
   getInvoiceStatusCode;
 
   const PrintInvoiceDialog({
     super.key,
     required this.invoiceNumber,
+    required this.batchId,
     required this.getInvoiceStatusCode,
   });
 
@@ -252,6 +259,41 @@ class _PrintInvoiceDialogState extends ConsumerState<PrintInvoiceDialog> {
                 );
 
                 try {
+                  final invoices = await ref.refresh(
+                    invoicesProvider(widget.batchId).future,
+                  );
+
+                  final invoiceFromList = invoices.firstWhere(
+                    (item) => item.invoiceNo == infoDetials.invoiceNumber,
+                  );
+
+                  final hasCoordinates =
+                      invoiceFromList.coordinates?.isValid ?? false;
+
+                  if (!hasCoordinates) {
+                    final position = await getLocation();
+
+                    if (position == null) {
+                      throw Exception("تعذر تحديد الموقع");
+                    }
+
+                    final locationRequest = LocationRequest(
+                      invoiceNumber: infoDetials.invoiceNumber,
+                      latitude: position.latitude.toString(),
+                      longitude: position.longitude.toString(),
+                    );
+
+                    final locationResponse = await ref.read(
+                      insertLocationProvider(locationRequest).future,
+                    );
+
+                    if (!locationResponse.isSuccess) {
+                      throw Exception(
+                        locationResponse.errorMessage ?? "تعذر حفظ الموقع",
+                      );
+                    }
+                  }
+
                   final image = await controller.captureFromWidget(
                     Material(
                       color: Colors.white,

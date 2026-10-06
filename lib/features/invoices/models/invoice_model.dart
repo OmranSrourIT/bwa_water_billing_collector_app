@@ -1,5 +1,3 @@
-
-
 class InvoiceModel {
   final String invoiceNo;
   final String accountNo;
@@ -11,11 +9,11 @@ class InvoiceModel {
   final double totalDueAmount;
   final bool isNotified;
   final bool isMeterRollover;
-  final double consumptionQtyRow; 
+  final double consumptionQtyRow;
   final double consumptionQtyPotable;
   final PaymentModel? payment;
+  final CoordinatesModel? coordinates;
   final List<LookupModelParent> lookup;
-  
 
   InvoiceModel({
     required this.invoiceNo,
@@ -27,7 +25,8 @@ class InvoiceModel {
     required this.totalDueAmount,
     required this.isNotified,
     required this.isMeterRollover,
-        this.payment,
+    this.payment,
+    this.coordinates,
     required this.lookup,
     required this.consumptionQtyRow,
     this.consumptionQtyPotable = 0.0,
@@ -47,7 +46,7 @@ class InvoiceModel {
       usageType: json["UsageTypeName"] ?? "",
 
       collectorName: json["CollectorName"] ?? "",
-      
+
       consumptionQtyRow: (json["ConsumptionQtyRow"] ?? 0).toDouble(),
 
       consumptionQtyPotable: (json["ConsumptionQtyPotable"] ?? 0).toDouble(),
@@ -60,14 +59,38 @@ class InvoiceModel {
 
       isMeterRollover: json["IsMeterRollover"] ?? false,
 
-         payment: json["Payment"] != null
+      payment: json["Payment"] != null
           ? PaymentModel.fromJson(json["Payment"])
+          : null,
+
+      coordinates: json["Coordinates"] is Map
+          ? CoordinatesModel.fromJson(
+              Map<String, dynamic>.from(json["Coordinates"]),
+            )
           : null,
 
       lookup: (json["Lookup"] as List? ?? [])
           .map((e) => LookupModelParent.fromJson(e))
           .toList(),
     );
+  }
+}
+
+class CoordinatesModel {
+  final String longitude;
+  final String latitude;
+
+  const CoordinatesModel({required this.longitude, required this.latitude});
+
+  factory CoordinatesModel.fromJson(Map<String, dynamic> json) {
+    return CoordinatesModel(
+      longitude: json["Longitude"]?.toString() ?? "",
+      latitude: json["Latitude"]?.toString() ?? "",
+    );
+  }
+
+  bool get isValid {
+    return longitude.trim().isNotEmpty && latitude.trim().isNotEmpty;
   }
 }
 

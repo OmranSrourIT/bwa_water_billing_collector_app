@@ -5,6 +5,7 @@ class ReadingRequest {
   final String currentReadDateTime;
   final String previousReadingDateTime;
   final bool isMeterRollover;  
+    final bool isReadingUpdated;
   final String? base64;
 
   ReadingRequest({
@@ -14,6 +15,7 @@ class ReadingRequest {
     required this.currentReadDateTime,
     required this.previousReadingDateTime,
     required this.isMeterRollover, 
+        required this.isReadingUpdated,
     this.base64,
   });
 }

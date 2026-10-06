@@ -364,9 +364,8 @@ class MainActivity : FlutterFragmentActivity() {
             }
         }
 
-        // Feed one line after each chunk so the printer starts printing
-        // the first chunk while the rest is still being sent.
-        out.write(0x0A)
+       
+    
     }
 
 }

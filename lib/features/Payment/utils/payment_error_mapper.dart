@@ -26,7 +26,16 @@ class PaymentErrorMapper {
           return "تم تجاوز الحد المسموح للبطاقة";
         }
 
-        return msg.toString();
+        if (msg?.contains('do not honor transaction') ?? false) {
+          return 'تعذّر قبول عملية الدفع من البنك المصدر. يرجى التأكد من بيانات البطاقة أو استخدام بطاقة أخرى.';
+        }
+
+        if (msg?.contains('system malfunction') ?? false) {
+          return 'حدث خلل تقني أثناء تنفيذ عملية الدفع. يرجى المحاولة مرة أخرى بعد قليل.';
+        }
+        //return msg.toString();
+
+        return 'تعذّر إتمام عملية الدفع. يرجى المحاولة مرة أخرى.';
 
       case "-14":
         return "تم إلغاء العملية";

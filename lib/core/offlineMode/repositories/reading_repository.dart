@@ -29,16 +29,12 @@ class ReadingRepository {
     if (isOnline) {
       return await api.insertReading(
         invoiceNumber: request.invoiceNumber,
-
         previousReading: request.previousReading,
-
         currentReading: request.currentReading,
-
         currentReadDateTime: request.currentReadDateTime,
-
-        previousReadingDateTime: request.previousReadingDateTime,
-
+        previousReadingDateTime: request.previousReadingDateTime, 
         isMeterRollover: request.isMeterRollover, 
+        isReadingUpdated: request.isReadingUpdated,
         base64: request.base64,
       );
     }
@@ -74,6 +70,7 @@ class ReadingRepository {
         "currentReadDateTime": request.currentReadDateTime,
         "previousReadingDateTime": request.previousReadingDateTime,
         "isMeterRollover": request.isMeterRollover, 
+        "isReadingUpdated": request.isReadingUpdated, 
         // لم يعد Base64
         "imagePath": imagePath,
       },

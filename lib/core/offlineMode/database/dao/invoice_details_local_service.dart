@@ -70,7 +70,19 @@ class InvoiceDetailsLocalService {
 
       "payment_ref_no": item.payment?.paymentRefNo,
 
+      "payment_amount": item.payment?.amount,
+
       "payment_date": item.payment?.paymentDate?.toIso8601String(),
+
+      "is_sent_to_pos": item.payment?.isSentToPos == true ? 1 : 0,
+
+      "pos_id": item.payment?.posId,
+
+      "payment_amount": item.payment?.amount,
+
+      "is_sent_to_pos": item.payment?.isSentToPos == true ? 1 : 0,
+
+      "pos_id": item.payment?.posId,
 
       "invoice_details_json": jsonEncode(
         item.invoiceDetails
@@ -117,7 +129,7 @@ class InvoiceDetailsLocalService {
       ),
 
       "activeCollectionPeriod": item.activeCollectionPeriod,
-      "waterMeterSerialNo": item.waterMeterSerialNo ??"",
+      "waterMeterSerialNo": item.waterMeterSerialNo ?? "",
       "totalDebt": item.totalDebt,
       "totalCredit": item.totalCredit,
       "totalAmountDue": item.totalDueAmount,
@@ -203,10 +215,13 @@ class InvoiceDetailsLocalService {
 
       payment: json["payment_ref_no"] != null
           ? PaymentModel(
-              paymentRefNo: json["payment_ref_no"] as int,
+              paymentRefNo: _parseInt(json["payment_ref_no"]),
+              amount: _parseDouble(json["payment_amount"]),
               paymentDate: json["payment_date"] != null
-                  ? DateTime.parse(json["payment_date"] as String)
+                  ? DateTime.tryParse(json["payment_date"].toString())
                   : null,
+              isSentToPos: _parseBool(json["is_sent_to_pos"]),
+              posId: json["pos_id"]?.toString() ?? "",
             )
           : null,
 
@@ -268,7 +283,6 @@ class InvoiceDetailsLocalService {
       totalDebt: (json["totalDebt"] as num? ?? 0).toDouble(),
       totalCredit: (json["totalCredit"] as num? ?? 0).toDouble(),
       totalDueAmount: (json["totalAmountDue"] as num? ?? 0).toDouble(),
-      
 
       // attachment: json["attachment"] as String?,
     );
@@ -374,5 +388,31 @@ class InvoiceDetailsLocalService {
       where: "invoice_no = ?",
       whereArgs: [invoiceNo],
     );
+  }
+
+  int _parseInt(dynamic value) {
+    if (value is int) return value;
+
+    return int.tryParse(value?.toString() ?? "") ?? 0;
+  }
+
+  double _parseDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+
+    return double.tryParse(value?.toString() ?? "") ?? 0.0;
+  }
+
+  bool _parseBool(dynamic value) {
+    if (value is bool) return value;
+
+    if (value is num) {
+      return value != 0;
+    }
+
+    if (value is String) {
+      return value.toLowerCase().trim() == "true" || value == "1";
+    }
+
+    return false;
   }
 }

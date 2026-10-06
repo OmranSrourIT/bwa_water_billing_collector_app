@@ -5,6 +5,7 @@ class PaymentResultDialog extends StatelessWidget {
   final bool success;
   final Map<String, dynamic> data;
   final String Invoicenumber;
+  final String invoiceStatus;
   final VoidCallback? onClose;
 
   const PaymentResultDialog({
@@ -12,6 +13,7 @@ class PaymentResultDialog extends StatelessWidget {
     required this.success,
     required this.data,
     required this.Invoicenumber,
+    required this.invoiceStatus,
     this.onClose,
   });
 
@@ -33,13 +35,12 @@ class PaymentResultDialog extends StatelessWidget {
 
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 450),
-      tween: Tween(begin: .85, end: 1),
+      tween: Tween<double>(begin: 0.0, end: 1.0),
       curve: Curves.easeOutBack,
-      builder: (_, value, child) {
-        return Transform.scale(
-          scale: value,
-          child: Opacity(opacity: value, child: child),
-        );
+      builder: (context, value, child) {
+        final safeOpacity = value.clamp(0.0, 1.0);
+
+        return Opacity(opacity: safeOpacity, child: child);
       },
       child: Dialog(
         backgroundColor: Colors.transparent,
@@ -241,39 +242,59 @@ class PaymentResultDialog extends StatelessWidget {
 
                         const SizedBox(height: 28),
 
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(context);
-
-                              if (success && onClose != null) {
-                                onClose!();
-                              }
-                            },
-                            icon: Icon(
-                              success
-                                  ? Icons.check_circle_outline
-                                  : Icons.arrow_back_rounded,
-                            ),
-                            label: Text(
-                              success ? "إنهاء" : "إغلاق",
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                        if (success)
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                onClose?.call();
+                              },
+                              icon: const Icon(Icons.print),
+                              label: const Text(
+                                "طباعة الفاتورة",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryColor,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                minimumSize: const Size.fromHeight(56),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                               ),
                             ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryColor,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              minimumSize: const Size.fromHeight(56),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                          )
+                        else if (!success)
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              icon: const Icon(Icons.arrow_back_rounded),
+                              label: const Text(
+                                "إغلاق",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryColor,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                minimumSize: const Size.fromHeight(56),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                               ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ),

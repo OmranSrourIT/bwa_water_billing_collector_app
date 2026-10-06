@@ -17,8 +17,8 @@ final readingServiceProvider = Provider((ref) {
 
   return ReadingService(dio: dio);
 });
- 
- final readingRepositoryProvider = Provider<ReadingRepository>((ref) {
+
+final readingRepositoryProvider = Provider<ReadingRepository>((ref) {
   return ReadingRepository(
     api: ref.read(readingServiceProvider),
     queue: ref.read(syncQueueLocalServiceProvider),
@@ -40,22 +40,17 @@ final insertReadingProvider =
 
 final updateInvoiceStatusRepositoryProvider =
     Provider<UpdateInvoiceStatusRepository>((ref) {
-  return UpdateInvoiceStatusRepository(
-    api: ref.read(readingServiceProvider),
-    queue: ref.read(syncQueueLocalServiceProvider),
-    detailsLocal: ref.read(invoiceDetailsLocalServiceProvider),
-    invoiceLocal : ref.read(invoiceLocalServiceProvider),
-    isOnline: ref.watch(connectionProvider),
-  );
-});
+      return UpdateInvoiceStatusRepository(
+        api: ref.read(readingServiceProvider),
+        queue: ref.read(syncQueueLocalServiceProvider),
+        detailsLocal: ref.read(invoiceDetailsLocalServiceProvider),
+        invoiceLocal: ref.read(invoiceLocalServiceProvider),
+        isOnline: ref.watch(connectionProvider),
+      );
+    });
 
-
-    
- final updateInvoiceStatusProvider =
-    FutureProvider.family<String, ({String invoiceNo, String status})>((
-      ref,
-      request,
-    ) async {
+final updateInvoiceStatusProvider = FutureProvider.autoDispose
+    .family<String, ({String invoiceNo, String status})>((ref, request) async {
       final repository = ref.read(updateInvoiceStatusRepositoryProvider);
 
       return repository.updateStatus(
