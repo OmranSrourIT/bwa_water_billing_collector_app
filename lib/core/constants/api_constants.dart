@@ -2,10 +2,14 @@ class ApiConstants {
   static const String baseUrl = "http://149.200.251.200:9090/rest";
   static const String baseUrlQR = "http://149.200.251.200:9090";
 
+
+// URL Api
   //ProdIraq   ===> https://bwa.asimti.iq
   //Stage Iraq ===> https://stgbwa.asimti.iq
   //Dev Amman ===> https://bwa.infinite-tek.com:8443
   //Test Amman ===> http://149.200.251.200:9090
+
+
 
   static String get environment {
     if (baseUrl.contains("stgbwa.asimti.iq")) {
