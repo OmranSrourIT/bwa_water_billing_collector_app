@@ -36,6 +36,8 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
   final notesController = TextEditingController();
 
   String? selectedReasonCode;
+  String? selectedReasonLabel;
+
   String? base64Image;
   String? invoiceStatus;
   bool isSaving = false;
@@ -234,12 +236,14 @@ class _UnreachableDialogState extends ConsumerState<UnreachableDialog> {
                                                 item.code == "DAM" ||
                                                 item.code == "MST" ||
                                                 item.code == "RPE" ||
+                                                item.code == "ACR" ||
                                                 item.code == "OTH";
 
                                           case "RDY":
                                             return item.code == "CNA" ||
                                                 item.code == "OTH" ||
                                                 item.code == "INS" ||
+                                                item.code == "ACR" ||
                                                 item.code == "CNP";
 
                                           default:

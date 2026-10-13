@@ -26,6 +26,7 @@ import 'package:bwa_water_billing_collector_app/features/invoices/models/invoice
 import 'package:bwa_water_billing_collector_app/features/invoices/models/invoice_model.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoiceDetails_provider.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/providers/invoice_provider.dart';
+import 'package:bwa_water_billing_collector_app/features/invoices/screens/ExecutionNoticeDialog.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/screens/MeterReadingDialog.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/screens/PaymentDialog.dart';
 import 'package:bwa_water_billing_collector_app/features/invoices/screens/PaymentNoticeDialog.dart';
@@ -53,18 +54,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Set<String> selectedInvoiceStatuses = {};
   String? _lastInvoiceStatusKey;
   Map<String, String> _lastInvoiceStatusesByInvoice = {};
-
   String? searchAccountValue;
   String? searchAddressValue;
-
   bool isEndBatchLoading = false;
   bool isInitialBatchSelectionDone = false;
   bool isInvoiceStatusFilterInitialized = false;
-
   Timer? _searchDebounce;
-
   final ScrollController _scrollController = ScrollController();
   bool _showScrollToTopButton = false;
+  final Map<String, String> _executionReasonsByInvoice = {};
 
   void _handleScroll() {
     final shouldShow =
@@ -2855,6 +2853,27 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                               );
                             },
                           ),
+
+                        // UEX = تعذر القراءة أو التنفيذ
+                        if (getInvoiceStatusCode(widget.invoice, context) ==
+                            "UEX")
+                          _ActionButton(
+                            title: const Text('طباعة إشعار تنفيذ'),
+                            icon: Icons.print_outlined,
+                            color: AppColors.danger,
+                            onBeforePressed: _selectCard,
+                            onPressed: () {
+                              final invoiceNo = widget.invoice.invoiceNo;
+
+                              _openInvoiceAction(
+                                invoiceNo: invoiceNo,
+                                dialogBuilder: (_) => ExecutionNoticeDialog(
+                                  invoiceNumber: invoiceNo,
+                                ),
+                              );
+                            },
+                          ),
+
                         if (getInvoiceStatusCode(widget.invoice, context) ==
                             "COL")
                           _ActionButton(
@@ -2953,7 +2972,6 @@ class _InvoiceCardState extends ConsumerState<_InvoiceCard> {
                                   widget.invoice.payment?.paymentRefNo
                                       .toString() ??
                                   '';
- 
 
                               final amount = widget.invoice.totalDueAmount;
 

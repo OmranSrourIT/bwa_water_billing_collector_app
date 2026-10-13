@@ -35,12 +35,7 @@ class PaymentDialog extends ConsumerStatefulWidget {
   final String paymentReference;
   final double amount;
   final String batchId;
-  final void Function(
-    bool success,
-    Map<String, dynamic> data,
-    String invoiceStatus,
-  )?
-  onPaymentFinished;
+  final void Function( bool success,Map<String, dynamic> data,String invoiceStatus,)?onPaymentFinished;
 
   const PaymentDialog({
     super.key,
@@ -48,7 +43,7 @@ class PaymentDialog extends ConsumerStatefulWidget {
     required this.paymentReference,
     required this.amount,
     required this.batchId,
-    this.onPaymentFinished,
+      this.onPaymentFinished,
   });
 
   @override
@@ -148,9 +143,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       return;
     }
 
-    // =====================================================
-    // ثانيًا: الدفع نجح من جهاز POS
-    // =====================================================
+ 
     try {
       final paymentResponse = await ref.read(
         paymentProvider(
@@ -216,10 +209,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       Navigator.of(context).pop();
 
       // فتح PaymentResultDialog مباشرة
-      onPaymentFinished?.call(true, resultData, "COL");
-
-      // عكس IsSentToPOS في الخلفية بدون تعطيل الواجهة
-      _releaseInvoiceSafely();
+      onPaymentFinished?.call(true, resultData, "COL"); 
+      // _releaseInvoiceSafely();
     } catch (e, stack) {
       debugPrint("[PAYMENT SAVE ERROR] $e");
       debugPrint("$stack");
@@ -228,8 +219,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       // لذلك نسأل الـbackend عن الحالة قبل عرض النتيجة النهائية.
       final statusResponse = await _checkUnknownPayment();
 
-      // حسب التدفق المطلوب، نعكس الحجز في جميع الحالات.
-      await _releaseInvoiceSafely();
+      // // حسب التدفق المطلوب، نعكس الحجز في جميع الحالات.
+      // await _releaseInvoiceSafely();
 
       if (!mounted) {
         return;
@@ -481,7 +472,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         // =====================================================
         // 3. العملية السابقة ناجحة
         // =====================================================
-        if (statusResponse.isVerified && statusResponse.isPaid) {
+        if (statusResponse.isPaid) {
           if (!mounted) return;
 
           setState(() {
@@ -497,10 +488,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
           return;
         }
 
-        // =====================================================
-        // 4. العملية السابقة مرفوضة
-        // =====================================================
-        if (statusResponse.isVerified && !statusResponse.isPaid) {
+     
+        if (!statusResponse.isPaid) {
           PaymentDebugService.addEvent(
             title: 'Previous POS payment rejected',
             description: apiMessage,

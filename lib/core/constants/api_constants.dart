@@ -1,6 +1,6 @@
 class ApiConstants {
-  static const String baseUrl = "https://stgbwa.asimti.iq/rest";
-  static const String baseUrlQR = "https://stgbwa.asimti.iq";
+  static const String baseUrl = "http://149.200.251.200:9090/rest";
+  static const String baseUrlQR = "http://149.200.251.200:9090";
 
   //ProdIraq   ===> https://bwa.asimti.iq
   //Stage Iraq ===> https://stgbwa.asimti.iq
